@@ -1,0 +1,17 @@
+node_modules/
+dist/
+_app/
+.netlify/
+.local-preview/
+.testing/
+.sharing-validation/
+.DS_Store
+.env
+.env.*
+client_secret*.json
+*backup*.json
+*.pem
+*.key
+CHANGE-CHECKLIST-*.md
+HANDOFF-*.md
+LATEST-HANDOFF.md
