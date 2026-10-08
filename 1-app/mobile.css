@@ -1,0 +1,40 @@
+/* Fit the room and task selectors in the first phone viewport. */
+main{padding-top:0;padding-bottom:calc(76px + env(safe-area-inset-bottom));min-height:100svh}
+nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));overflow:visible;padding:4px 5px calc(4px + env(safe-area-inset-bottom));gap:2px;height:calc(70px + env(safe-area-inset-bottom))}
+nav button,nav button[data-tab]{min-width:0;min-height:58px;font-size:10px;line-height:1.2;padding:2px;white-space:normal}
+nav button[data-tab=calendar],nav button[data-tab=later],nav button[data-tab=library],nav button[data-tab=rooms],nav button[data-tab=rewards]{display:none}
+nav button::before,nav button[data-tab]::before{content:'';height:28px;width:28px;display:block;margin:0 auto 2px;background:center/contain no-repeat}
+nav button[data-tab=house]::before{background-image:url('assets/ui/house.svg')}nav button[data-tab=doing]::before{content:'◎';font-size:25px;line-height:28px;background:none}nav button[data-tab=now]::before{background-image:url('assets/ui/tasks.svg')}nav button[data-tab=side]::before{background-image:url('assets/ui/side.svg')}nav button[data-tab=wins]::before{background-image:url('assets/ui/wins.svg')}nav #settings::before{background-image:url('assets/ui/settings.svg')}nav #moreNav::before{background-image:url('assets/ui/more.svg')}
+nav button[data-tab=calendar]::before{content:'📅';font-size:23px;line-height:28px;background:none}
+.room-toolbar{height:48px;box-sizing:border-box;padding:2px 10px;position:relative;z-index:8;gap:5px}.room-toolbar>button{min-height:42px;padding:6px 10px;font-size:13px}
+#roomScene{width:min(100%,calc(100svh - 255px));margin:0 auto;aspect-ratio:1;max-height:none;border-radius:10px}
+.room-sign{max-width:70%;padding:5px 9px;top:2%;left:2%}.room-sign h2{font-size:clamp(16px,4.3vw,24px);line-height:1.15}.room-sign p{font-size:10px;margin-top:3px}
+.companion-menu{position:relative;margin:0 auto}.companion-menu[hidden]{display:none}.companion-menu summary{display:flex;align-items:center;justify-content:center;min-height:42px;padding:0 10px;font-size:12px;border:1px solid #ccba9c;border-radius:12px;background:#e2e8cf;cursor:pointer;list-style:none}.companion-menu summary::before{content:'✦';margin-right:5px}.companion-menu[open] .companion-controls{position:absolute;top:46px;left:50%;transform:translateX(-50%);width:min(280px,80vw);box-sizing:border-box;border-radius:14px;border:1px solid #b9ab8e;box-shadow:0 8px 20px #332b2340;z-index:10}.companion-controls{padding:10px;gap:6px}.companion-controls button{font-size:12px;min-height:44px}
+.mess-panel{margin:5px 10px;padding:6px 10px;border-radius:9px;position:relative}.mess-panel>div{gap:8px}.mess-panel h3{font-size:15px!important;margin:0;white-space:nowrap}.mess-panel #detailState{font-size:12px;white-space:nowrap}.mess-panel progress{display:block;height:5px;margin:4px 0 0}.mess-panel>p{display:none}.mess-panel>details{display:none}
+.room-task-panel{margin:4px 10px 12px;padding:8px 10px}.room-task-panel h3{font-size:20px;margin:0 0 5px}.room-tabs{margin:0 0 8px;gap:4px;flex-wrap:nowrap}.room-tabs button{font-size:10px;padding:4px 2px;min-height:44px;flex:1 1 0;min-width:0}.room-tabs button::before{display:block;font-size:14px;line-height:16px}.room-tabs button:nth-child(1)::before{content:'✓'}.room-tabs button:nth-child(2)::before{content:'◷'}.room-tabs button:nth-child(3)::before{content:'☆'}.room-tabs button:nth-child(4)::before{content:'↻'}
+.more-actions{display:grid;gap:8px}.more-actions button{min-height:48px}#moreMenu{width:min(370px,90vw);box-sizing:border-box}
+@media(max-height:520px){#roomScene{width:min(100%,calc(100svh - 220px))}.room-sign p{display:none}.room-toolbar{height:44px}.room-task-panel h3{font-size:16px}.room-tabs button{min-height:40px}}
+
+/* Preserve the complete supplied living-room painting, including both shelves. */
+#roomScene.living-scene{aspect-ratio:1415/1111;background-size:contain}
+
+/* Keep the supplied Penny painting complete in the compact room view. */
+#roomScene[data-room=room-penny]{aspect-ratio:338/325;background-size:contain}
+
+body[data-view=side] .hero,body[data-view=rewards] :is(.hero,.progress,.category-bar),.mystery-strip{display:none}
+body[data-view=doing] :is(.hero,.progress,.category-bar){display:none}.completed-task{opacity:.72}.completed-task strong{text-decoration:line-through}.task-notice{border-left:7px solid #6b8557}.task-notice p{margin:8px 0}
+.room-tabs{flex-wrap:wrap}.room-tabs button{flex:1 1 25%}.room-tabs button:nth-child(5)::before{content:'⌂'}
+#add,#addSide{flex-wrap:wrap}#add select,#addSide select{max-width:100%;min-width:0}#homelessEditor{max-width:440px;width:calc(100% - 42px);box-sizing:border-box}
+
+nav button[data-tab=data]{display:none}
+nav button.hidden-route{display:none!important}
+.stats-summary{background:#e2e8d0;border-radius:12px;padding:16px;margin:12px 0}.stats-summary strong{font-size:24px}.stats-table-wrap{overflow:auto;margin:12px 0 24px}.stats-table-wrap table{width:100%;border-collapse:collapse;font-size:14px}.stats-table-wrap :is(th,td){padding:10px;text-align:left;border-bottom:1px solid #dac7ab;min-width:90px}.stats-table-wrap th{background:#e9dfcd}body[data-view=wins] .hero,body[data-view=data] .hero,body[data-view=other] :is(.hero,.progress,.category-bar),body[data-view=notes] :is(.hero,.progress,.category-bar),body[data-view=calendar] :is(.hero,.progress,.category-bar){display:none}
+
+#rewardCollection[hidden]{display:none}
+#quickSavedMultiple label.saved-task-select{display:flex;align-items:flex-start;gap:10px;padding:8px 0}#quickSavedMultiple input[type=checkbox]{flex:0 0 22px;width:22px;height:22px;min-height:22px;margin:0}#quickSavedMultiple .saved-task-select span{flex:1;line-height:22px}#quickSavedMultiple p{font-size:14px;line-height:1.4}
+.saved-task-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.saved-task-actions button{min-height:44px}.saved-task-select{display:flex;align-items:center;gap:6px;min-height:44px;cursor:pointer}.saved-task-select input{width:22px;height:22px;min-height:0;accent-color:#50794f}
+
+/* Keep feedback above the navigation and the iPhone home indicator. */
+.celebration{bottom:calc(82px + env(safe-area-inset-bottom));z-index:30;pointer-events:none}
+button{touch-action:manipulation}
+@media(hover:none){button:hover{transform:none;box-shadow:none}}
