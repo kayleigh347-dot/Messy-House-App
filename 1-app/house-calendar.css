@@ -1,0 +1,43 @@
+/* Scoped calendar colours override the application's general dark-theme cards. */
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid):not(.week-view) .calendar-day {
+ background:var(--calendar-light)!important;
+ border-color:#ffffff55!important;
+}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .weekday-0{--calendar-light:#e5efd4;--calendar-dark:#405640}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .weekday-1{--calendar-light:#dae9f5;--calendar-dark:#3c5276}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .weekday-2{--calendar-light:#eadcf2;--calendar-dark:#604571}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .weekday-3{--calendar-light:#d5eeec;--calendar-dark:#32646c}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .weekday-4{--calendar-light:#f5e5cf;--calendar-dark:#6a543c}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .weekday-5{--calendar-light:#f0dae5;--calendar-dark:#704655}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .weekday-6{--calendar-light:#dcecdf;--calendar-dark:#3f604c}
+.dark-mode :is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid):not(.week-view) .calendar-day {
+ background:var(--calendar-dark)!important;
+}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .calendar-day.today,
+.dark-mode :is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .calendar-day.today {
+ background:#e8cd73!important;
+ color:#342507!important;
+ border:2px solid #fff0ab!important;
+ box-shadow:inset 0 0 0 2px #fff4bb!important;
+}
+:is(#calendar #houseCalendarGrid,main .symbol-calendar .calendar-grid) .calendar-day.today>.calendar-day-heading {
+ background:#fff0ab!important;
+ color:#342507!important;
+ font-weight:800;
+}
+#calendar .calendar-completed-tasks {
+ margin-top:18px;
+ padding:10px;
+ border:1px solid #879eb4;
+ border-radius:12px;
+ background:#e5edf4;
+}
+.dark-mode #calendar .calendar-completed-tasks{background:#26364b}
+#calendar .calendar-completed-tasks h4{margin:0 0 8px;font-size:15px}
+#calendar .calendar-completed-tasks .calendar-task-main>strong{text-decoration:line-through}
+#calendar .week-view .calendar-completed-tasks{padding:6px;margin-top:12px}
+
+.symbol-calendar .calendar-legend{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.symbol-calendar .calendar-completed-tasks{margin-top:12px;padding:8px;border:1px solid #879eb4;border-radius:10px;background:#26364b}
+.symbol-calendar .calendar-completed-tasks h4{font-size:14px;margin:0 0 7px}
+.symbol-calendar .calendar-completed-tasks .calendar-task-main>strong{text-decoration:line-through}

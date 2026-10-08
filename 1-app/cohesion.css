@@ -1,0 +1,151 @@
+/* Master mobile layouts: tabs, page headings, task cards, controls and calendars. */
+:root{--tab-active:#8756b0;--tab-idle:#3d2857;--tab-edge:#b990d7}
+main .page>h2,main .settings-heading h2{font-size:23px;line-height:1.2;margin:12px 0 10px;letter-spacing:0}
+main .page>.meta{font-size:12px;line-height:1.4;margin:6px 0 10px}
+main .folder-tabs{display:flex;align-items:stretch;flex-wrap:nowrap;gap:0;margin:10px 0 12px;padding:0 0 2px;border-bottom:2px solid var(--tab-edge);overflow-x:auto;scrollbar-width:none}
+main .folder-tabs::-webkit-scrollbar{display:none}
+main .folder-tabs button,.dark-mode main .folder-tabs button,.dark-mode #doingTabs.folder-tabs button{position:relative;flex:1 0 max-content;margin:0 0 -2px;min-width:0;min-height:44px;padding:10px 21px 8px 12px;border:0!important;border-radius:0!important;clip-path:polygon(0 100%,0 10%,5% 0,86% 0,100% 100%);background:var(--tab-idle)!important;color:#e9def3!important;box-shadow:none!important;outline:0;white-space:nowrap;font-size:12px;line-height:1.2;transform:none}
+main .folder-tabs button+button{margin-left:-5px}
+main .folder-tabs button::before,main .folder-tabs button::after{display:none!important}
+.dark-mode main .folder-tabs button[aria-pressed=true],.dark-mode main .folder-tabs button.on,.dark-mode #doingTabs.folder-tabs button[aria-pressed=true]{background:var(--tab-active)!important;color:white!important;z-index:1;font-weight:700!important}
+main .folder-tabs button:focus-visible{outline:0;box-shadow:inset 0 0 0 3px #fff0bd!important}
+.task-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 10px}
+.task-layout-toggle{min-height:44px;font-size:12px;padding:7px 11px}
+.task-list-toolbar .add-task-main{margin-left:auto}
+main .task-card{display:block!important;position:relative;min-width:0;padding:10px!important}
+main .task-card>.body{display:flex;flex-direction:column;gap:4px;width:100%;min-width:0}
+main .task-card .task-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;min-height:0}
+main .task-card .task-heading>strong{flex:1;min-width:0;margin:0;font-size:16px!important;line-height:1.3}
+main .task-card .task-heading>.subtask-progress{flex:0 0 auto;order:3;align-self:flex-start;margin:0;padding:3px 6px;font-size:12px;font-weight:700!important;line-height:1.4}
+main .task-card .subtask-chevron{flex:0 0 auto;order:2;font-size:18px}
+main .task-card .task-footer{display:flex;align-items:center;gap:6px;justify-content:flex-end;min-width:0;margin-top:3px}
+main .task-card .task-footer>.task-complete,.dark-mode main .task-card .task-footer>.task-complete{flex:0 0 auto;margin:0 0 0 auto!important;min-height:44px;max-width:100%;padding:7px 10px;background:#81cda6!important;color:#102e24!important;border:1px solid #58ae85!important;font-size:12px;white-space:nowrap}
+main .task-card .task-footer>.do-now{flex:0 0 auto;min-height:44px;padding:7px 10px;border-radius:10px;font-size:12px;line-height:1.2}
+main .task-card .task-footer>.task-undo{margin-left:auto;min-height:44px;padding:7px 10px;font-size:12px}
+main .task-card .recurring-day-badge{flex:0 0 auto;border-radius:6px;padding:3px 5px;background:#d6c1ec;color:#312342;font-size:11px;line-height:1.3;white-space:nowrap}
+main .task-card[data-recurring-status=later]>.body>.meta{display:none!important}
+.task-compact-view main .task-card:not(.completed-task){padding:7px 9px!important;min-height:0;box-shadow:none!important;cursor:pointer}
+.task-compact-view main .task-card>.body>.meta,.task-compact-view main .task-card>.body>.task-quick-actions,.task-compact-view main .task-card .task-options,.task-compact-view main .task-card .subtasks:not([open]){display:none!important}
+.task-compact-view main .task-card .task-heading>strong{font-size:14px!important;line-height:1.25}
+.task-compact-view main .task-card .task-secondary-actions:empty{display:none}
+main .completed-list .task.task-card.completed-task{display:block!important;padding:7px 0!important}
+main .completed-list .task-card .task-heading>strong{font-size:13px!important}
+.calendar-view-controls{flex-wrap:nowrap;gap:9px;justify-content:space-between;padding:5px 7px;margin:8px 0}
+.calendar-view-controls label{margin:0;gap:4px;min-width:0;font-size:11px;white-space:nowrap}
+.calendar-view-controls .calendar-view-label{flex:0 0 auto}
+.calendar-view-controls select{width:auto;min-width:0;min-height:44px;padding:7px 5px;font-size:12px}
+.calendar-view-controls .checkbox-label{gap:4px;min-height:44px}
+.calendar-view-controls .checkbox-label input[type=checkbox]{width:17px;height:17px;min-height:17px;flex-basis:17px;margin:0}
+#wins .data-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 12px}
+#wins .data-filters>label,#wins .data-filters>.category-bar{display:grid;gap:4px;min-width:0;margin:0;padding:0;background:transparent!important;border:0!important;font-size:12px}
+#wins .data-filters select{min-width:0;width:100%;min-height:44px;padding:7px;font-size:12px}
+#wins .stats-summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 12px;padding:9px 11px;margin:8px 0}
+#wins .stats-summary strong{font-size:16px!important;line-height:1.25}
+#wins .stats-summary span{font-size:11px;line-height:1.4}
+#wins h3{font-size:16px;margin:12px 0 8px}
+#wins .completion-line-chart{padding:8px;margin:8px 0 12px}
+#quickSavedMultiple{padding:0;margin:0;border:0}
+#quickSavedMultiple h3{font-size:16px;margin:3px 0}
+#quickSavedMultiple p{font-size:12px;line-height:1.4}
+#quickTask .folder-tabs{margin:8px 0 12px}
+.symbol-calendar .calendar-grid{grid-template-columns:repeat(7,minmax(0,1fr));overflow:hidden}
+.symbol-calendar .calendar-grid.week-view{display:block}
+.symbol-calendar .calendar-day{min-width:0;min-height:68px;padding:3px}
+.symbol-calendar .calendar-day-heading{min-width:0;min-height:32px;padding:4px 6px;font-size:12px}
+.symbol-calendar .calendar-weekday{font-size:10px;padding:5px 1px}
+.symbol-calendar .calendar-month-toolbar{display:flex;align-items:center;gap:5px;margin:8px 0;min-width:0}
+.symbol-calendar .calendar-month-toolbar strong{flex:1;text-align:center;font-size:14px;min-width:0}
+.symbol-calendar .calendar-month-toolbar select{font-size:11px;padding:6px 4px;max-width:85px;min-height:44px}
+.symbol-calendar .calendar-month-toolbar button{flex:0 0 36px;min-width:0;min-height:44px;padding:5px}
+.symbol-calendar .calendar-agenda-heading h3{font-size:15px;line-height:1.3}
+.symbol-calendar .calendar-agenda-heading button{font-size:11px;white-space:nowrap;padding:6px}
+.symbol-calendar .calendar-agenda-filter{flex-wrap:wrap;font-size:12px}
+.symbol-calendar .room-legend{font-size:10px}
+.symbol-calendar .calendar-room-symbol{min-width:27px!important;min-height:30px!important;padding:2px!important;font-size:17px!important}
+.spread-preview{max-height:60vh;margin:8px 0}
+main .calendar-task-row .calendar-task-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 6px;align-items:start}
+main .calendar-task-row .calendar-task-main>span:first-child{grid-column:1;font-size:10px;white-space:normal}
+main .calendar-task-row .calendar-task-main>strong{grid-column:1;grid-row:2;white-space:normal;overflow-wrap:anywhere;font-size:13px}
+main .calendar-task-row .calendar-subtask-progress{grid-column:2;grid-row:1 / span 2;align-self:start;padding:3px 6px;border-radius:6px;background:#f8d77a;color:#34250b;font-size:12px}
+main .calendar-task-footer{display:flex;justify-content:flex-end;margin-top:5px}
+main .calendar-task-footer .calendar-done{min-height:44px;padding:7px 10px;font-size:12px;background:#81cda6;color:#102e24}
+@media(max-width:380px){main .folder-tabs button{font-size:11px;padding:10px 16px 8px 9px}.calendar-view-controls{gap:5px;padding:4px}.calendar-view-controls label{font-size:10px}.calendar-view-controls select{font-size:11px}main .task-card .task-footer{gap:4px}main .task-card .task-footer>.do-now,main .task-card .task-footer>.task-complete{font-size:11px;padding:7px}}
+
+/* Three recurring status tabs fit together on narrow screens. */
+main #recurringStatusTabs.folder-tabs button,main #roomRecurringStatusTabs.folder-tabs button{font-size:11px;padding:10px 14px 8px 8px}
+main #roomTabs.folder-tabs button{font-size:10px;padding:10px 13px 8px 7px}
+
+.folder-tabs .tab-count{display:inline-block;font-size:10px;margin-left:4px;opacity:.85}
+@media(max-width:380px){main #recurringStatusTabs.folder-tabs button,main #roomRecurringStatusTabs.folder-tabs button{font-size:10px;padding:10px 11px 8px 6px}}
+
+main .house-heading h2,main .calendar-heading h2,main dialog>h2,main #featureDialogBody>h2{font-size:23px;line-height:1.2;margin:12px 0 10px;letter-spacing:0}
+#dataCalendar .data-calendar-day.today{background:#e8cd73!important;color:#342507!important;border-color:#fff0ab!important}
+
+#wins .stats-summary small{font-size:11px;font-weight:400;letter-spacing:0;flex-basis:100%;color:inherit}
+
+main .task-card .task-footer>.task-create{margin-left:auto;min-height:44px;font-size:12px;background:#81cda6!important;color:#102e24!important;padding:7px 10px}
+
+/* Keep repeated phone taps from triggering page zoom; pinch zoom remains available. */
+main button,nav button{touch-action:manipulation}
+
+/* Secondary form controls share one compact, touch-friendly expander. */
+main .optional-section{min-width:0;margin:4px 0;border:1px solid #765096;border-radius:10px;background:#2d1643;color:#eee1fa}
+main .optional-section>summary{min-height:44px;padding:11px 10px;color:#e6ccfc;font-size:13px;line-height:1.5;font-weight:700;touch-action:manipulation}
+main .optional-section[open]>summary{border-bottom:1px solid #765096}
+main .optional-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:10px;min-width:0}
+main .optional-fields label{min-width:0;margin:0}
+main .optional-fields input:not([type=checkbox]),main .optional-fields select,main .optional-fields textarea{width:100%;min-width:0}
+main .optional-fields p{font-size:12px;line-height:1.45;margin:2px 0}
+main .optional-fields fieldset{margin:0;min-width:0}
+main .optional-fields .checkbox-label{display:flex;align-items:center;gap:8px;min-height:44px;font-size:13px;line-height:1.4}
+main .optional-fields .checkbox-label input{flex:0 0 18px;width:18px;height:18px;min-height:18px}
+main .schedule-tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+main .schedule-tools button{min-width:0;font-size:12px}
+#recurring #undoSchedule{min-height:44px;font-size:12px;margin:4px 0 8px}
+#recurring #undoSchedule[hidden]{display:none}
+
+main .room-detail-heading h2{font-size:23px;margin:10px 0 3px;line-height:1.2}
+main .room-detail-heading p{font-size:12px;margin:3px 0 8px}
+main .room-scene-details{margin:8px 0 12px;border:1px solid #765096;border-radius:12px;overflow:hidden}
+main .room-scene-details>summary{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px;color:#e6ccfc;font-size:13px;background:#2d1643}
+main .room-scene-details>summary::before{content:'▸';font-size:16px}
+main .room-scene-details[open]>summary::before{content:'▾'}
+main .room-scene-details>summary>span{margin-left:auto;font-size:11px;font-weight:400}
+main .room-scene-details #roomScene{margin:0}
+main .room-scene-details .mess-panel{margin:0;border:0;border-radius:0}
+.simple-view main #roomSceneDetails{display:none!important}
+
+main .task-order-heading{display:flex;align-items:center;gap:8px;font-size:12px;margin:12px 0 5px;padding:5px 0;border-bottom:1px solid #9a73bd;color:#dfc6f3;line-height:1.4}
+main .task-order-heading>span:last-child{margin-left:auto;font-size:11px;font-weight:400}
+main .task-order-heading+ .task-card{margin-top:5px}
+
+main .subtask-list>.task-card.subtask-card:not(.has-subtask-counter){padding:3px 5px!important}
+main .subtask-list>.subtask-card:not(.has-subtask-counter)>.body{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 4px}
+main .subtask-list>.subtask-card:not(.has-subtask-counter)>.body>.task-heading{grid-column:1;grid-row:1;display:block;min-width:0}
+main .subtask-list>.subtask-card:not(.has-subtask-counter) .task-heading>strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px!important;line-height:1.4}
+main .subtask-list>.subtask-card>.body>.meta,main .subtask-list>.subtask-card>.body>.task-quick-actions{display:none!important}
+main .subtask-list>.subtask-card>.body>details,main .subtask-list>.subtask-card>.body>.item-image-controls{display:none;grid-column:1/-1}
+main .subtask-list>.subtask-card.subtask-expanded>.body>details,main .subtask-list>.subtask-card.subtask-expanded>.body>.item-image-controls{display:block}
+main .subtask-list>.subtask-card>.body>.task-secondary-actions{display:none;grid-column:1/-1;grid-row:2}
+main .subtask-list>.subtask-card.subtask-expanded>.body>.task-secondary-actions,main .subtask-list>.subtask-card.compact-expanded>.body>.task-secondary-actions{display:block}
+main .subtask-list>.subtask-card.subtask-expanded .task-options{display:block!important}
+main .subtask-list>.subtask-card:not(.has-subtask-counter)>.body>.task-footer{grid-column:2;grid-row:1;margin:0;gap:3px}
+main .subtask-list>.subtask-card .task-footer>.task-complete,main .subtask-list>.subtask-card .task-footer>.task-undo{font-size:11px;padding:6px 7px;min-height:44px}
+main .subtask-options-toggle{font-size:20px;min-width:30px;min-height:44px;padding:4px;line-height:1}
+main .calendar-subtask-row{display:flex;align-items:center;gap:5px;min-width:0}
+main .calendar-subtask-row>span{flex:1;min-width:0;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:12px}
+main .calendar-subtask-row>button{flex-shrink:0;min-height:44px}
+
+main .data-summary-list{display:grid;gap:7px;min-width:0}
+main .data-summary-card{padding:10px;border:1px solid #765096;border-radius:10px;background:#2d1643;min-width:0}
+main .data-card-heading{display:flex;align-items:flex-start;gap:8px;min-width:0}
+main .data-card-heading>strong{flex:1;min-width:0;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+main .data-card-total{flex:0 0 auto;font-size:11px;line-height:1.5;padding:2px 5px;border-radius:5px;background:#754b96;color:#fff}
+main .data-summary-card>p{font-size:11px;margin:4px 0;color:#d1bbdf}
+main .data-card-figures{margin-top:5px}
+main .data-card-figures>summary{min-height:44px;padding:11px 0;font-size:12px;color:#e6ccfc}
+main .data-card-figures dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;font-size:12px;margin:0 0 5px}
+main .data-card-figures dd{margin:0;text-align:right}
+main .completion-rows .completion-row{min-width:0;margin:0}
+main .completion-row>strong,main .completion-row>span{min-width:0;overflow-wrap:anywhere}
+main .calendar-room-filter>summary{overflow-wrap:anywhere}
