@@ -1,0 +1,56 @@
+name: Deploy Mission Control to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Assemble reviewed app and image upload parts
+        run: |
+          mkdir -p _app/assets
+          cp -R 1-app/. _app/
+          cp -R 2-assets/assets/. _app/assets/
+          for part in part-*; do
+            if [ -d "$part/2-assets/assets" ]; then
+              cp -R "$part/2-assets/assets/." _app/assets/
+            fi
+          done
+          cp -R 3-tests/tests _app/tests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: 1-app/package-lock.json
+      - run: npm ci
+        working-directory: _app
+      - run: npm test
+        working-directory: _app
+      - run: npm run build
+        working-directory: _app
+        env:
+          VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY || 'BN22HnEySrYZnOKjrZYXDkRe6QwbUwNrW1szraL_x-zMgQadX7QliejkshTq3H2zn5DGwBlBEn9RJ_WcU0hcuKQ' }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _app/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
