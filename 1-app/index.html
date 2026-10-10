@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="stage-one.css">
 <link rel="stylesheet" href="mobile.css">
 <title>Mission Control</title>
-<link rel="stylesheet" href="features.css?v=streamline-20261009-v2">
+<link rel="stylesheet" href="features.css?v=overdue-20261010-v1">
 <link rel="stylesheet" href="house-calendar.css?v=streamline-20261009-v2">
 <link rel="stylesheet" href="cohesion.css?v=streamline-20261009-v2">
 </head>
@@ -85,6 +85,7 @@
 <section class="room-task-panel">
 <button id="homeAdd" class="add-task-main">＋ Add task</button>
 <h2>Overdue tasks</h2>
+<section id="homeImportantOverdue" class="important-overdue" aria-live="polite" hidden></section>
 <div id="homeOverdue">
 </div>
 <button type="button" class="add-task-main bottom-add" data-add-task>＋ Add task</button>
@@ -545,7 +546,7 @@
 <div id="featureToast" role="status" aria-live="polite" hidden></div><div id="focusStatus" hidden></div>
 <dialog id="featureDialog"><div id="featureDialogBody"></div><button type="button" onclick="this.closest('dialog').close()">Close</button></dialog>
 </main>
-<script type="module" src="app.js?v=streamline-20261009-v2">
+<script type="module" src="app.js?v=overdue-20261010-v2">
 </script>
 </body>
 </html>

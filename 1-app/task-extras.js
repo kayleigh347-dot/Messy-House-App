@@ -32,6 +32,11 @@ export function taskDeadline(task){
  return Number.isFinite(recurring)?recurring:null;
 }
 
+export function overdueTaskGroups(tasks,now=Date.now()){
+ const overdue=ordered(tasks.filter(task=>{const due=taskDeadline(task);return !task.parentId&&due!==null&&due<now}));
+ return {important:overdue.filter(task=>task.recurrence&&task.importantWhenOverdue),other:overdue.filter(task=>!task.recurrence||!task.importantWhenOverdue)};
+}
+
 // Cleaned backups name exact duplicate IDs; importing one can remove those originals.
 // Only matching unfinished roots are removed, keeping newer completions and all children.
 export function applyBackupCleanup(state,cleanup){

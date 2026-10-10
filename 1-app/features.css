@@ -209,3 +209,10 @@ body[data-view="recurring"] .category-bar,body[data-view="library"] .category-ba
 @media(max-width:600px){.data-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.data-filters>label,.data-filters>.category-bar{min-width:0;padding:6px}.data-filters select{min-width:0;font-size:13px}}
 
 .task-heading strong{min-width:0;overflow-wrap:anywhere}.task-heading .task-complete{white-space:nowrap;align-self:flex-start}.task-compact-view .task-heading{gap:6px}.task-compact-view .task-heading .task-complete{min-height:44px;padding:7px 8px;font-size:13px}
+
+#homeImportantOverdue.important-overdue{margin:10px 0 16px;padding:12px;border:2px solid #e35c68;border-radius:14px;background:#fff0ec;color:#57252c}
+#homeImportantOverdue h3{margin:0 0 5px;color:#9d2434;font-weight:800}
+#homeImportantOverdue p{margin:4px 0 10px}
+#homeImportantOverdue .task{border:2px solid #dc5863!important;border-left-width:7px!important}
+.dark-mode #homeImportantOverdue.important-overdue{background:#3a202b;color:#ffe5e8;border-color:#f07882}
+.dark-mode #homeImportantOverdue h3{color:#ff9ba2}

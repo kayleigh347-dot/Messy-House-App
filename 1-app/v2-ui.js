@@ -4,7 +4,7 @@ import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appe
 import {createSymbolCalendar} from './house-calendar.js?v=streamline-20261009-v2';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
-import {saveReusable,deleteReusable,roomTemplates,taskDeadline,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js';
+import {saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=overdue-20261010-v1';
 import {activeTask,completedToday} from './task-flow.js?v=purple-subtasks-1';
 import {navigate} from './navigation.js';
 import {messPieces,renderRoomMess} from './room-mess.js';
@@ -42,7 +42,7 @@ export function initV2(get,changed,taskCard,shared={}){getState=get;save=changed
 }
 export function renderV2(st){const templateRoom=document.querySelector('#templateRoomFilter');if(templateRoom&&!templateRoom.dataset.bound){templateRoom.dataset.bound='1';templateRoom.onchange=()=>renderLibrary(getState())}
  renderHouse(st);renderLibrary(st);renderRoom(st);
- const overdue=document.querySelector('#homeOverdue');overdue.replaceChildren();const late=ordered(st.tasks.filter(t=>{const due=taskDeadline(t);return !t.parentId&&due!==null&&due<Date.now()}));for(const t of late)overdue.append(makeTaskCard(t,'task'));if(!late.length)overdue.append(el('p','No overdue tasks.'));
+ const overdue=document.querySelector('#homeOverdue'),important=document.querySelector('#homeImportantOverdue'),groups=overdueTaskGroups(st.tasks);overdue.replaceChildren();important.replaceChildren();important.hidden=!groups.important.length;if(groups.important.length){important.append(el('h3','⚠ Important · do these first'));for(const t of groups.important)important.append(makeTaskCard(t,'task'))}for(const t of groups.other)overdue.append(makeTaskCard(t,'task'));if(!groups.other.length)overdue.append(el('p',groups.important.length?'No other overdue tasks.':'No overdue tasks.'));
  const list=document.querySelector('#roomList');list.replaceChildren();
  const rooms=ordered(st.rooms);
  rooms.forEach((r,i)=>{

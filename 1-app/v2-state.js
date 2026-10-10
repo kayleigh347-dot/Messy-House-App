@@ -127,7 +127,7 @@ export function scheduleNext(task,now=new Date()){
  const nextDue=nextOccurrence(task.recurrence,now);if(!nextDue)return null;
  const seriesId=task.seriesId||task.id;
  task.lastDone=now.toISOString();task.nextDue=nextDue;
- return {...freshTask(task,`occ-${seriesId}-${nextDue}`,now.toISOString(),task.order),seriesId,recurringGroupId:task.recurringGroupId||seriesId,recurrence:structuredClone(task.recurrence),bucket:'now',scheduled:true,allowanceDays:null,nextDue,lastDone:task.lastDone,activeSince:nextDue};
+ return {...freshTask(task,`occ-${seriesId}-${nextDue}`,now.toISOString(),task.order),...(task.importantWhenOverdue?{importantWhenOverdue:true}:{}),seriesId,recurringGroupId:task.recurringGroupId||seriesId,recurrence:structuredClone(task.recurrence),bucket:'now',scheduled:true,allowanceDays:null,nextDue,lastDone:task.lastDone,activeSince:nextDue};
 }
 export function activateDue(st,now=Date.now()){
  let changed=false;for(const t of st.tasks)if(!t.done&&!t.pausedAt&&t.scheduled&&Date.parse(t.nextDue)<=now){t.bucket='now';t.scheduled=false;t.activeSince=t.nextDue;changed=true}return changed;

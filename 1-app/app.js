@@ -6,7 +6,7 @@ import {enableTaskDrag} from './task-drag.js?v=streamline-20261009-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=streamline-20261009-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,startFocus,featureToast} from './features.js?v=streamline-20261009-v2';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,startFocus,featureToast} from './features.js?v=overdue-20261010-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js';
 import {completionRecord} from './task-stats.js';
@@ -14,13 +14,13 @@ import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,c
 
 import {renderStats} from './stats-ui.js?v=streamline-20261009-v2';
 
-import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-extras.js';
+import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-extras.js?v=overdue-20261010-v1';
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=streamline-20261009-v2";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=overdue-20261010-v2";
 
-import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=purple-subtasks-1";
+import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=overdue-20261010-v1";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
