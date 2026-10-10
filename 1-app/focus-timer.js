@@ -43,21 +43,23 @@ function addPhoneTimer(body,form){
   return true;
  };
  const requestFor=seconds=>new URLSearchParams({secret:secret.value.trim(),to:account.value.trim(),device:device.value.trim(),priority:'normal',payload:String(seconds)});
- const saveButton=document.createElement('button'),testButton=document.createElement('button');saveButton.type=testButton.type='button';saveButton.textContent='Save connection';testButton.textContent='Test 1-minute timer';panel.querySelector('[data-android]').append(saveButton,testButton);
+ const saveButton=document.createElement('button'),testButton=document.createElement('button'),responseButton=document.createElement('button');saveButton.type=testButton.type=responseButton.type='button';saveButton.textContent='Save connection';testButton.textContent='Test 1-minute timer';responseButton.textContent='Check connection response';panel.querySelector('[data-android]').append(saveButton,testButton,responseButton);
  saveButton.onclick=()=>{if(saveConnection())status.textContent='Connection saved on this device.'};
- testButton.onclick=()=>{
+ responseButton.onclick=()=>{
   if(!saveConnection())return;stopPreview();
   // A normal form opens the server's real reply, which no-cors fetch cannot read.
   const testForm=document.createElement('form');testForm.method='POST';testForm.action='https://llamalab.com/automate/cloud/message';testForm.target='_blank';testForm.rel='noopener noreferrer';testForm.enctype='application/x-www-form-urlencoded';
   for(const [name,value] of requestFor(60)){const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;testForm.append(input)}
   document.body.append(testForm);testForm.submit();testForm.remove();
-  status.textContent='Test submitted. Automate’s response opens in another tab; check it for an error, then check your phone Clock.';
+  status.textContent='Connection check submitted with a one-minute timer. Automate’s response opens in another tab; check it for an error, then return to this app.';
  };
+ const sendAndroidTimer=async seconds=>{
+  if(!saveConnection())return;stopPreview();button.disabled=testButton.disabled=true;status.textContent='Sending timer request…';
+  try{await fetch('https://llamalab.com/automate/cloud/message',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:requestFor(seconds),mode:'no-cors',credentials:'omit',referrerPolicy:'no-referrer'});status.textContent='Timer request submitted. Check your phone Clock; delivery cannot be confirmed here. If it has not started, use Check connection response.'}catch{status.textContent='Could not send the request. Check your connection and try again.'}finally{button.disabled=testButton.disabled=false}
+ };
+ testButton.onclick=()=>sendAndroidTimer(60);
  button.onclick=async()=>{if(!form.elements.minutes.reportValidity())return;const seconds=Number(form.elements.minutes.value)*60;stopPreview();
   if(phone.value==='iphone'){const name=shortcut.value.trim();if(!name){status.textContent='Enter your shortcut name.';panel.querySelector('details').open=true;return}localStorage.setItem('mc-phone-timer-shortcut',name);window.location.href='shortcuts://run-shortcut?name='+encodeURIComponent(name)+'&input=text&text='+seconds;status.textContent='Opening Shortcuts. Check that your Clock timer started.';return}
-  if(!saveConnection())return;
-  const request=requestFor(seconds);
-  button.disabled=true;status.textContent='Sending timer request…';
-  try{await fetch('https://llamalab.com/automate/cloud/message',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:request,mode:'no-cors',credentials:'omit',referrerPolicy:'no-referrer'});status.textContent='Timer request submitted; delivery is not confirmed here. Check your phone Clock. If it has not started, use Test 1-minute timer to see Automate’s response.'}catch{status.textContent='Could not send the request. Check your connection and try again.'}finally{button.disabled=false}
+  await sendAndroidTimer(seconds);
  };
 }
