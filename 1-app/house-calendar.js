@@ -2,6 +2,7 @@ import {roomHues} from './room-colours.js';
 import {recurrenceLabel} from './v2-state.js?v=schedule-20261010-v1';
 import {localDateKey as dateKey} from './calendar.js';
 import {taskDeadline} from './task-extras.js';
+import {setNextDue} from './recurring-schedule.js?v=schedule-20261010-v1';
 import {subtasksForDisplay} from './subtasks.js?v=streamline-20261009-v2';
 const $=s=>document.querySelector(s),el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
 const symbols={'room-master':'🛏️','room-penny':'🧸','room-kitchen':'🍽️','room-living':'🛋️','room-bathroom':'🛁','room-hall':'🚪','room-entrance':'🔑','room-cats':'🐈','room-print':'🖨️','room-craft':'🎨'};
@@ -21,6 +22,53 @@ export function upcomingCalendarEntries(state,{showRecurring=true,showSetDay=tru
  }
  return entries;
 }
+
+const moveFields=['nextDue','dueDate','activeSince','scheduled','bucket','allowanceDays'];
+const moveSnapshot=task=>Object.fromEntries(moveFields.filter(key=>key in task).map(key=>[key,structuredClone(task[key])]));
+// Recheck the source day before moving: a concurrent edit must not move a different occurrence.
+export function moveCalendarRoom(state,{ids,roomId,from,to},now=Date.now()){
+ const date=new Date(to+'T00:00:00');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(to)||!Number.isFinite(+date)||dateKey(date)!==to)throw new Error('Choose a valid day.');
+ if(from===to)return [];
+ const visible=new Set(upcomingCalendarEntries(state).filter(e=>e.roomId===roomId&&e.date===from).map(e=>e.id)),selected=new Set(ids),undo=[];
+ for(const task of state.tasks)if(selected.has(task.id)&&visible.has(task.id)){
+  const before=moveSnapshot(task);
+  if(task.recurrence)setNextDue(task,to,now);
+  else{task.dueDate=date.toISOString();task.nextDue=task.dueDate;task.scheduled=+date>+now;task.bucket='now'}
+  undo.push({id:task.id,before,after:moveSnapshot(task)});
+ }
+ return undo;
+}
+export function undoCalendarRoomMove(state,undo){
+ let count=0;
+ for(const item of undo){const task=state.tasks.find(t=>t.id===item.id&&!t.done&&!t.pausedAt);if(!task||JSON.stringify(moveSnapshot(task))!==JSON.stringify(item.after))continue;
+  for(const key of moveFields)delete task[key];Object.assign(task,item.before);count++;
+ }
+ return count;
+}
+function calendarRoomDrag(grid,options,status){
+ let picked=null,target=null,touch=null,suppressClick=false;
+ const announce=text=>status.textContent=text;
+ const clear=()=>{target?.classList.remove('calendar-drop-target');picked?.chip.classList.remove('calendar-room-dragging');picked?.chip.setAttribute('aria-pressed','false');picked=null;target=null};
+ const pointCell=(x,y)=>document.elementsFromPoint(x,y).map(n=>n.closest('.calendar-day')).find(n=>n&&grid.contains(n));
+ const aim=cell=>{target?.classList.remove('calendar-drop-target');target=cell;target?.classList.add('calendar-drop-target');if(cell)announce('Move to '+new Date(cell.dataset.date+'T12:00:00').toLocaleDateString())};
+ const pick=chip=>{clear();picked={chip,ids:JSON.parse(chip.dataset.taskIds),roomId:chip.dataset.roomId,from:chip.dataset.date};chip.classList.add('calendar-room-dragging');chip.setAttribute('aria-pressed','true');aim(chip.closest('.calendar-day'))};
+ const drop=()=>{if(!picked)return;const move=target&&{ids:picked.ids,roomId:picked.roomId,from:picked.from,to:target.dataset.date};clear();suppressClick=true;setTimeout(()=>suppressClick=false,500);if(move&&move.from!==move.to){sessionStorage.setItem((options.storageKey||'mc-calendar')+'-day',move.to);options.onMoveRoom(move)}else announce('Move cancelled.')};
+ grid.onpointerdown=e=>{if(e.button!==undefined&&e.button!==0)return;const chip=e.target.closest('.calendar-room-symbol[data-task-ids]');if(!chip)return;touch={chip,x:e.clientX,y:e.clientY,id:e.pointerId};chip.setPointerCapture(e.pointerId)};
+ grid.onpointermove=e=>{if(!touch||touch.id!==e.pointerId)return;if(!picked&&Math.hypot(e.clientX-touch.x,e.clientY-touch.y)>8)pick(touch.chip);if(picked){e.preventDefault();aim(pointCell(e.clientX,e.clientY));if(e.pointerType==='touch'){if(e.clientY<24)window.scrollBy(0,-8);else if(e.clientY>window.innerHeight-24)window.scrollBy(0,8)}}};
+ grid.onpointerup=e=>{if(!touch||touch.id!==e.pointerId)return;touch=null;if(picked){e.preventDefault();aim(pointCell(e.clientX,e.clientY));drop()}};
+ grid.onpointercancel=()=>{touch=null;clear();announce('Move cancelled.')};
+ grid.onclick=e=>{if(suppressClick){e.preventDefault();e.stopPropagation()}};
+ grid.onkeydown=e=>{const chip=e.target.closest('.calendar-room-symbol[data-task-ids]');if(!chip)return;
+  if(!picked&&(e.key===' '||e.key==='Enter')){e.preventDefault();pick(chip);announce('Room picked up. Arrow keys choose a day; Enter moves; Escape cancels.');return}
+  if(picked?.chip!==chip)return;
+  if(e.key==='Escape'){e.preventDefault();clear();announce('Move cancelled.')}
+  else if(e.key==='Enter'||e.key===' '){e.preventDefault();drop()}
+  else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const cells=[...grid.querySelectorAll('.calendar-day')],at=cells.indexOf(target),step={ArrowLeft:-1,ArrowRight:1,ArrowUp:grid.classList.contains('week-view')?-1:-7,ArrowDown:grid.classList.contains('week-view')?1:7}[e.key];const next=cells[at+step];if(next)aim(next)}
+ };
+ return ()=>suppressClick||!!picked;
+}
+
 export function scheduledCalendarState(state,proposals){
  const preview=structuredClone(state),dates=new Map(proposals.map(p=>[p.id,p.date]));
  for(const task of preview.tasks)if(dates.has(task.id)){task.nextDue=dates.get(task.id);task.activeSince=task.nextDue;task.scheduled=Date.parse(task.nextDue)>Date.now();task.previewChange=true}
@@ -61,6 +109,8 @@ export function renderLocalCalendar(state,anchor,onComplete,options={}){
  const end=new Date(start);end.setDate(end.getDate()+(weekly?7:42));const last=new Date(end);last.setDate(last.getDate()-1);
  $('#calendarMonthLabel').textContent=weekly?`${start.toLocaleDateString([],{day:'numeric',month:'short'})} – ${last.toLocaleDateString([],{day:'numeric',month:'short',year:'numeric'})}`:anchor.toLocaleDateString([],{month:'long',year:'numeric'});
  grid.replaceChildren();grid.classList.toggle('week-view',weekly);
+ let dragging=()=>false;
+ if(options.onMoveRoom){const tools=el('div');tools.className='calendar-drag-tools';const status=el('span','Drag a room symbol to another day to move its tasks.');status.setAttribute('role','status');tools.append(status);if(options.onUndoRoomMove){const undo=el('button','Undo room move');undo.type='button';undo.onclick=options.onUndoRoomMove;tools.append(undo)}grid.append(tools);dragging=calendarRoomDrag(grid,{...options,storageKey},status)}
  const hues=roomHues(state.rooms),rooms=new Map(state.rooms.map(r=>[r.id,{...r,symbol:symbols[r.id]||'🏠',hue:hues.get(r.id),muted:!!options.focusRoomIds&&!options.focusRoomIds.includes(r.id)}]));
  const roomFilter=$('#calendarRoomFilter'),filterSummary=$('#calendarRoomFilterSummary');let wholeRoom=options.showRoomFilter===false?'':sessionStorage.getItem(storageKey+'-filter')||'';
  if(wholeRoom&&wholeRoom!=='household'&&!rooms.has(wholeRoom))wholeRoom='';
@@ -72,11 +122,19 @@ export function renderLocalCalendar(state,anchor,onComplete,options={}){
  const selectDay=(d,roomId='')=>{sessionStorage.setItem(storageKey+'-day',dateKey(d));sessionStorage.removeItem(storageKey+'-room');if(options.onSelectDate){options.onSelectDate(d);return}if(d.getMonth()!==anchor.getMonth()||d.getFullYear()!==anchor.getFullYear())jump(d);else renderLocalCalendar(state,anchor,onComplete,options);$('#calendarAgenda').scrollIntoView({behavior:'smooth',block:'nearest'})};
  if(!weekly)for(const day of ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']){const n=el('strong',day);n.className='calendar-weekday';grid.append(n)}
  for(let i=0;i<(weekly?7:42);i++){
-  const d=new Date(start);d.setDate(d.getDate()+i);const key=dateKey(d),cell=el('section'),heading=el('button',weekly?d.toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'}):String(d.getDate()));cell.className='calendar-day weekday-'+((d.getDay()+6)%7);if(!weekly)cell.classList.toggle('outside-month',d.getMonth()!==anchor.getMonth());cell.classList.toggle('today',key===today);cell.classList.toggle('selected',key===selectedKey);
+  const d=new Date(start);d.setDate(d.getDate()+i);const key=dateKey(d),cell=el('section'),heading=el('button',weekly?d.toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'}):String(d.getDate()));cell.dataset.date=key;cell.className='calendar-day weekday-'+((d.getDay()+6)%7);if(!weekly)cell.classList.toggle('outside-month',d.getMonth()!==anchor.getMonth());cell.classList.toggle('today',key===today);cell.classList.toggle('selected',key===selectedKey);
   heading.className='calendar-day-heading';heading.type='button';heading.setAttribute('aria-label',(options.onSelectDate?'Move tasks to ':weekly?'Show week of ':'Show tasks on ')+d.toLocaleDateString());heading.onclick=()=>options.onSelectDate?selectDay(d):weekly?jump(d):selectDay(d);cell.append(heading);
   const dayEntries=filteredEntries.filter(x=>x.date===key).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const tasks=dayEntries.filter(e=>(e.type==='recurring'||e.type==='task')&&!e.done&&!e.estimated);
+  if(!options.taskCountsOnly&&(!weekly||options.onMoveRoom)){
+   const roomEntries=new Map();for(const event of tasks){if(!roomEntries.has(event.roomId))roomEntries.set(event.roomId,[]);roomEntries.get(event.roomId).push(event)}
+   for(const [roomId,events] of roomEntries){const room=rooms.get(roomId),chip=el('button',(room?.symbol||'🏠')+' '+events.length);chip.type='button';chip.className='calendar-room-symbol'+(room?.muted?' calendar-muted-room':'');chip.style.setProperty('--room-hue',room?.hue||0);chip.title=`${room?.name||'Room'}: ${events.length} tasks`;chip.setAttribute('aria-label',chip.title+' on '+d.toLocaleDateString()+(options.onMoveRoom?'. Drag to reschedule; press Space to move with arrow keys.':''));chip.onclick=e=>{if(dragging()){e.preventDefault();return}selectDay(d)};
+    if(options.onMoveRoom){chip.draggable=false;chip.dataset.taskIds=JSON.stringify(events.map(e=>e.id));chip.dataset.roomId=roomId||'';chip.dataset.date=key;chip.setAttribute('aria-pressed','false')}
+    cell.append(chip)
+   }
+  }
   if(weekly){appendDayEntries(cell,dayEntries,rooms,state,onComplete);if(!dayEntries.length)cell.append(el('p','Nothing scheduled.'))}
-  else{const tasks=dayEntries.filter(e=>e.type==='recurring'||e.type==='task');if(options.taskCountsOnly){if(tasks.length){const count=el('button',`${tasks.length}`);count.type='button';count.className='calendar-task-count';count.setAttribute('aria-label',`${tasks.length} tasks become active on ${d.toLocaleDateString()}`);count.onclick=()=>selectDay(d);cell.append(count)}}else{const roomEntries=new Map();for(const event of tasks){if(!roomEntries.has(event.roomId))roomEntries.set(event.roomId,[]);roomEntries.get(event.roomId).push(event)}for(const [roomId,events] of roomEntries){const room=rooms.get(roomId),chip=el('button',(room?.symbol||'🏠')+' '+events.length);chip.type='button';chip.className='calendar-room-symbol'+(room?.muted?' calendar-muted-room':'');chip.style.setProperty('--room-hue',room?.hue||0);chip.title=`${room?.name||'Room'}: ${events.length} tasks`;chip.setAttribute('aria-label',chip.title+' on '+d.toLocaleDateString());chip.onclick=()=>selectDay(d);cell.append(chip)}}for(const event of dayEntries.filter(e=>e.type!=='recurring'&&e.type!=='task')){const n=el('button',(event.type==='appointment'?'● ':'◆ ')+event.title);n.type='button';n.className='calendar-event '+event.type;n.title=event.title;n.onclick=()=>selectDay(d);cell.append(n)}}grid.append(cell)
+  else{if(options.taskCountsOnly&&tasks.length){const count=el('button',`${tasks.length}`);count.type='button';count.className='calendar-task-count';count.setAttribute('aria-label',`${tasks.length} tasks become active on ${d.toLocaleDateString()}`);count.onclick=()=>selectDay(d);cell.append(count)}for(const event of dayEntries.filter(e=>e.type!=='recurring'&&e.type!=='task')){const n=el('button',(event.type==='appointment'?'● ':'◆ ')+event.title);n.type='button';n.className='calendar-event '+event.type;n.title=event.title;n.onclick=()=>selectDay(d);cell.append(n)}}grid.append(cell)
  }
  const agenda=$('#calendarAgenda');agenda.replaceChildren();agenda.hidden=weekly||options.showAgenda===false;
  if(!weekly&&options.showAgenda!==false){const date=new Date(selectedKey+'T12:00:00'),heading=el('div'),title=el('h3',date.toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'})),viewWeek=el('button','View week'),selectedRoomDetails=wholeRoom?null:rooms.get(selectedRoom);heading.className='calendar-agenda-heading';viewWeek.type='button';viewWeek.onclick=()=>{$('#calendarView').value='week';if(options.elements)sessionStorage.setItem(storageKey+'-view','week');else localStorage.setItem('mc-calendar-view','week');jump(date)};heading.append(title,viewWeek);agenda.append(heading);const dayEntries=filteredEntries.filter(x=>x.date===selectedKey).sort((a,b)=>(a.time||'').localeCompare(b.time||''));appendDayEntries(agenda,dayEntries,rooms,state,onComplete);if(!dayEntries.length)agenda.append(el('p',selectedRoomDetails?'No tasks for this room on this day.':'Nothing scheduled.'))}

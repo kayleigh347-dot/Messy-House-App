@@ -1,6 +1,6 @@
 import {scheduleFields,scheduleSnapshot,recurringScheduleTasks,nextDueDate,setNextDue,schedulePlan,unchangedScheduleTasks} from './recurring-schedule.js?v=schedule-20261010-v1';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
-import {createSymbolCalendar,scheduledCalendarState,roomSymbol} from './house-calendar.js?v=schedule-20261010-v1';
+import {createSymbolCalendar,scheduledCalendarState,roomSymbol,moveCalendarRoom,undoCalendarRoomMove} from './house-calendar.js?v=schedule-20261010-v1';
 import {initTimer,tickTimer,startFocus} from './focus-timer.js';
 export {startFocus};
 import {freshTask,nextOccurrence,recurrenceLabel,roomMess,DAY,priorityOrdered} from './v2-state.js?v=schedule-20261010-v1';
@@ -8,6 +8,8 @@ import {taskDeadline} from './task-extras.js?v=overdue-20261010-v1';
 import {displayPersonName} from './completion-history.js?v=schedule-20261010-v1';
 const $=s=>document.querySelector(s), el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n}, button=(text,run)=>{const n=el('button',text);n.type='button';n.onclick=run;return n};
 const dateKey=d=>{d=new Date(d);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+let roomMoveUndo=[];
+export function calendarDragOptions(onMoved){return {onMoveRoom:move=>{roomMoveUndo=moveCalendarRoom(api.get(),move);onMoved?.(move);api.save();featureToast(`Moved ${roomMoveUndo.length} tasks to ${new Date(move.to+'T12:00:00').toLocaleDateString()}. Repeat rules stay the same.`)},...(roomMoveUndo.length?{onUndoRoomMove:()=>{const count=undoCalendarRoomMove(api.get(),roomMoveUndo);roomMoveUndo=[];api.save();featureToast(`Restored ${count} tasks. Tasks changed since the move were kept.`)}}:{})}}
 let api,importDraft=[],importUndo=[],scheduleUndo=[],toastTimeout,recurringStatus='needs',manualAnchor=new Date(),manualDay=null,manualRoom='',manualSelected=new Set(),manualMessage='';
 export function featureToast(text){const n=$('#featureToast');n.textContent=text;n.hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>n.hidden=true,5500)}
 export function applyPreferences(state,actor){const pref=state.settings?.find(x=>x.id==='preferences-'+actor.id)||JSON.parse(localStorage.getItem('mc-preferences-'+actor.id)||'{}');document.body.classList.toggle('simple-view',!!pref.simple);document.body.classList.add('dark-mode');document.querySelector('meta[name=theme-color]').content='#1A0430';document.body.dataset.snark=pref.snark||'gentle';$('#simpleSettings').hidden=!pref.simple;$('#simpleView').checked=!!pref.simple;$('#snarkLevel').value=pref.snark||'gentle'}
@@ -70,7 +72,7 @@ function scheduleResult(updated,total){return `Updated ${updated} ${updated===1?
 function renderManualSchedule(){
  const state=api.get(),calendar=$('#manualScheduleCalendar'),choices=$('#manualScheduleChoices');
  const draw=date=>{if(dateKey(date)!==dateKey(manualAnchor)){manualDay=null;manualSelected.clear()}manualAnchor=new Date(date);renderManualSchedule()};
- calendar.replaceChildren(createSymbolCalendar(state,manualAnchor,null,{storageKey:'mc-manual-schedule',showRoomFilter:false,showAgenda:false,selectedDay:manualDay,onJump:draw,onSelectDate:date=>{manualDay=dateKey(date);manualAnchor=new Date(date);manualMessage='';renderManualSchedule()}}));
+ calendar.replaceChildren(createSymbolCalendar(state,manualAnchor,null,{...calendarDragOptions(move=>{manualDay=move.to;manualAnchor=new Date(move.to+'T12:00:00')}),storageKey:'mc-manual-schedule',showRoomFilter:false,showAgenda:false,selectedDay:manualDay,onJump:draw,onSelectDate:date=>{manualDay=dateKey(date);manualAnchor=new Date(date);manualMessage='';renderManualSchedule()}}));
  choices.replaceChildren();const roomLabel=el('label','Choose tasks by room'),roomSelect=el('select');roomSelect.setAttribute('aria-label','Choose tasks by room');roomSelect.append(new Option('All rooms',''));for(const r of state.rooms.filter(r=>!r.archived))roomSelect.append(new Option(roomSymbol(r.id)+' '+r.name,r.id));roomSelect.value=manualRoom;roomSelect.onchange=()=>{manualRoom=roomSelect.value;manualSelected.clear();manualMessage='';renderManualSchedule()};roomLabel.append(roomSelect);choices.append(roomLabel);
  if(!manualDay){choices.append(el('p','Choose a day on the calendar to move tasks to it.'));return}
  choices.append(el('h3','Move tasks to '+new Date(manualDay+'T12:00:00').toLocaleDateString([],{weekday:'long',day:'numeric',month:'long',year:'numeric'})));
