@@ -1,5 +1,6 @@
 import {activeTask,recurringDueNotification} from './task-flow.js?v=schedule-20261010-v1';
 import {normalizeSubtasks,childrenOf,rootTask,repeatChildren} from './subtasks.js';
+import {seedCommonTasks} from './common-tasks.js';
 import {migrateRewards} from './rewards.js';
 import {creditLegacyCompletions,archiveOldCompletions,enrichCompletionRecords} from './completion-history.js?v=schedule-20261010-v1';
 export const DAY=86400000;
@@ -76,6 +77,7 @@ export function normalize(input){
  creditLegacyCompletions(state);
  enrichCompletionRecords(state);
  archiveOldCompletions(state);
+ seedCommonTasks(state);
  migrateRewards(state);
  state.schemaVersion=7;
  return state;
@@ -112,7 +114,7 @@ export function allowanceLabel(t,now=Date.now()){
  return due<now?`Overdue by ${days} ${days===1?'day':'days'}`:`${days} ${days===1?'day':'days'} left`;
 }
 export function freshTask(template,id,now=new Date().toISOString(),order=0){
- return {id,text:template.text,roomId:template.roomId,area:template.area||'General',notes:template.notes||'',bucket:'now',done:false,created:now,activeSince:now,order,allowanceDays:template.allowanceDays||null,messImpact:template.messImpact||'normal',priority:template.priority==='high'?'high':'mid',...(template.assignedTo?{assignedTo:template.assignedTo,assignedToName:template.assignedToName}:{}),sourceTemplateId:template.sourceTemplateId||(template.sourceId?template.id:null)};
+ return {id,text:template.text,roomId:template.roomId,area:template.area||'General',notes:template.notes||'',bucket:'now',done:false,created:now,activeSince:now,order,allowanceDays:template.allowanceDays||null,messImpact:template.messImpact||'normal',priority:template.priority==='high'?'high':'mid',...(template.assignedTo?{assignedTo:template.assignedTo,assignedToName:template.assignedToName}:{}),sourceTemplateId:template.sourceTemplateId||((template.sourceId||template.builtinKey)?template.id:null)};
 }
 export function validRecurrence(r){return r===null||r===undefined||((r.kind==='days'||r.kind==='weeks')&&Number.isInteger(r.every)&&r.every>=1&&r.every<=3650)||(r.kind==='weekdays'&&Array.isArray(r.days)&&r.days.length>0&&r.days.every(d=>Number.isInteger(d)&&d>=0&&d<=6))||(r.kind==='fixed-weekday'&&Number.isInteger(r.day)&&r.day>=0&&r.day<=6)}
 export function nextOccurrence(recurrence,from=new Date()){
