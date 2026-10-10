@@ -1,4 +1,4 @@
-import {laundryProgress,completeLaundryStep} from './laundry.js?v=laundry-20261010-v1';
+import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask} from './laundry.js?v=laundry-20261010-v2';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -399,23 +399,42 @@ function renderDoingSearch(){
  for(const task of matches){const row=document.createElement('div'),text=document.createElement('span'),add=document.createElement('button');row.className='doing-search-result';text.textContent=task.text+' · '+(task.area||'General');add.type='button';add.textContent="I'm on it";add.setAttribute('aria-label','Add to Doing Now: '+task.text);add.onclick=()=>{addToDoingNow(task,st.tasks);changed()};row.append(text,add);root.append(row)}
  if(!matches.length)root.textContent='No matching available tasks.';
 }
-let laundryBusy=false;
+const laundryBusy={rail:false,dryer:false};
 function renderLaundryPanel(){
- const progress=laundryProgress(st),button=$('#laundryComplete');
- $('#laundryStepNumber').textContent=`Step ${progress.index+1} of 3`;
- $('#laundryStepTitle').textContent=progress.text;
- $('#laundrySymbol').textContent=['🧺','👕','🧥'][progress.index];
- button.setAttribute('aria-label','Complete: '+progress.text);button.disabled=laundryBusy;
- button.onclick=()=>{
-  if(laundryBusy)return;
-  const before=rewardProgress(st).earned,record=completeLaundryStep(st,progress.completed,currentActor());
-  if(!record){featureToast('Sign in on this device to complete laundry and keep your points.');return}
-  laundryBusy=true;$('#laundryStatus').textContent=`${record.text} complete. +1 point. Next: ${laundryProgress(st).text}.`;
-  changed();
-  if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');
-  setTimeout(()=>{laundryBusy=false;renderLaundryPanel()},800);
- };
+ for(const cycle of ['rail','dryer']){
+  const prefix=cycle==='dryer'?'dryer':'laundry',progress=laundryProgress(st,cycle),button=$('#'+prefix+'Complete');
+  $('#'+prefix+'StepNumber').textContent=`Step ${progress.index+1} of 3`;
+  $('#'+prefix+'StepTitle').textContent=progress.text;
+  $('#'+prefix+'Symbol').textContent=(cycle==='dryer'?['🧺','♨️','👕']:['🧺','👕','🧥'])[progress.index];
+  button.setAttribute('aria-label','Complete: '+progress.text);button.disabled=laundryBusy[cycle];
+  button.onclick=()=>{
+   if(laundryBusy[cycle])return;
+   const before=rewardProgress(st).earned,record=completeLaundryStep(st,progress.completed,currentActor(),new Date().toISOString(),cycle);
+   if(!record){featureToast('Sign in on this device to complete laundry and keep your points.');return}
+   laundryBusy[cycle]=true;$('#'+prefix+'Status').textContent=`${record.text} complete. +1 point. Next: ${laundryProgress(st,cycle).text}.`;
+   changed();
+   if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');
+   setTimeout(()=>{laundryBusy[cycle]=false;renderLaundryPanel()},800);
+  };
+ }
 }
+function renderLaundryTasks(){
+ const list=$('#laundryTasks');list.replaceChildren();
+ for(const task of laundryTasks(st)){
+  const row=document.createElement('div'),text=document.createElement('span'),done=document.createElement('button'),remove=document.createElement('button');
+  row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent='Done it!';remove.textContent='Delete';
+  done.setAttribute('aria-label','Complete laundry task: '+task.text);remove.setAttribute('aria-label','Delete laundry task: '+task.text);
+  done.onclick=()=>{const before=rewardProgress(st).earned;if(!completeLaundryTask(st,task.id,currentActor())){featureToast('Sign in on this device to complete laundry and keep your points.');return}$('#laundryTasksStatus').textContent=task.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!')};
+  remove.onclick=()=>{st.settings=st.settings.filter(item=>item.id!==task.id);changed()};
+  row.append(text,done,remove);list.append(row);
+ }
+ $('#laundryTasksEmpty').hidden=!!list.children.length;
+}
+$('#laundryTaskForm').onsubmit=event=>{
+ event.preventDefault();const input=$('#laundryTaskInput'),task=addLaundryTask(st,input.value,id());if(!task)return;
+ input.value='';$('#laundryTasksStatus').textContent='Added '+task.text+'.';changed();input.value='';input.focus();
+};
+
 function showDoingTab(tab){
  const laundry=tab==='laundry',attention=tab==='attention';
  $('#doingList').hidden=laundry||attention;$('#attentionList').hidden=laundry||!attention;$('#laundryPanel').hidden=!laundry;
@@ -428,7 +447,7 @@ function renderDoingNow(){const root=$('#doingList'),items=doingNowTasks(st.task
 function render(){const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
 renderDoingNow();
-renderLaundryPanel();
+renderLaundryPanel();renderLaundryTasks();
 renderTaskNotifications();
 categoryOptions();
 personOptions();
@@ -838,7 +857,7 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-20261010-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-20261010-v2").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
