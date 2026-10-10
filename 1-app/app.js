@@ -1,3 +1,4 @@
+import {laundryProgress,completeLaundryStep} from './laundry.js?v=laundry-20261010-v1';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -398,11 +399,36 @@ function renderDoingSearch(){
  for(const task of matches){const row=document.createElement('div'),text=document.createElement('span'),add=document.createElement('button');row.className='doing-search-result';text.textContent=task.text+' · '+(task.area||'General');add.type='button';add.textContent="I'm on it";add.setAttribute('aria-label','Add to Doing Now: '+task.text);add.onclick=()=>{addToDoingNow(task,st.tasks);changed()};row.append(text,add);root.append(row)}
  if(!matches.length)root.textContent='No matching available tasks.';
 }
+let laundryBusy=false;
+function renderLaundryPanel(){
+ const progress=laundryProgress(st),button=$('#laundryComplete');
+ $('#laundryStepNumber').textContent=`Step ${progress.index+1} of 3`;
+ $('#laundryStepTitle').textContent=progress.text;
+ $('#laundrySymbol').textContent=['🧺','👕','🧥'][progress.index];
+ button.setAttribute('aria-label','Complete: '+progress.text);button.disabled=laundryBusy;
+ button.onclick=()=>{
+  if(laundryBusy)return;
+  const before=rewardProgress(st).earned,record=completeLaundryStep(st,progress.completed,currentActor());
+  if(!record){featureToast('Sign in on this device to complete laundry and keep your points.');return}
+  laundryBusy=true;$('#laundryStatus').textContent=`${record.text} complete. +1 point. Next: ${laundryProgress(st).text}.`;
+  changed();
+  if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');
+  setTimeout(()=>{laundryBusy=false;renderLaundryPanel()},800);
+ };
+}
+function showDoingTab(tab){
+ const laundry=tab==='laundry',attention=tab==='attention';
+ $('#doingList').hidden=laundry||attention;$('#attentionList').hidden=laundry||!attention;$('#laundryPanel').hidden=!laundry;
+ for(const node of document.querySelectorAll('#doing > .task-list-toolbar,#doing > .doing-search,#doingSearchResults,#doingAdd,#doing > .undo-deleted'))node.hidden=laundry;
+ if(!laundry)renderDoingSearch();
+ for(const button of document.querySelectorAll('[data-doing-tab]'))button.setAttribute('aria-pressed',String(button.dataset.doingTab===tab));
+}
 $('#doingSearch').oninput=renderDoingSearch;
 function renderDoingNow(){const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done),completed=items.filter(t=>t.done);root.replaceChildren();for(const task of active)root.append(mk(task,'task','doing'));if(completed.length){const box=document.createElement('section');box.className='completed-list';box.append(document.createElement('h3'));box.firstChild.textContent='Completed today';for(const task of completed)box.append(mk(task,'task','doing'));root.append(box)}if(!items.length){const empty=document.createElement('p');empty.textContent="Nothing selected yet. Tap “I'm on it” on a task, or choose one from Needs done.";root.append(empty)}renderAttention();renderDoingSearch()}
 function render(){const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
 renderDoingNow();
+renderLaundryPanel();
 renderTaskNotifications();
 categoryOptions();
 personOptions();
@@ -420,7 +446,7 @@ $('#allTaskSummary').textContent=`${shownTasks.length} active tasks${categoryFil
 list("#nowList",shownTasks,"task",st.tasks.filter(t=>completedToday(t,st.wins)&&inCategory(t)));
 renderSidequestTabs($('#sideTabs'),st,filter,value=>{filter=value;render()},changed,()=>st);
 list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&sidequestMatches(t,filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&sidequestMatches(t,filter)));
-renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderCalendar();colourTaskLists();renderUndoDeleted()}
+renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderCalendar();colourTaskLists();renderUndoDeleted();showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
 
 function renderHousehold(){
  $('#scoreboardHeading').textContent='Household members · '+$('#statsPeriod').selectedOptions[0].textContent;
@@ -483,7 +509,7 @@ clearTimeout(celebrationTimer);
 celebrationTimer=setTimeout(()=>$("#celebration").classList.add("hide"),5000)}
 function showPage(name){document.querySelector('nav button[data-tab="'+name+'"]').click()}
 document.querySelector('#doingAdd')?.addEventListener('click',()=>quickAdd(null,{doingNow:true}));for(const b of document.querySelectorAll('[data-add-task]'))b.onclick=()=>quickAdd(null,{bucket:b.closest('#side')?'side':b.closest('#recurring')?'recurring':'now',doingNow:!!b.closest('#doing'),type:filter==='all'?'organisation':filter});for(const b of document.querySelectorAll('[data-task-layout]'))b.onclick=()=>{const compact=!document.body.classList.contains('task-compact-view');localStorage.setItem('mc-task-layout',compact?'compact':'detail');render()};
-for(const tab of document.querySelectorAll('[data-doing-tab]'))tab.onclick=()=>{const attention=tab.dataset.doingTab==='attention';$('#doingList').hidden=attention;$('#attentionList').hidden=!attention;for(const b of document.querySelectorAll('[data-doing-tab]'))b.setAttribute('aria-pressed',String(b===tab))};
+for(const tab of document.querySelectorAll('[data-doing-tab]'))tab.onclick=()=>showDoingTab(tab.dataset.doingTab);
 let otherView='shopping';
 function showOtherView(name){otherView=name;for(const button of $$('[data-other]'))button.setAttribute('aria-pressed',String(button.dataset.other===name));for(const panel of $$('.other-panel'))panel.classList.toggle('hide',panel.id!==`other${name[0].toUpperCase()+name.slice(1)}`)}
 for(const button of $$('[data-other]'))button.onclick=()=>showOtherView(button.dataset.other);showOtherView(otherView);
@@ -812,7 +838,7 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=release-20261010-v3").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-20261010-v1").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
