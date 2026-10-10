@@ -211,6 +211,7 @@
 
 <div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" class="add-task-main" data-add-task>＋ Add task</button></div>
 
+<label class="doing-search">Find a task to do<input id="doingSearch" type="search" placeholder="Search tasks or rooms…" autocomplete="off"></label><div id="doingSearchResults" role="region" aria-label="Matching tasks" hidden></div>
 <div id="doingList"></div>
 <div id="attentionList" hidden></div>
 <button type="button" id="doingAdd" class="add-task-main">＋ Add task</button>
@@ -279,7 +280,7 @@
 <p id="rewardShelfStatus" role="status">
 </p>
 <button id="revealNext" class="reveal-button">Open a mystery</button>
-<div id="rewardCollection" class="reward-grid">
+<div id="rewardChallenges" aria-label="Next reward milestones"></div><div id="rewardCollection" class="reward-grid">
 </div>
 </section>
 <p id="celebration" role="status" class="celebration hide">

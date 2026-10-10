@@ -15,7 +15,7 @@ export function archiveOldCompletions(state,now=Date.now()){
   if(!Number.isFinite(previous)||at>previous){
    const month=new Date(at).toISOString().slice(0,7),personId=hasRecordedPerson(win)?win.completedBy:'',roomId=win.roomId||'';
    const id=`archive:${month}:${roomId}:${personId}`,row=groups.get(id)||{id,month,roomId,completedBy:personId,completedByName:win.completedByName||'',count:0};
-   row.count+=completionPoints(win);if(row.count)groups.set(id,row);archived++;
+   row.taskCounts||={};const taskKey=String(win.text||'').trim().toLocaleLowerCase().replace(/\s+/g,' ');if(taskKey&&completionPoints(win))row.taskCounts[taskKey]=(row.taskCounts[taskKey]||0)+1;row.count+=completionPoints(win);if(row.count)groups.set(id,row);archived++;
   }
  }
  state.wins=retained;state.completionArchive=[...groups.values()];
