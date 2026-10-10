@@ -1,5 +1,10 @@
 # GitHub Pages source of truth
 
+## Current project focus
+
+Until Kayleigh says otherwise, this repository is the only active working area. Netlify credits are exhausted, so do not use Netlify or edit the separate mission-control/ working area. Make requested app changes here for GitHub Pages.
+
+
 This folder is the only working copy for files used by the GitHub Pages site.
 
 - Make all changes intended for GitHub Pages in this repository.
