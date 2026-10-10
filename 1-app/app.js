@@ -6,7 +6,7 @@ import {enableTaskDrag} from './task-drag.js?v=streamline-20261009-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=schedule-20261010-v1';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,startFocus,featureToast} from './features.js?v=schedule-20261010-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=schedule-20261010-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=schedule-20261010-v1';
 import {completionRecord} from './task-stats.js';
@@ -467,7 +467,7 @@ function renderHousehold(){
 
 }
 
-function renderCalendar(){renderLocalCalendar(st,calendarMonth,(type,id,done)=>{if(type==='errand'){const item=st.errands.find(t=>t.id===id);if(item){item.done=done;changed()}return}const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(task.completionUndo&&!st.tasks.some(t=>t.id===task.completionUndo.nextTaskId&&t.done)&&undoCompletion(st,task))changed()})}
+function renderCalendar(){renderLocalCalendar(st,calendarMonth,(type,id,done)=>{if(type==='errand'){const item=st.errands.find(t=>t.id===id);if(item){item.done=done;changed()}return}const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(task.completionUndo&&!st.tasks.some(t=>t.id===task.completionUndo.nextTaskId&&t.done)&&undoCompletion(st,task))changed()},calendarDragOptions())}
 document.addEventListener('room-recurring-complete',event=>{const task=st.tasks.find(t=>t.id===event.detail?.id);if(task){if(event.detail.done===false){if(undoCompletion(st,task))changed()}else finish(task,'task')}});
 $('#statsPeriod').value='month';localStorage.setItem('mc-stats-period','month');
 $("#statsPeriod").onchange=()=>{localStorage.setItem('mc-stats-period',$('#statsPeriod').value);renderHousehold();

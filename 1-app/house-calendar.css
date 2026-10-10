@@ -41,3 +41,8 @@
 .symbol-calendar .calendar-completed-tasks{margin-top:12px;padding:8px;border:1px solid #879eb4;border-radius:10px;background:#26364b}
 .symbol-calendar .calendar-completed-tasks h4{font-size:14px;margin:0 0 7px}
 .symbol-calendar .calendar-completed-tasks .calendar-task-main>strong{text-decoration:line-through}
+
+.calendar-drag-tools{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;padding:8px}
+.calendar-room-symbol[data-task-ids]{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.calendar-room-symbol.calendar-room-dragging{opacity:.55;cursor:grabbing;outline:2px solid #f4cdff}
+.calendar-day.calendar-drop-target{outline:3px solid #eeaaff;outline-offset:-3px;background:#49305e!important}
