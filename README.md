@@ -23,3 +23,11 @@ The reviewed upload excludes personal task backups, OAuth secrets, environment f
 
 ## Verification
 All 196 uploaded app files matched the reviewed copies. The assembled app passes 127 tests and its build. The Pages deployment succeeded, all 147 required asset URLs responded successfully, mobile room navigation was checked and anonymous board access was denied. Complete the final account check by signing in, selecting your house and confirming that a reversible task edit syncs between Pages and Netlify. Notification delivery and offline installation require checks on the intended device. Keep Netlify active while completing those checks.
+
+
+## 9 October 2026 update
+Signed-in navigation is simpler, account settings have their own tab, task data groups main tasks and attributes completed subtasks, and average days between completions replaces the detailed weekly frequency. Sidequests support named tabs and edit-only attachments; errands support creation-time images; house notes support reply threads.
+
+Task lists put Doing Now first, automatically finish a parent when all subtasks are complete without awarding another point, keep colours at list positions, and provide readable subtask controls. Recurring calendars show only the next activation for each task. Scheduling previews include existing tasks, reusable additions prevent duplicates in the same room, and the Mystery Shelf uses an interactive illustrated cabinet.
+
+The update passes 136 tests and the static build (148 production files). Local browser checks covered the changed pages and all 149 local runtime URLs loaded. Account-state checks used an isolated mock session; physical phone keyboard behaviour and live two-device sync should be checked on the intended devices. Personal backups and preview test data remain local. Cleaned backups can carry exact duplicate IDs and labelled test IDs for import cleanup. Matching unfinished main duplicates are removed while real completion history is retained; test cleanup requires both an exact ID and a test-labelled title.

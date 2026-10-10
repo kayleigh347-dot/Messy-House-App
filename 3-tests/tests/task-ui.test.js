@@ -13,7 +13,7 @@ test('whole-calendar room filters keep only the chosen room or household events'
 test('room and management lists use the same recurring status and small day counter',()=>{
  const now=new Date('2026-10-08T12:00:00');
  assert.deepEqual(['2026-10-06','2026-10-08','2026-10-12'].map(day=>recurringTiming({nextDue:day+'T12:00:00'},now).status),['needs','ready','later']);
- assert.equal(recurringTiming({nextDue:'2026-10-12T12:00:00'},now).label,'4d');
+ assert.equal(recurringTiming({nextDue:'2026-10-12T12:00:00'},now).label,'Due in 4d');
  assert.equal(recurringTiming({nextDue:'2026-10-06T12:00:00',pausedAt:'2026-10-07'},now).status,'later');
  assert.equal(recurringTiming({nextDue:'2026-10-06T12:00:00',pausedAt:'2026-10-07'},now).label,'Paused');
 });

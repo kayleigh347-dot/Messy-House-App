@@ -29,7 +29,7 @@ test('next task cycles without changing task order or state',()=>{
 test('reusable task families retain nested subtasks when saved and added again',()=>{
  const state={rooms:[{id:'r',name:'Room'}],tasks:[{id:'p',text:'Project',roomId:'r',area:'Room'},{id:'c',text:'Step',roomId:'r',area:'Room',parentId:'p'},{id:'g',text:'Detail',roomId:'r',area:'Room',parentId:'c'}],templates:[]};
  saveReusable(state,state.tasks[0]);assert.equal(roomTemplates(state,'r').length,1);assert.equal(state.templates.length,3);
- const root=roomTemplates(state,'r')[0];assert.equal(addSavedTasks(state,[root.id]),3);const added=state.tasks.slice(3);assert.equal(added[0].text,'Project');assert.equal(added[1].parentId,added[0].id);assert.equal(added[2].parentId,added[1].id);
+ state.tasks.forEach(task=>task.done=true);const root=roomTemplates(state,'r')[0];assert.equal(addSavedTasks(state,[root.id]),3);const added=state.tasks.slice(3);assert.equal(added[0].text,'Project');assert.equal(added[1].parentId,added[0].id);assert.equal(added[2].parentId,added[1].id);
 });
 
 test('completed reusable suggestions expire after 30 days or can be dismissed',()=>{
