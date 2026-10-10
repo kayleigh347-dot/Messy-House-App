@@ -250,3 +250,11 @@ body.task-compact-view main .subtask-list>.subtask-card .task-footer>.task-quick
 
 #doing section.subtasks>h4{font-size:12px;font-weight:500;margin:8px 0;color:inherit}
 #doing .task-heading>strong{cursor:default!important}
+
+#doingTabs [data-doing-tab="laundry"]{background:#684497!important;color:#fff!important;border-color:#cda7ed!important}
+.laundry-panel{max-width:580px;margin:20px auto;padding:20px;border:1px solid #9874b8;border-radius:18px;background:#29133d;text-align:center}
+.laundry-panel h3{margin:0 0 10px}.laundry-step-number{color:#e6c6fb;font-size:15px}
+.laundry-step-card{display:grid;justify-items:center;gap:16px;padding:18px 0}
+.laundry-symbol{font-size:56px}.laundry-step-card h4{font-size:24px;margin:0;line-height:1.35}
+#laundryComplete{min-height:52px;min-width:170px;font-size:18px;background:#21815b;color:#fff}
+#laundryStatus{min-height:1.5em;color:#b6edcb}

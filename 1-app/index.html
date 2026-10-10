@@ -12,7 +12,7 @@
 <title>Mission Control</title>
 <link rel="stylesheet" href="features.css?v=schedule-20261010-v1">
 <link rel="stylesheet" href="house-calendar.css?v=release-20261010-v3">
-<link rel="stylesheet" href="cohesion.css?v=release-20261010-v3">
+<link rel="stylesheet" href="cohesion.css?v=laundry-20261010-v1">
 </head>
 <body class="dark-mode">
 <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs><filter id="character-edge-cleanup" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="erode" radius="0.65" result="inset"/><feGaussianBlur in="inset" stdDeviation="0.25" result="soft"/><feComposite in="SourceGraphic" in2="soft" operator="in"/></filter></defs></svg>
@@ -207,11 +207,16 @@
 </section>
 </section>
 <section id="doing" class="page hide">
-<h2>Doing Now</h2><div class="folder-tabs" id="doingTabs"><button type="button" data-doing-tab="mine" aria-pressed="true">Doing Now</button><button type="button" data-doing-tab="attention" aria-pressed="false">Needs done</button></div>
+<h2>Doing Now</h2><div class="folder-tabs" id="doingTabs"><button type="button" data-doing-tab="mine" aria-pressed="true">Doing Now</button><button type="button" data-doing-tab="attention" aria-pressed="false">Needs done</button><button type="button" data-doing-tab="laundry" aria-pressed="false">Laundry</button></div>
 
 <div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" class="add-task-main" data-add-task>＋ Add task</button></div>
 
 <label class="doing-search">Find a task to do<input id="doingSearch" type="search" placeholder="Search tasks or rooms…" autocomplete="off"></label><div id="doingSearchResults" role="region" aria-label="Matching tasks" hidden></div>
+<section id="laundryPanel" class="laundry-panel" aria-label="Laundry" hidden>
+<h3>Laundry</h3><p id="laundryStepNumber" class="laundry-step-number"></p>
+<div class="laundry-step-card"><span id="laundrySymbol" class="laundry-symbol" aria-hidden="true"></span><h4 id="laundryStepTitle"></h4><button type="button" id="laundryComplete">Done it!</button></div>
+<p id="laundryStatus" role="status"></p>
+</section>
 <div id="doingList"></div>
 <div id="attentionList" hidden></div>
 <button type="button" id="doingAdd" class="add-task-main">＋ Add task</button>
@@ -552,7 +557,7 @@
 <div id="featureToast" role="status" aria-live="polite" hidden></div><div id="focusStatus" hidden></div>
 <dialog id="featureDialog"><div id="featureDialogBody"></div><button type="button" onclick="this.closest('dialog').close()">Close</button></dialog>
 </main>
-<script type="module" src="app.js?v=release-20261010-v3">
+<script type="module" src="app.js?v=laundry-20261010-v1">
 </script>
 </body>
 </html>
