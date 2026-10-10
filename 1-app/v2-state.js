@@ -13,6 +13,13 @@ export function taskAge(t,now=Date.now()){
  return days===0?'Added today':`Added ${days} ${days===1?'day':'days'} ago`;
 }
 export function ordered(items){return items.map((item,index)=>({item,index})).sort((a,b)=>(a.item.order??a.index)-(b.item.order??b.index)||a.index-b.index).map(x=>x.item)}
+// Put a newly added batch first while preserving its selected order and existing manual order.
+export function placeNewTasksFirst(items,added,key='order'){
+ if(!added.length)return;
+ const ids=new Set(added.map(task=>task.id)),existing=items.filter(task=>!ids.has(task.id));
+ const start=Math.min(0,...existing.map((task,index)=>Number.isFinite(task[key])?task[key]:index))-added.length;
+ added.forEach((task,index)=>task[key]=start+index);
+}
 export function move(items,id,delta){
  const list=ordered(items),index=list.findIndex(x=>x.id===id),target=index+delta;
  if(index<0||target<0||target>=list.length)return false;

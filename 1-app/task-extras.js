@@ -1,13 +1,13 @@
-import {dueAt,freshTask,ordered} from './v2-state.js?v=release-20261010-v3';
+import {placeNewTasksFirst,dueAt,freshTask,ordered} from './v2-state.js?v=new-tasks-first-20261010-v1';
 import {descendants} from './subtasks.js';
 export function activeSavedTasks(state,template){return state.tasks.filter(task=>!task.done&&!task.parentId&&task.roomId===template.roomId&&(task.sourceTemplateId===template.id||task.text.trim().toLocaleLowerCase()===template.text.trim().toLocaleLowerCase()))}
 export function removeSavedTasks(state,template){const roots=activeSavedTasks(state,template),ids=new Set(roots.flatMap(root=>[root,...descendants(state.tasks,root.id)]).map(task=>task.id));state.tasks=state.tasks.filter(task=>!ids.has(task.id));return roots.length}
 export function addSavedTasks(state,ids,newId=()=>crypto.randomUUID(),now=new Date().toISOString()){
- const selected=new Set(ids),roots=ordered(state.templates).filter(t=>selected.has(t.id)&&!t.parentTemplateId&&state.rooms.some(r=>r.id===t.roomId&&!r.archived)),start=Math.max(-1,...state.tasks.map(t=>t.order??0))+1;let count=0;
+ const selected=new Set(ids),roots=ordered(state.templates).filter(t=>selected.has(t.id)&&!t.parentTemplateId&&state.rooms.some(r=>r.id===t.roomId&&!r.archived)),start=Math.max(-1,...state.tasks.map(t=>t.order??0))+1;let count=0;const added=[];
  for(const template of roots){if(activeSavedTasks(state,template).length)continue;const family=[],pending=[template];while(pending.length){const item=pending.shift();family.push(item);pending.push(...ordered(state.templates.filter(child=>child.parentTemplateId===item.id)))}const generated=new Map(),baseOrder=start+count;
-  for(const [index,item] of family.entries()){const fresh=freshTask({...item,roomId:template.roomId,area:state.rooms.find(room=>room.id===template.roomId)?.name||template.area},newId(),now,baseOrder+index);generated.set(item.id,fresh);if(item.parentTemplateId)fresh.parentId=generated.get(item.parentTemplateId)?.id||generated.get(template.id).id;state.tasks.push(fresh);count++}
+  for(const [index,item] of family.entries()){const fresh=freshTask({...item,roomId:template.roomId,area:state.rooms.find(room=>room.id===template.roomId)?.name||template.area},newId(),now,baseOrder+index);generated.set(item.id,fresh);if(item.parentTemplateId)fresh.parentId=generated.get(item.parentTemplateId)?.id||generated.get(template.id).id;state.tasks.push(fresh);added.push(fresh);count++}
  }
- return count;
+ placeNewTasksFirst(state.tasks,added);return count;
 }
 export function saveReusable(state,task,allRooms=false,newId=()=>crypto.randomUUID()){
  const groupId=allRooms?newId():null,rooms=allRooms?state.rooms.filter(r=>!r.archived):state.rooms.filter(r=>r.id===task.roomId),source=[task,...(task.parentId?[]:descendants(allItems(state,task),task.id))];

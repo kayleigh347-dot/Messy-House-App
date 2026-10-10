@@ -8,7 +8,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=phone-timer-free-20261010-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=new-tasks-first-20261010-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -16,13 +16,13 @@ import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,c
 
 import {renderStats} from './stats-ui.js?v=streamline-20261009-v2';
 
-import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-extras.js?v=overdue-20261010-v1';
+import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-extras.js?v=new-tasks-first-20261010-v1';
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=task-input-20261010-v1";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=new-tasks-first-20261010-v1";
 
-import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=laundry-uniform-20261010-v2";
+import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=new-tasks-first-20261010-v1";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
@@ -216,7 +216,7 @@ $("#sideArea").value=$("#area").value}render()};
 function add(text,area="General",bucket="now"){area=area.trim()||"General";
 text=text.trim();
 if(!text)return;
-st.tasks.push({id:id(),text,area,bucket,done:false,created:iso(),order:Math.max(-1,...st.tasks.map(t=>t.order??0))+1});
+st.tasks.push({id:id(),text,area,bucket,done:false,created:iso(),order:Math.min(0,...st.tasks.map(t=>t.order??0))-1});
 changed()}
 function win(t,kind,at=iso(),actor=currentActor(),details={}){const record={...completionRecord(t,at,kind,actor),...details};st.wins.unshift(record);return record;
 }
@@ -262,7 +262,7 @@ function completeTaskCard(card,task,kind,control){
 function subtaskPanel(t,kind,context,body){const items=kind==='side'?st.side:st.tasks,children=subtasksForDisplay(items,t.id);if(!children.length&&(t.done||t.parentId))return;
  const details=document.createElement('details'),summary=document.createElement('summary'),list=document.createElement('div');details.className='subtasks';details.open=expandedSubtasks.has(t.id);summary.textContent=children.length?`Subtasks (${children.filter(x=>x.done).length}/${children.length})`:'Add subtasks';details.ontoggle=()=>{details.open?expandedSubtasks.add(t.id):expandedSubtasks.delete(t.id);const card=details.closest('.task');if(card&&!t.done){card.classList.toggle('compact-expanded',details.open);card.querySelector(':scope > .body > .task-heading > strong')?.setAttribute('aria-expanded',String(details.open))}};list.className='subtask-list';list.dataset.parentId=t.id;
  for(const child of children)list.append(mk(child,kind,context));details.append(summary,list);if(children.length){const collapse=document.createElement('button');collapse.type='button';collapse.className='collapse-subtasks';collapse.textContent='Collapse subtasks';collapse.onclick=()=>{details.open=false;expandedSubtasks.delete(t.id);details.closest('.task')?.classList.remove('compact-expanded');details.closest('.task')?.scrollIntoView({block:'start',behavior:'smooth'})};details.append(collapse)}
- if(!t.done&&!t.parentId){const form=document.createElement('form'),input=document.createElement('input'),add=document.createElement('button');form.className='subtask-add';input.placeholder='Add a subtask…';input.setAttribute('aria-label','Subtask for '+t.text);input.maxLength=180;input.required=true;add.textContent='Add';form.append(input,add);form.onsubmit=e=>{e.preventDefault();const text=input.value.trim();if(!text)return;items.push({id:id(),text,parentId:t.id,roomId:t.roomId,area:t.area,assignedTo:t.assignedTo,assignedToName:t.assignedToName,done:false,bucket:'now',created:iso(),order:Math.max(-1,...items.map(x=>x.order??0))+1});expandedSubtasks.add(t.id);changed()};details.append(form)}body.append(details)
+ if(!t.done&&!t.parentId){const form=document.createElement('form'),input=document.createElement('input'),add=document.createElement('button');form.className='subtask-add';input.placeholder='Add a subtask…';input.setAttribute('aria-label','Subtask for '+t.text);input.maxLength=180;input.required=true;add.textContent='Add';form.append(input,add);form.onsubmit=e=>{e.preventDefault();const text=input.value.trim();if(!text)return;items.push({id:id(),text,parentId:t.id,roomId:t.roomId,area:t.area,assignedTo:t.assignedTo,assignedToName:t.assignedToName,done:false,bucket:'now',created:iso(),order:Math.min(0,...items.filter(x=>x.parentId===t.id).map(x=>x.order??0))-1});expandedSubtasks.add(t.id);changed()};details.append(form)}body.append(details)
 }
 function roomColour(task){return `hsl(${roomHues(st.rooms).get(task.roomId)??200} 55% 70%)`}
 function mk(t,kind="task",context="source"){let a=document.createElement("article");
