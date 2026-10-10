@@ -13,5 +13,6 @@ client_secret*.json
 *.pem
 *.key
 CHANGE-CHECKLIST-*.md
+TASK-CHECKLIST-*.md
 HANDOFF-*.md
 LATEST-HANDOFF.md

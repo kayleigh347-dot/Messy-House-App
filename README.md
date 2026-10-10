@@ -12,6 +12,9 @@ Every push to main runs the tests, builds the static app and deploys GitHub Page
 
 For local development, assemble those folders as shown in the workflow, then run npm ci, npm test and npm run build inside _app. Use Node.js 22 and serve _app/dist with a static HTTP server.
 
+## Source folders
+This repository is the single working copy for the GitHub Pages version of Mission Control. Edit app files in `1-app`, tests in `3-tests/tests`, workflow files in `.github/workflows`, and images in `2-assets/assets` or the existing `part-*` asset folders. Folders with copied suffixes such as `1-app 2`, dated upload bundles, retry folders and ZIP files are snapshots or upload mistakes and must not be used as source.
+
 ## Supabase
 The app continues using the existing Supabase project and browser-safe publishable key. GitHub Pages has been added to the authentication redirect allowlist; the Netlify Site URL and existing redirects remain unchanged. Database access continues to depend on authentication and row-level security. Do not rerun database setup scripts for this hosting change.
 
