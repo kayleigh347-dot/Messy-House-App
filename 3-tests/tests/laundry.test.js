@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {laundryProgress,completeLaundryStep,laundrySteps,laundryTasks,addLaundryTask,completeLaundryTask} from '../laundry.js';
+import {laundryProgress,completeLaundryStep,laundrySteps,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep} from '../laundry.js';
 import {normalize} from '../v2-state.js';
 import {rewardCounts} from '../rewards.js';
 import {merge} from '../sync-state.js';
@@ -35,7 +35,7 @@ test('completion records recover progress when an older settings row arrives in 
 });
 
 test('dryer has an independent three-step cycle and points',()=>{
- const state=board(),steps=['Put washing on','Put in dryer','Empty dryer'];
+ const state=board(),steps=['Put a load on','Put in dryer','Empty dryer'];
  completeLaundryStep(state,0,actor,at);
  for(let i=0;i<3;i++){
   assert.equal(laundryProgress(state,'dryer').text,steps[i]);
@@ -64,4 +64,53 @@ test('separate extra laundry tasks added by two devices both survive sync',()=>{
  const base=normalize(board()),local=structuredClone(base),remote=structuredClone(base);
  addLaundryTask(local,'Wash towels','towels',at);addLaundryTask(remote,'Wash bedding','bedding',at);
  assert.equal(laundryTasks(merge(base,local,remote)).length,2);
+});
+
+const uniformBoard=()=>({...board(),tasks:[
+ {id:'uniform',text:'Wash uniform.',roomId:'room-kitchen',area:'Kitchen',done:false,nextDue:'2026-10-10T00:00:00Z',recurrence:{kind:'fixed-weekday',day:6}},
+ {id:'gather',text:'Gather uniform',parentId:'uniform',roomId:'room-kitchen',area:'Kitchen',done:true,completedAt:'2026-10-10T01:00:00Z',order:1},
+ {id:'wash',text:'Wash whites',parentId:'uniform',roomId:'room-kitchen',area:'Kitchen',done:false,order:2},
+ {id:'hang',text:'Put out whites',parentId:'uniform',roomId:'room-kitchen',area:'Kitchen',done:false,order:3},
+ {id:'machine',text:'Clean inside washing machine',roomId:'room-kitchen',area:'Kitchen',done:false},
+ {id:'dishes',text:'Do dishes',roomId:'room-kitchen',area:'Kitchen',done:false},
+ {id:'dish-wash',text:'Wash',parentId:'dishes',roomId:'room-kitchen',area:'Kitchen',done:false}
+]});
+test('Kitchen laundry moves with its children, preserving progress and other Kitchen chores',()=>{
+ const state=normalize(uniformBoard());assert.deepEqual(state.tasks.map(item=>item.id),['dishes','dish-wash']);
+ assert.equal(uniformProgress(state,Date.parse('2026-10-10T12:00:00Z')).step.id,'wash');
+ assert.equal(uniformProgress(state,Date.parse('2026-10-09T12:00:00Z')),null);
+ assert.ok(laundryTasks(state).some(task=>task.id==='machine'));assert.equal(state.settings.find(item=>item.id==='gather').done,true);
+ assert.deepEqual(normalize(state).settings,state.settings);
+});
+test('uniform completes one next step, awards a point, then hides until next Saturday',()=>{
+ const state=normalize(uniformBoard()),at='2026-10-10T12:00:00Z';
+ assert.equal(completeUniformStep(state,'hang',actor,at),null);
+ assert.ok(completeUniformStep(state,'wash',actor,at));assert.equal(completeUniformStep(state,'wash',actor,at),null);
+ assert.equal(uniformProgress(state,Date.parse(at)).step.id,'hang');assert.ok(completeUniformStep(state,'hang',actor,at));
+ assert.equal(uniformProgress(state,Date.parse(at)),null);
+ const next=uniformProgress(state,Date.parse('2026-10-17T12:00:00Z'));assert.ok(next);assert.equal(next.step.text,'Gather uniform');assert.equal(next.total,3);
+ assert.equal(state.wins.find(win=>win.taskId==='uniform').points,0);
+ assert.equal(state.wins.filter(win=>win.taskId==='wash'||win.taskId==='hang').reduce((sum,win)=>sum+win.points,0),2);
+});
+test('moved recurring maintenance keeps its schedule after completion',()=>{
+ const raw=uniformBoard();raw.tasks.find(item=>item.id==='machine').recurrence={kind:'weeks',every:4};
+ const state=normalize(raw);assert.ok(completeLaundryTask(state,'machine',actor,'2026-10-10T12:00:00Z'));
+ assert.equal(laundryTasks(state,Date.parse('2026-10-11T12:00:00Z')).some(item=>item.text==='Clean inside washing machine'),false);
+ assert.equal(laundryTasks(state,Date.parse('2026-11-07T12:00:00Z')).some(item=>item.text==='Clean inside washing machine'),true);
+});
+
+import {laundryReminder} from '../laundry-reminders.js';
+test('both load reminders wait two hours, repeat every thirty minutes and stop at step two',()=>{
+ for(const cycle of ['rail','dryer']){
+  const state=board(),start=Date.parse('2026-10-10T10:00:00Z');
+  assert.equal(laundryReminder(state,cycle,start),null);
+  completeLaundryStep(state,0,actor,new Date(start).toISOString(),cycle);
+  assert.equal(laundryReminder(state,cycle,start+7199999).due,false);
+  assert.equal(laundryReminder(state,cycle,start+7200000).slot,0);
+  assert.equal(laundryReminder(state,cycle,start+9000000).slot,1);
+  const reopened=JSON.parse(JSON.stringify(state));reopened.wins=[];
+  assert.equal(laundryReminder(reopened,cycle,start+10800000).slot,2);
+  completeLaundryStep(state,1,actor,new Date(start+9000000).toISOString(),cycle);
+  assert.equal(laundryReminder(state,cycle,start+10800000),null);
+ }
 });

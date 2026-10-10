@@ -1,3 +1,5 @@
+import {migrateKitchenLaundry} from './laundry-migration.js';
+import {settleScheduledLaundry} from './laundry.js?v=laundry-uniform-20261010-v1';
 import {activeTask,recurringDueNotification} from './task-flow.js?v=schedule-20261010-v1';
 import {normalizeSubtasks,childrenOf,rootTask,repeatChildren} from './subtasks.js';
 import {seedCommonTasks} from './common-tasks.js?v=release-20261010-v3';
@@ -66,6 +68,8 @@ export function normalize(input){
   if(!TASK_PRIORITIES.includes(t.priority))t.priority='mid';
  });
  for(const key of ['tasks','side'])normalizeSubtasks(state[key]);
+ migrateKitchenLaundry(state);
+ settleScheduledLaundry(state);
  completeReadyParents(state);
  // Retain an overloaded room's scale until its current mess is cleared.
  for(const room of state.rooms){
