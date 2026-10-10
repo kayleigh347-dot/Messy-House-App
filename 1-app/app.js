@@ -1,5 +1,5 @@
 import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v2';
-import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=laundry-size-20261010-v1';
+import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=phone-timer-20261010-v1';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -8,7 +8,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=laundry-uniform-20261010-v2';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=phone-timer-20261010-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -40,7 +40,7 @@ function restoreInputDrafts(){let drafts={};try{drafts=JSON.parse(sessionStorage
 document.addEventListener('input',event=>{const field=event.target;if(!(field instanceof HTMLInputElement||field instanceof HTMLTextAreaElement)||field.type==='password'||field.closest('#setup,#houseSharing'))return;let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}const key=inputDraftKey(field);if(field.value)drafts[key]=field.value;else delete drafts[key];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});
 document.addEventListener('submit',event=>{let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}for(const field of event.target.querySelectorAll('input[type=text],textarea'))delete drafts[inputDraftKey(field)];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});window.addEventListener('pageshow',restoreInputDrafts);restoreInputDrafts();
 
-if(!localStorage.getItem('mc-compact-default-20261010')){localStorage.setItem('mc-task-layout','compact');localStorage.setItem('mc-compact-default-20261010','true')}
+if(!localStorage.getItem('mc-compact-default-20261010-v2')){localStorage.setItem('mc-task-layout','compact');localStorage.setItem('mc-compact-default-20261010-v2','true')}
 const C="mc-config-v1",S="mc-state-v1";
 let cfg=JSON.parse(localStorage.getItem(C)||'{"url":"https://thviqhojcjrmqurhdkql.supabase.co","key":"sb_publishable_ziQesp5o-pHIXINUMMdmTA_3nDFSVZr"}'),st=JSON.parse(localStorage.getItem(S)||'{"tasks":[],"side":[],"wins":[],"current":null}'),db=null,filter="all";
 let calendarMonth=new Date();
@@ -871,7 +871,7 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-size-20261010-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=phone-timer-20261010-v1").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
