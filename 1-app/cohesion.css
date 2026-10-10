@@ -246,19 +246,21 @@ body.task-compact-view main .subtask-list>.subtask-card .task-footer>.task-quick
 
 
 #doingTabs [data-doing-tab="laundry"]{background:#684497!important;color:#fff!important;border-color:#cda7ed!important}
-.laundry-panel{max-width:1000px;margin:20px auto;padding:20px;border:1px solid #9874b8;border-radius:18px;background:#29133d;text-align:center}
-.laundry-panel h3{margin:0 0 10px}.laundry-step-number{color:#e6c6fb;font-size:15px}
-.laundry-step-card{display:grid;justify-items:center;gap:16px;padding:18px 0}
-.laundry-symbol{font-size:56px}.laundry-step-card h4{font-size:24px;margin:0;line-height:1.35}
-.laundry-step-card button{min-height:52px;min-width:170px;font-size:18px;background:#21815b;color:#fff}
+.laundry-panel{max-width:800px;margin:12px auto;padding:12px;border:1px solid #9874b8;border-radius:18px;background:#29133d;text-align:center}
+.laundry-panel h3{margin:0 0 10px}.laundry-step-number{color:#e6c6fb;font-size:14px;margin:6px 0}
+.laundry-step-card{display:grid;justify-items:center;gap:8px;padding:8px 0}
+.laundry-symbol{font-size:34px}.laundry-step-card h4{font-size:20px;margin:0;line-height:1.35}
+.laundry-step-card button{min-height:44px;min-width:0;padding:8px 14px;font-size:15px;background:#21815b;color:#fff}
 .laundry-status{min-height:1.5em;color:#b6edcb}
 
-.laundry-cycles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px}.laundry-cycle{padding:16px;border:1px solid #9874b8;border-radius:14px}.laundry-cycle>h4{font-size:20px;margin:0 0 12px}
+.laundry-cycles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}.laundry-cycle{padding:12px;border:1px solid #9874b8;border-radius:14px}.laundry-cycle>h4{font-size:18px;margin:0 0 6px}
 
 .laundry-other{margin-top:24px;text-align:left;border-top:1px solid #9874b8;padding-top:16px}.laundry-other h4{font-size:20px}.laundry-add-row{display:flex;gap:8px;margin-top:8px}.laundry-add-row input{flex:1;min-width:0}.laundry-extra-task{display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid #9874b8}.laundry-extra-task span{flex:1;overflow-wrap:anywhere}.laundry-extra-task button{min-height:44px}@media(max-width:480px){.laundry-panel{padding:12px}.laundry-extra-task{flex-wrap:wrap}.laundry-extra-task span{flex-basis:100%}}
 
 .uniform-cycle{margin-bottom:20px;background:#40214e;border-color:#e2b5ec}
 
-.laundry-picture{width:170px;height:140px;object-fit:contain}.laundry-reminder{color:#e6c6fb;font-size:14px;min-height:1.5em}
+.laundry-picture{width:72px;height:60px;object-fit:contain}.laundry-reminder{color:#e6c6fb;font-size:14px;min-height:1.5em}
 
 #laundryTaskForm{display:block;padding:0;background:none;border:0}#laundryTaskForm>label{display:block}#laundryTaskForm .laundry-add-row{width:100%}#laundryTaskInput{width:auto;max-width:none}
+
+.laundry-reminder,.laundry-status{margin:6px 0;font-size:13px}.laundry-reminder:empty,.laundry-status:empty{display:none}

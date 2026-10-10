@@ -1,5 +1,5 @@
 import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v2';
-import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep} from './laundry.js?v=laundry-uniform-20261010-v2';
+import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=laundry-size-20261010-v1';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -408,7 +408,7 @@ function renderLaundryPanel(){
  const uniform=uniformProgress(st);$('#uniformCycle').hidden=!uniform;
  if(uniform){
   $('#uniformStepNumber').textContent=`Step ${uniform.index+1} of ${uniform.total}`;$('#uniformStepTitle').textContent=uniform.step.text;
-  const button=$('#uniformComplete');button.disabled=uniformBusy;button.setAttribute('aria-label','Complete uniform step: '+uniform.step.text);
+  const button=$('#uniformComplete');button.textContent=laundryCompletionPhrase(uniform.step.text);button.disabled=uniformBusy;button.setAttribute('aria-label','Complete uniform step: '+uniform.step.text);
   button.onclick=()=>{if(uniformBusy)return;const before=rewardProgress(st).earned,record=completeUniformStep(st,uniform.step.id,currentActor());
    if(!record){featureToast('Sign in on this device to complete laundry and keep your points.');return}
    uniformBusy=true;$('#uniformStatus').textContent=record.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');setTimeout(()=>{uniformBusy=false;renderLaundryPanel()},800);
@@ -420,7 +420,7 @@ function renderLaundryPanel(){
   $('#'+prefix+'StepNumber').textContent=`Step ${progress.index+1} of 3`;
   $('#'+prefix+'StepTitle').textContent=progress.text;
   const reminder=laundryReminder(st,cycle);$('#'+prefix+'Reminder').textContent=reminder?`Reminder ${reminder.due?'due now; repeats every 30 minutes': 'at '+new Date(reminder.nextAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}. Stops when this step is done.`:'';
-  button.setAttribute('aria-label','Complete: '+progress.text);button.disabled=laundryBusy[cycle];
+  button.textContent=laundryCompletionPhrase(progress.text);button.setAttribute('aria-label','Complete: '+progress.text);button.disabled=laundryBusy[cycle];
   button.onclick=()=>{
    if(laundryBusy[cycle])return;
    const before=rewardProgress(st).earned,record=completeLaundryStep(st,progress.completed,currentActor(),new Date().toISOString(),cycle);
@@ -436,7 +436,7 @@ function renderLaundryTasks(){
  const list=$('#laundryTasks');list.replaceChildren();
  for(const task of laundryTasks(st)){
   const row=document.createElement('div'),text=document.createElement('span'),done=document.createElement('button'),remove=document.createElement('button');
-  row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent='Done it!';remove.textContent='Delete';
+  row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent=laundryCompletionPhrase(task.text);remove.textContent='Delete';
   done.setAttribute('aria-label','Complete laundry task: '+task.text);remove.setAttribute('aria-label','Delete laundry task: '+task.text);
   done.onclick=()=>{const before=rewardProgress(st).earned;if(!completeLaundryTask(st,task.id,currentActor())){featureToast('Sign in on this device to complete laundry and keep your points.');return}$('#laundryTasksStatus').textContent=task.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!')};
   remove.onclick=()=>{st.settings=st.settings.filter(item=>item.id!==task.id);changed()};
@@ -654,7 +654,7 @@ if(page==='other'){markActivitySeen('shopping');renderHousehold();showOtherView(
 localStorage.setItem('mc-view-v2',page);
 showRoom(page==='house'&&st.rooms.some(r=>r.id===room)?room:null);
 window.scrollTo({top:0,behavior:'instant'})}
-$$("nav button[data-tab]").forEach(b=>b.onclick=()=>{if(['wins','data'].includes(b.dataset.tab))sessionStorage.setItem('mc-data-tab','overview');navigate(b.dataset.tab);if(['wins','data'].includes(b.dataset.tab))renderStats(st,categoryFilter,personFilter,changed)});
+$$("nav button[data-tab]").forEach(b=>b.onclick=()=>{if(b.dataset.tab==='doing')showDoingTab('mine');if(['wins','data'].includes(b.dataset.tab))sessionStorage.setItem('mc-data-tab','overview');navigate(b.dataset.tab);if(['wins','data'].includes(b.dataset.tab))renderStats(st,categoryFilter,personFilter,changed)});
 $$(".filters button").forEach(b=>b.onclick=()=>{$$(".filters button").forEach(x=>x.classList.remove("on"));
 b.classList.add("on");
 for(const tab of $$(".filters button"))tab.setAttribute("aria-pressed",String(tab===b));filter=b.dataset.filter;
@@ -871,7 +871,7 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=doing-controls-20261010-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-size-20261010-v1").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;

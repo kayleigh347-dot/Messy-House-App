@@ -83,3 +83,26 @@ export function completeUniformStep(state,stepId,actor,at=new Date().toISOString
  const progress=uniformProgress(state,Date.parse(at));if(!person||!progress||progress.step.id!==stepId)return null;
  const record=finishLaundryItem(state,progress.step,person,at);settleScheduledLaundry(state);return record;
 }
+
+export function laundryCompletionPhrase(text){
+ const phrases={
+  'put a load on':'Load is on!',
+  'put washing on':'Load is on!',
+  'put out washing':'Washing is out!',
+  'put away clothes on rail':'Clothes put away!',
+  'put in dryer':'In the dryer!',
+  'empty dryer':'Dryer emptied!',
+  'sort laundry to go in':'Laundry sorted!',
+  'gather uniform':'Uniform gathered!',
+  'wash darks':'Darks washed!',
+  'put out darks':'Darks are out!',
+  'wash whites':'Whites washed!',
+  'put out whites':'Whites are out!',
+  'remove dye from tops if possible':'Dye removal tried!',
+  'clean inside washing machine to remove smell':'Machine cleaned!',
+  'wipe down washing machine':'Machine wiped!',
+  'wipe down dryer':'Dryer wiped!',
+  'laundry':'Laundry finished!'
+ };
+ return phrases[String(text||'').trim().toLowerCase().replace(/[.!]+$/,'')]||'All done!';
+}
