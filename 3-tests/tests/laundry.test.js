@@ -114,3 +114,12 @@ test('both load reminders wait two hours, repeat every thirty minutes and stop a
   assert.equal(laundryReminder(state,cycle,start+10800000),null);
  }
 });
+
+test('selected backup fills missing uniform step once while preserving completed live steps',()=>{
+ const raw=uniformBoard(),old='uniform',id='7db69e67-90f5-4a25-aded-e5cc614f4c2a';raw.tasks[0].id=id;
+ for(const task of raw.tasks)if(task.parentId===old)task.parentId=id;
+ const state=normalize(raw),children=state.settings.filter(item=>item.parentId===id);
+ assert.ok(children.some(item=>item.text==='Remove dye from tops if possible'));
+ assert.equal(children.find(item=>item.id==='gather').done,true);
+ const count=state.settings.length;assert.equal(normalize(state).settings.length,count);
+});
