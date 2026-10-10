@@ -21,13 +21,15 @@ function viewImage(attachment,title){
  const image=document.createElement('img');image.src=attachment.src;image.alt=attachment.name||title;
  dialog.append(close,heading,image);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()});dialog.showModal();
 }
-export function appendItemImage(parent,item,getCurrent,save){
+export function appendItemImage(parent,item,getCurrent,save,{editable=true}={}){
+ if(!editable&&!item.image?.src?.startsWith('data:image/'))return;
  const controls=document.createElement('div');controls.className='item-image-controls';
  if(item.image?.src?.startsWith('data:image/')){
   const thumbnail=document.createElement('button');thumbnail.type='button';thumbnail.className='item-image-thumbnail';thumbnail.setAttribute('aria-label','View image for '+item.text);
   const image=document.createElement('img');image.src=item.image.src;image.alt=item.image.name||item.text;thumbnail.append(image);thumbnail.onclick=()=>viewImage(item.image,item.text);controls.append(thumbnail);
-  const remove=document.createElement('button');remove.type='button';remove.textContent='Remove image';remove.onclick=()=>{const current=getCurrent();if(current){delete current.image;save()}};controls.append(remove);
+  const remove=document.createElement('button');remove.type='button';remove.textContent='Remove image';remove.onclick=()=>{const current=getCurrent();if(current){delete current.image;save()}};if(editable)controls.append(remove);
  }
+ if(!editable){parent.append(controls);return}
  const label=document.createElement('label');label.className='item-image-upload';label.append(document.createTextNode(item.image?'Replace image':'Upload image'));
  const input=document.createElement('input');input.type='file';input.accept='image/*';input.setAttribute('aria-label','Upload image for '+item.text);
  const status=document.createElement('span');status.setAttribute('role','status');

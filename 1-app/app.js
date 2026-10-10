@@ -1,23 +1,24 @@
-import {recurringTiming,appendTaskGroups} from './task-ui.js?v=cohesion-20261008-v6';
-import {appendItemImage} from './item-images.js';
-import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=cohesion-20261008-v6';
-import {enableTaskDrag} from './task-drag.js?v=cohesion-20261008-v6';
+import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
+import {recurringTiming,appendTaskGroups} from './task-ui.js?v=streamline-20261009-v2';
+import {appendItemImage,readItemImage} from './item-images.js';
+import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=streamline-20261009-v2';
+import {enableTaskDrag} from './task-drag.js?v=streamline-20261009-v2';
 import {roomHues} from './room-colours.js';
-import {calendarStep} from './house-calendar.js?v=cohesion-20261008-v6';
+import {calendarStep} from './house-calendar.js?v=streamline-20261009-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,startFocus,featureToast} from './features.js?v=cohesion-20261008-v6';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,startFocus,featureToast} from './features.js?v=streamline-20261009-v2';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js';
 import {completionRecord} from './task-stats.js';
 import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification} from './task-flow.js?v=purple-subtasks-1';
 
-import {renderStats} from './stats-ui.js?v=cohesion-20261008-v6';
+import {renderStats} from './stats-ui.js?v=streamline-20261009-v2';
 
-import {taskDeadline} from './task-extras.js';
+import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-extras.js';
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=cohesion-20261008-v6";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=streamline-20261009-v2";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=purple-subtasks-1";
 
@@ -58,7 +59,11 @@ function markActivitySeen(type){const seen=activitySeen();seen[type]=Date.now();
 const currentActor=()=>meta.actor||{id:'local-device',name:'This device'};
 const entryTime=value=>{const time=Date.parse(value);return Number.isFinite(time)?new Date(time).toLocaleString():''};
 
-const status=text=>$("#sync").textContent=text;
+let signedIn=false;
+function updateSignInUI(value){signedIn=!!value;document.querySelector('.sync-line').hidden=signedIn;$('#signOut').hidden=!signedIn;$('#signIn').hidden=signedIn;$('#email').closest('label').hidden=signedIn}
+const status=text=>$('#sync').textContent=text;
+function settingsTab(name='general'){for(const panel of $$('[data-settings-panel]'))panel.hidden=panel.dataset.settingsPanel!==name;for(const tab of $$('[data-settings-tab]'))tab.setAttribute('aria-pressed',String(tab.dataset.settingsTab===name));if(name==='account'){$('#url').value=cfg.url||'';$('#key').value=cfg.key||'';if(db&&!sharingBusy&&!busy)db.auth.getSession().then(({data})=>{if(data.session)runSharing(refreshHouses)}).catch(()=>{})}}
+for(const tab of $$('[data-settings-tab]'))tab.onclick=()=>settingsTab(tab.dataset.settingsTab);
 
 function remember(){localStorage.setItem(M,JSON.stringify(meta))}
 const expandedSubtasks=new Set();
@@ -100,7 +105,8 @@ async function push(forSharing=false){
 
     if(authError)throw authError;
 
-    if(!session){status("Local · sign in to sync");
+    updateSignInUI(!!session);
+    if(!session){$("#account").textContent="Sign in to sync your house.";status("Local · sign in to sync");
 return}
     const owner=cfg.url+"/"+session.user.id;
 
@@ -207,23 +213,26 @@ text=text.trim();
 if(!text)return;
 st.tasks.push({id:id(),text,area,bucket,done:false,created:iso(),order:Math.max(-1,...st.tasks.map(t=>t.order??0))+1});
 changed()}
-function win(t,kind,at=iso(),actor=currentActor()){const record=completionRecord(t,at,kind,actor);st.wins.unshift(record);return record;
+function win(t,kind,at=iso(),actor=currentActor(),details={}){const record={...completionRecord(t,at,kind,actor),...details};st.wins.unshift(record);return record;
 }
 function finish(t,kind,actor=currentActor(),silent=false){t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return false;
  actor=st.householdPeople.find(p=>p.id===actor?.id&&p.id!=='local-device');if(!actor){if(!silent)featureToast('Sign in on this device to complete tasks and keep your points.');return false}
-const items=kind==='side'?st.side:st.tasks,childIds=descendants(items,t.id).reverse().map(child=>child.id);for(const childId of childIds){const childItems=kind==='side'?st.side:st.tasks,child=childItems.find(item=>item.id===childId);if(child&&!child.done)finish(child,kind,actor,true)}t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return;
+const items=kind==='side'?st.side:st.tasks,childIds=descendants(items,t.id).reverse().map(child=>child.id);for(const childId of childIds){const childItems=kind==='side'?st.side:st.tasks,child=childItems.find(item=>item.id===childId);if(child&&!child.done)finish(child,kind,actor,true)}t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return true;
 const roomId=t.roomId,fromMood=roomId&&roomMess(st,roomId).state;
 // Capture any overdue growth before removing this task's contribution.
 const messRoom=st.rooms?.find(room=>room.id===roomId);
 if(messRoom)messRoom.messCapacity=roomMess(st,roomId).capacity;
 const before=rewardProgress(st).earned,completedAt=iso(),previous={hasNextDue:Object.hasOwn(t,'nextDue'),nextDue:t.nextDue,hasLastDone:Object.hasOwn(t,'lastDone'),lastDone:t.lastDone};
-const record=win(t,kind,completedAt,actor);
+let root=t;const seen=new Set();while(root.parentId&&!seen.has(root.id)){seen.add(root.id);const parent=items.find(item=>item.id===root.parentId);if(!parent)break;root=parent}
+const record=win(t,kind,completedAt,actor,{rootTaskId:root.id,rootText:root.text,rootRecurrence:root.recurrence||null,rootSourceTemplateId:root.sourceTemplateId||null,points:childIds.length?0:1,aggregate:!!childIds.length});
 t.done=true;
 let next=null;if(kind==="task"&&!t.parentId&&t.recurrence){next=scheduleNext(t,new Date(completedAt));
 if(next&&!st.tasks.some(x=>x.id===next.id)){next.order=Math.max(-1,...st.tasks.map(x=>x.order))+1;
 st.tasks.push(next,...repeatChildren(st.tasks,t,next))}}if(kind==="task"&&st.current===t.id)st.current=null;
 captureCompletion(t,completedAt,record.id,next?.id||null,previous);
 changed();
+const parentId=t.parentId;
+if(parentId){const currentItems=kind==='side'?st.side:st.tasks,parent=currentItems.find(item=>item.id===parentId),siblings=currentItems.filter(item=>item.parentId===parentId);if(parent&&!parent.done&&siblings.length&&siblings.every(item=>item.done))finish(parent,kind,actor,true)}
 if(!silent&&roomId)notifyCompanionTaskCompleted({id:t.id,roomId,fromMood,toMood:roomMess(st,roomId).state,kind:kind==="side"?"sidequest":"task"});
 if(!silent&&actor.id===currentActor().id){const earned=rewardProgress(st).earned;if(earned>before)featureToast("A new mystery joined your shelf! "+prizes[st.rewards.at(-1)?.prizeIndex||0].treat);else celebrate("Task complete — "+rewardProgress(st).remaining+" more to your next mystery.")}return true}
 $("#unlockOpen").onclick=()=>{$("#mysteryUnlocked").close();
@@ -259,7 +268,7 @@ a.dataset.priority=kind==='task'?priorityOf(t):'mid';
 const deadline=kind==='task'?taskDeadline(t):null;const overdue=deadline!==null&&deadline<Date.now();a.classList.toggle('is-overdue',overdue);a.classList.toggle('is-paused',!!t.pausedAt);
 a.style.setProperty("--room-colour",roomColour(t));
 if(t.parentId)a.classList.add('subtask-card');
-if(t.done){a.classList.add('completed-task');const body=document.createElement('div'),heading=document.createElement('div'),strong=document.createElement('strong'),footer=document.createElement('div'),undo=document.createElement('button');body.className='body';heading.className='task-heading';footer.className='task-footer';strong.textContent=t.text;strong.title=t.text;heading.append(strong);const children=childrenOf(kind==='side'?st.side:st.tasks,t.id);if(children.length){a.classList.add('has-subtask-counter');const count=document.createElement('span');count.className='subtask-progress';count.textContent=`${children.filter(child=>child.done).length}/${children.length}`;heading.append(count)}undo.textContent='Undo';undo.className='task-undo';undo.disabled=!t.completionUndo;undo.setAttribute('aria-label','Undo completion: '+t.text);undo.onclick=()=>{if(undoCompletion(st,(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id)))changed()};footer.append(undo);body.append(heading,footer);a.append(body);return a}
+if(t.done){a.classList.add('completed-task');const body=document.createElement('div'),heading=document.createElement('div'),strong=document.createElement('strong'),footer=document.createElement('div'),undo=document.createElement('button');body.className='body';heading.className='task-heading';footer.className='task-footer';strong.textContent=t.text;strong.title=t.text;heading.append(strong);const children=childrenOf(kind==='side'?st.side:st.tasks,t.id);if(children.length){a.classList.add('has-subtask-counter');const count=document.createElement('span');count.className='subtask-progress';count.textContent=`${children.filter(child=>child.done).length}/${children.length}`;heading.append(count)}undo.textContent='Undo';undo.className='task-undo';undo.disabled=!t.completionUndo;undo.setAttribute('aria-label','Undo completion: '+t.text);undo.onclick=()=>{if(undoCompletion(st,(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id)))changed()};footer.append(undo);const record=st.wins.find(w=>w.taskId===t.id),by=document.createElement('span');by.className='meta completion-person';by.textContent=record?.aggregate?'Subtasks completed':`Completed by ${record?.completedByName||'Unrecorded'}`;body.append(heading,by,footer);subtaskPanel(t,kind,context,body);a.append(body);return a}
 let check=document.createElement("button");
 check.type="button";check.disabled=!!t.pausedAt;
 check.className="check";
@@ -273,7 +282,7 @@ strong.textContent=t.text;strong.title=t.text;
 let meta=document.createElement("span");
 meta.className="meta";
 meta.textContent=(t.area||'General')+(overdue?' · Overdue by '+(Date.now()-deadline<86400000?Math.max(1,Math.floor((Date.now()-deadline)/3600000))+'h':Math.floor((Date.now()-deadline)/86400000)+' days'):'')+' · '+(st.householdPeople.find(person=>person.id===t.assignedTo)?.name||t.assignedToName||'Anyone');
-const heading=document.createElement("div");heading.className="task-heading";strong.tabIndex=0;strong.setAttribute('role','button');strong.setAttribute('aria-label',(t.parentId&&!childrenOf(kind==='side'?st.side:st.tasks,t.id).length?'Subtask options: ':'Expand subtasks: ')+t.text);const toggleCompactCard=()=>{const panel=a.querySelector(':scope > .body > .task-secondary-actions > details.subtasks');if(!panel){if(t.parentId){const options=a.querySelector('.task-options');options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)}return;}panel.open=!panel.open;a.classList.toggle('compact-expanded',panel.open);panel.open?expandedSubtasks.add(t.id):expandedSubtasks.delete(t.id);if(!panel.open)a.scrollIntoView({block:'start',behavior:'smooth'})};strong.onclick=toggleCompactCard;strong.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCompactCard()}};heading.append(strong);const children=childrenOf(kind==='side'?st.side:st.tasks,t.id);if(children.length){a.classList.add('has-subtask-counter');const count=document.createElement('span');count.className='subtask-progress';count.textContent=`${children.filter(child=>child.done).length}/${children.length}`;heading.append(count)}const arrow=document.createElement('span');arrow.className='subtask-chevron';arrow.setAttribute('aria-hidden','true');arrow.textContent='⌄';if(children.length)heading.append(arrow);check.classList.add('task-complete');body.append(heading,meta);if(kind==='side')appendItemImage(body,t,()=>st.side.find(item=>item.id===t.id),changed);
+const heading=document.createElement("div");heading.className="task-heading";strong.tabIndex=0;strong.setAttribute('role','button');strong.setAttribute('aria-label',(t.parentId&&!childrenOf(kind==='side'?st.side:st.tasks,t.id).length?'Subtask options: ':'Expand subtasks: ')+t.text);const toggleCompactCard=()=>{const panel=a.querySelector(':scope > .body > .task-secondary-actions > details.subtasks');if(!panel){if(t.parentId){const options=a.querySelector('.task-options');options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)}return;}panel.open=!panel.open;a.classList.toggle('compact-expanded',panel.open);panel.open?expandedSubtasks.add(t.id):expandedSubtasks.delete(t.id);if(!panel.open)a.scrollIntoView({block:'start',behavior:'smooth'})};strong.onclick=toggleCompactCard;strong.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCompactCard()}};heading.append(strong);const children=childrenOf(kind==='side'?st.side:st.tasks,t.id);if(children.length){a.classList.add('has-subtask-counter');const count=document.createElement('span');count.className='subtask-progress';count.textContent=`${children.filter(child=>child.done).length}/${children.length}`;heading.append(count)}const arrow=document.createElement('span');arrow.className='subtask-chevron';arrow.setAttribute('aria-hidden','true');arrow.textContent='⌄';if(children.length)heading.append(arrow);check.classList.add('task-complete');body.append(heading,meta);if(kind==='side')appendItemImage(body,t,()=>st.side.find(item=>item.id===t.id),changed,{editable:false});
 if(t.notes){const details=document.createElement("details"),summary=document.createElement("summary"),note=document.createElement("p");
 summary.textContent="Notes";
 note.textContent=t.notes;
@@ -363,23 +372,24 @@ del.setAttribute("aria-label","Delete: "+t.text);
 del.onclick=()=>{if(!window.confirm(`Delete “${t.text}”${childrenOf(kind==='side'?st.side:st.tasks,t.id).length?' and its subtasks':''}?`))return;rememberSubtaskExpansion();const items=kind==='side'?st.side:st.tasks,family=[t,...descendants(items,t.id)],snapshot=structuredClone(family),ids=new Set(family.map(x=>x.id));lastDeleted={kind,items:snapshot};for(const item of family)expandedSubtasks.delete(item.id);if(kind==='side')st.side=st.side.filter(x=>!ids.has(x.id));else st.tasks=st.tasks.filter(x=>!ids.has(x.id));changed();featureToast('Task deleted. Undo deleted is at the bottom of this page.')};
 const completeBy=document.createElement('select');completeBy.setAttribute('aria-label','Completed by, then confirm: '+t.text);completeBy.append(new Option('Completed by…',''));for(const person of st.householdPeople.filter(p=>p.id!=='local-device'))completeBy.append(new Option(displayPersonName(person),person.id));completeBy.append(new Option('✓ Confirm completion','__confirm__'));let chosenPerson='';completeBy.onchange=()=>{if(completeBy.value!=='__confirm__'){chosenPerson=completeBy.value;return}const person=st.householdPeople.find(x=>x.id===chosenPerson&&x.id!=='local-device');if(person)finish(t,kind,person);else{completeBy.value='';featureToast('Choose who completed this task first.')}};tools.append(completeBy,del);
 addDragHandle(a,t,kind,tools,context);
-if(kind==='task'){const side=document.createElement('button');side.textContent='Side quest';side.onclick=()=>{const family=[t,...descendants(st.tasks,t.id)],ids=new Set(family.map(x=>x.id));delete t.parentId;st.side.push(...family.map((x,i)=>({...x,type:'organisation',bucket:'now',scheduled:false,doingNow:false,order:st.side.length+i})));st.tasks=st.tasks.filter(x=>!ids.has(x.id));if(st.current===t.id)st.current=null;changed()};tools.append(side)}
+if(kind==='task'){const side=document.createElement('button');side.textContent='Side quest';side.onclick=()=>{const family=[t,...descendants(st.tasks,t.id)],ids=new Set(family.map(x=>x.id));delete t.parentId;st.side.push(...family.map((x,i)=>({...x,type:'organisation',messImpact:'none',bucket:'now',scheduled:false,doingNow:false,order:st.side.length+i})));st.tasks=st.tasks.filter(x=>!ids.has(x.id));if(st.current===t.id)st.current=null;changed()};tools.append(side)}
 if(kind==='side')tools.prepend(v2EditButton(t));
 const quickMoves=document.createElement('div');quickMoves.className='task-quick-actions';
 const doingControl=tools.querySelector('.do-now');for(const control of [...tools.querySelectorAll('button')].filter(b=>['Top','Last'].includes(b.textContent))){control.classList.add('quick-reorder');quickMoves.append(control)}
-quickMoves.append(focus);
-const options=document.createElement('details'),summary=document.createElement('summary');options.className='task-options';summary.textContent='Edit & options';options.append(summary,tools);const secondary=document.createElement('div');secondary.className='task-secondary-actions';secondary.append(options);body.append(quickMoves,secondary);subtaskPanel(t,kind,context,secondary);if(t.parentId){const detach=document.createElement('button');detach.textContent='Make standalone';detach.onclick=()=>{detachTask(kind==='side'?st.side:st.tasks,t.id);changed()};tools.append(detach)}const footer=document.createElement('div');footer.className='task-footer';if(doingControl)footer.append(doingControl);if(t.parentId){const more=document.createElement('button');more.type='button';more.className='subtask-options-toggle';more.textContent='⋯';more.setAttribute('aria-label','Options for subtask: '+t.text);more.onclick=()=>{options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)};footer.append(more)}footer.append(check);body.append(footer);a.append(body);a.classList.toggle('compact-expanded',expandedSubtasks.has(t.id));a.onclick=e=>{if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form')||e.target===strong)return;toggleCompactCard()};let swipeX=0,swipeY=0;a.addEventListener('touchstart',e=>{if(e.target.closest('button,input,select,textarea,summary,a,label,form'))return;swipeX=e.touches[0].clientX;swipeY=e.touches[0].clientY},{passive:true});a.addEventListener('touchend',e=>{if(!document.body.classList.contains('task-compact-view')||!swipeX)return;const dx=e.changedTouches[0].clientX-swipeX,dy=e.changedTouches[0].clientY-swipeY;swipeX=0;if(dx>80&&Math.abs(dy)<50){e.preventDefault();finish(t,kind)}},{passive:false});
+
+const options=document.createElement('details'),summary=document.createElement('summary');options.className='task-options';summary.textContent='Edit & options';options.append(summary,tools);const secondary=document.createElement('div');secondary.className='task-secondary-actions';secondary.append(quickMoves,options);body.append(secondary);subtaskPanel(t,kind,context,secondary);if(t.parentId){const detach=document.createElement('button');detach.textContent='Make standalone';detach.onclick=()=>{detachTask(kind==='side'?st.side:st.tasks,t.id);changed()};tools.append(detach)}const footer=document.createElement('div');footer.className='task-footer';if(doingControl)footer.append(doingControl);if(t.parentId){const more=document.createElement('button');more.type='button';more.className='subtask-options-toggle';more.textContent='⋯';more.setAttribute('aria-label','Options for subtask: '+t.text);more.onclick=()=>{options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)};footer.append(more)}footer.append(focus,check);body.append(footer);a.append(body);a.classList.toggle('compact-expanded',expandedSubtasks.has(t.id));a.onclick=e=>{if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form')||e.target===strong)return;toggleCompactCard()};let swipeX=0,swipeY=0;a.addEventListener('touchstart',e=>{if(e.target.closest('button,input,select,textarea,summary,a,label,form'))return;swipeX=e.touches[0].clientX;swipeY=e.touches[0].clientY},{passive:true});a.addEventListener('touchend',e=>{if(!document.body.classList.contains('task-compact-view')||!swipeX)return;const dx=e.changedTouches[0].clientX-swipeX,dy=e.changedTouches[0].clientY-swipeY;swipeX=0;if(dx>80&&Math.abs(dy)<50){e.preventDefault();finish(t,kind)}},{passive:false});
 return a}
 function list(sel,arr,kind,completed=[]){let e=$(sel);
 e.innerHTML="";
 arr=arr.filter(t=>!t.parentId);completed=completed.filter(t=>!t.parentId);
 if(!arr.length&&!completed.length){e.innerHTML="<p>Nothing here right now.</p>";
 return}appendTaskGroups(e,priorityOrdered(arr),t=>mk(t,kind));if(completed.length){const box=document.createElement('section'),title=document.createElement('h3');box.className='completed-list';title.textContent='Completed today';box.append(title);completed.sort((a,b)=>Date.parse(b.completedAt)-Date.parse(a.completedAt)).forEach(t=>box.append(mk(t,kind)));e.append(box)}}
-function colourTaskLists(){for(const root of document.querySelectorAll('#nowList,#sideList,#doingList,#roomTasks,#homeOverdue,.subtask-list')){let i=0;for(const card of root.children)if(card.classList.contains('task'))card.style.setProperty('--task-hue',[320,165,45,235,15,195][i++%6])}}
+function colourTaskLists(){for(const root of document.querySelectorAll('#nowList,#sideList,#doingList,#roomTasks,#homeOverdue,#attentionList,#recurringList,#templateList,#completedLibrary,.subtask-list')){let i=0;for(const card of root.querySelectorAll('.task')){const nested=card.closest('.subtask-list');if(root.classList.contains('subtask-list')?nested!==root:!!nested)continue;card.style.setProperty('--task-hue',(root.classList.contains('subtask-list')?[45,235,15,195,320,165]:[320,165,45,235,15,195])[i++%6])}}}
+
 function notificationTarget(){const actor=currentActor(),others=st.householdPeople.filter(person=>person.id!==actor.id);return others.find(person=>/^andy\b/i.test(person.name||person.email||''))||others[0]||null}
 function notifyAboutTasks(tasks,target){if(!target)return;for(const task of tasks)st.notifications.push(taskNotification(task,target,currentActor()))}
 function renderTaskNotifications(){const actor=currentActor(),pending=st.notifications.filter(notice=>notice.recipientId===actor.id&&!notice.readBy?.includes(actor.id)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),notice=pending[0],banner=$('#taskNotice');banner.classList.toggle('hide',!notice);if(!notice)return;$('#taskNoticeTitle').textContent=`New task for ${notice.recipientName||'you'}`;$('#taskNoticeText').textContent=`${notice.createdByName||'Someone'} added “${notice.text}” in ${notice.area||'General'}.`;$('#dismissTaskNotice').onclick=()=>{notice.readBy||=[];if(!notice.readBy.includes(actor.id))notice.readBy.push(actor.id);changed()}}
-function renderAttention(){const root=$('#attentionList');root.replaceChildren();const tasks=priorityOrdered(st.tasks.filter(t=>!t.parentId&&activeTask(t)&&t.priority==='high'));const byRoom=new Map();for(const task of tasks){const room=st.rooms.find(r=>r.id===task.roomId)?.name||task.area||'General';if(!byRoom.has(room))byRoom.set(room,[]);byRoom.get(room).push(task)}for(const [room,items] of byRoom){const group=document.createElement('section'),title=document.createElement('h3');group.className='attention-group';title.textContent=room;group.append(title,...items.map(task=>mk(task,'task')));root.append(group)}if(!tasks.length){const empty=document.createElement('p');empty.textContent='No tasks need attention right now.';root.append(empty)}}
+function renderAttention(){const root=$('#attentionList');root.replaceChildren();const tasks=priorityOrdered(st.tasks.filter(t=>!t.parentId&&activeTask(t)&&t.priority==='high'));const byRoom=new Map();for(const task of tasks){const room=st.rooms.find(r=>r.id===task.roomId)?.name||task.area||'General';if(!byRoom.has(room))byRoom.set(room,[]);byRoom.get(room).push(task)}for(const [room,items] of byRoom){const group=document.createElement('section'),title=document.createElement('h3');group.className='attention-group';title.textContent=room;group.append(title);group.id='attention-room-'+items[0].roomId;appendTaskGroups(group,items,task=>mk(task,'task'));root.append(group)}if(!tasks.length){const empty=document.createElement('p');empty.textContent='No tasks need attention right now.';root.append(empty)}}
 function renderDoingNow(){const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done).sort((a,b)=>Number(b.priority==='high')-Number(a.priority==='high')),completed=items.filter(t=>t.done);root.replaceChildren();appendTaskGroups(root,active,task=>mk(task,'task','doing'));if(completed.length){const box=document.createElement('section');box.className='completed-list';box.append(document.createElement('h3'));box.firstChild.textContent='Completed today';for(const task of completed)box.append(mk(task,'task','doing'));root.append(box)}if(!items.length){const empty=document.createElement('p');empty.textContent="Nothing selected yet. Tap “I'm on it” on a task, or choose one from Needs done.";root.append(empty)}renderAttention()}
 function render(){applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
@@ -399,7 +409,8 @@ $("#bar").value=(d+r)?Math.round(d/(d+r)*100):0;
 const shownTasks=st.tasks.filter(t=>!t.parentId&&activeTask(t)&&inCategory(t));
 $('#allTaskSummary').textContent=`${shownTasks.length} active tasks${categoryFilter?' in this room':''} · Future tasks are on the calendar.`;
 list("#nowList",shownTasks,"task",st.tasks.filter(t=>completedToday(t,st.wins)&&inCategory(t)));
-list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&(filter==="all"||t.type===filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&(filter==="all"||t.type===filter)));
+renderSidequestTabs($('#sideTabs'),st,filter,value=>{filter=value;render()},changed,()=>st);
+list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&sidequestMatches(t,filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&sidequestMatches(t,filter)));
 renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderCalendar();colourTaskLists();renderUndoDeleted()}
 
 function renderHousehold(){
@@ -408,10 +419,10 @@ function renderHousehold(){
  if(!scores.length){const empty=document.createElement('p');empty.className='meta';empty.textContent='Sign in to start keeping scores for each person.';scoreList.append(empty)}
  for(const person of scores){const row=document.createElement('div'),name=document.createElement('strong'),points=document.createElement('strong');row.className='score-row';name.textContent=person.name;points.textContent=person.points+' '+(person.points===1?'point':'points');row.append(name,points);scoreList.append(row)}
  const seen=activitySeen(),activity=unseenActivity(st,{personId:currentActor().id,shoppingSeen:seen.shopping||0,notesSeen:seen.notes||0});
- const openShopping=st.shopping.filter(item=>!item.done).length;
+ const openShopping=st.shopping.filter(item=>!item.done).length,threadCount=st.notes.filter(note=>!note.parentId||!st.notes.some(parent=>parent.id===note.parentId)).length;
  $("#homeShoppingStatus").textContent=activity.shopping?`${activity.shopping} new ${activity.shopping===1?'item':'items'} added by someone else`:openShopping?`${openShopping} ${openShopping===1?'item':'items'} to get`:'Nothing waiting';
  $('#homeCalendarStatus').textContent=`${st.appointments.length} appointments · ${st.errands.filter(x=>!x.done).length} errands`;
- $("#homeNotesStatus").textContent=activity.notes?`${activity.notes} new ${activity.notes===1?'note':'notes'} from someone else`:st.notes.length?`${st.notes.length} shared ${st.notes.length===1?'note':'notes'}`:'No notes yet';
+ $("#homeNotesStatus").textContent=activity.notes?`${activity.notes} new ${activity.notes===1?'update':'updates'} from someone else`:threadCount?`${threadCount} shared ${threadCount===1?'note':'notes'}`:'No notes yet';
  $("#homeShopping").classList.toggle('has-update',activity.shopping>0);$("#homeNotes").classList.toggle('has-update',activity.notes>0);
 
  const shopping=$("#shoppingList");shopping.replaceChildren();
@@ -435,8 +446,16 @@ function renderHousehold(){
  for(const select of [$("#addAppointment").elements.assignee,$("#addErrand").elements.assignee]){const value=select.value;select.replaceChildren(new Option('Anyone',''));for(const person of [...st.householdPeople].sort((a,b)=>a.name.localeCompare(b.name)))select.append(new Option(person.name,person.id));select.value=st.householdPeople.some(person=>person.id===value)?value:''}
 
  const notes=$("#notesList");notes.replaceChildren();
- for(const note of [...st.notes].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))){const row=document.createElement('article'),body=document.createElement('div'),text=document.createElement('strong'),by=document.createElement('span'),remove=document.createElement('button');row.className='shared-item note-item';body.className='shared-item-body';text.className='shared-item-text';text.textContent=note.text;by.className='meta';by.textContent=`${note.createdByName||'Household member'}${entryTime(note.createdAt)?' · '+entryTime(note.createdAt):''}`;remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete note');remove.onclick=()=>{st.notes=st.notes.filter(x=>x.id!==note.id);changed()};body.append(text,by);row.append(body,remove);notes.append(row)}
- if(!st.notes.length){const empty=document.createElement('p');empty.textContent='No house notes yet.';notes.append(empty)}
+ const topNotes=st.notes.filter(note=>!note.parentId||!st.notes.some(parent=>parent.id===note.parentId));
+ for(const note of [...topNotes].sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))){
+  const replies=st.notes.filter(reply=>reply.parentId===note.id).sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))),row=document.createElement(replies.length?'details':'article'),body=document.createElement('div'),text=document.createElement('strong'),by=document.createElement('span');row.className='shared-item note-item'+(replies.length?' note-thread':'');body.className='shared-item-body';text.className='shared-item-text';text.textContent=note.text;by.className='meta';by.textContent=`${note.createdByName||'Household member'}${entryTime(note.createdAt)?' · '+entryTime(note.createdAt):''}`;
+  if(replies.length){const summary=document.createElement('summary');summary.append(text,by,document.createTextNode(` · ${replies.length} ${replies.length===1?'reply':'replies'}`));row.append(summary);const key='mc-note-thread:'+note.id;row.open=sessionStorage.getItem(key)==='expanded';row.ontoggle=()=>sessionStorage.setItem(key,row.open?'expanded':'collapsed')}
+  else body.append(text,by);
+  for(const reply of replies){const entry=document.createElement('div'),content=document.createElement('p'),author=document.createElement('span');entry.className='note-reply';content.textContent=reply.text;author.className='meta';author.textContent=`${reply.createdByName||'Household member'} · ${entryTime(reply.createdAt)}`;entry.append(content,author);body.append(entry)}
+  const actions=document.createElement('div'),replyButton=document.createElement('button'),remove=document.createElement('button'),form=document.createElement('form'),input=document.createElement('textarea'),send=document.createElement('button');actions.className='note-actions';replyButton.type=remove.type='button';replyButton.textContent='Reply';remove.textContent=replies.length?'Delete thread':'Delete note';remove.onclick=()=>{if(replies.length&&!confirm('Delete this note and its replies?'))return;st.notes=st.notes.filter(item=>item.id!==note.id&&item.parentId!==note.id);changed()};form.className='note-reply-form';form.id='noteReply-'+note.id;const replyKey='mc-note-reply-open:'+note.id;form.hidden=sessionStorage.getItem(replyKey)!=='true';input.name='reply';input.required=true;input.maxLength=1000;input.rows=2;input.placeholder='Write a reply…';input.setAttribute('aria-label','Reply to '+note.text);send.textContent='Add reply';replyButton.onclick=()=>{form.hidden=!form.hidden;sessionStorage.setItem(replyKey,String(!form.hidden));if(!form.hidden)input.focus()};form.onsubmit=event=>{event.preventDefault();const text=input.value.trim();if(!text)return;const actor=currentActor();ensurePerson(st,actor);st.notes.push({id:id(),parentId:note.id,text,createdAt:iso(),createdBy:actor.id,createdByName:actor.name});input.value='';sessionStorage.setItem(replyKey,'false');let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}delete drafts[inputDraftKey(input)];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts));changed()};form.append(input,send);actions.append(replyButton,remove);body.append(actions,form);row.append(body);notes.append(row);
+ }
+ if(!topNotes.length){const empty=document.createElement('p');empty.textContent='No house notes yet.';notes.append(empty)}restoreInputDrafts();
+
 }
 
 function renderCalendar(){renderLocalCalendar(st,calendarMonth,(type,id,done)=>{if(type==='errand'){const item=st.errands.find(t=>t.id===id);if(item){item.done=done;changed()}return}const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(task.completionUndo&&!st.tasks.some(t=>t.id===task.completionUndo.nextTaskId&&t.done)&&undoCompletion(st,task))changed()})}
@@ -454,7 +473,7 @@ $("#celebration").classList.remove("hide");
 clearTimeout(celebrationTimer);
 celebrationTimer=setTimeout(()=>$("#celebration").classList.add("hide"),5000)}
 function showPage(name){document.querySelector('nav button[data-tab="'+name+'"]').click()}
-document.querySelector('#doingAdd')?.addEventListener('click',()=>quickAdd(null,{doingNow:true}));for(const b of document.querySelectorAll('[data-add-task]'))b.onclick=()=>quickAdd(null,{bucket:b.closest('#side')?'side':b.closest('#recurring')?'recurring':'now',doingNow:!!b.closest('#doing')});for(const b of document.querySelectorAll('[data-task-layout]'))b.onclick=()=>{const compact=!document.body.classList.contains('task-compact-view');localStorage.setItem('mc-task-layout',compact?'compact':'detail');render()};
+document.querySelector('#doingAdd')?.addEventListener('click',()=>quickAdd(null,{doingNow:true}));for(const b of document.querySelectorAll('[data-add-task]'))b.onclick=()=>quickAdd(null,{bucket:b.closest('#side')?'side':b.closest('#recurring')?'recurring':'now',doingNow:!!b.closest('#doing'),type:filter==='all'?'organisation':filter});for(const b of document.querySelectorAll('[data-task-layout]'))b.onclick=()=>{const compact=!document.body.classList.contains('task-compact-view');localStorage.setItem('mc-task-layout',compact?'compact':'detail');render()};
 for(const tab of document.querySelectorAll('[data-doing-tab]'))tab.onclick=()=>{const attention=tab.dataset.doingTab==='attention';$('#doingList').hidden=attention;$('#attentionList').hidden=!attention;for(const b of document.querySelectorAll('[data-doing-tab]'))b.setAttribute('aria-pressed',String(b===tab))};
 let otherView='shopping';
 function showOtherView(name){otherView=name;for(const button of $$('[data-other]'))button.setAttribute('aria-pressed',String(button.dataset.other===name));for(const panel of $$('.other-panel'))panel.classList.toggle('hide',panel.id!==`other${name[0].toUpperCase()+name.slice(1)}`)}
@@ -467,7 +486,11 @@ $("#addShopping").addEventListener('submit',e=>{e.preventDefault();const input=e
 function fillTimeChoices(form){for(const key of ['startTime','endTime']){const select=form.elements[key],prior=select.value||(key==='startTime'?'09:00':'10:00');select.replaceChildren();for(let hour=0;hour<24;hour++)for(const minute of [0,15,30,45]){const value=String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0');select.append(new Option(new Date('2000-01-01T'+value).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),value))}select.value=prior}}
 fillTimeChoices($('#addAppointment'));fillTimeChoices($('#calendarEventForm'));
 $("#addAppointment").onsubmit=e=>{e.preventDefault();const form=e.currentTarget,text=form.elements.text.value.trim(),date=form.elements.date.value,startTime=form.elements.startTime.value,endTime=form.elements.endTime.value;if(!text||!date||!startTime||!endTime)return;if(endTime<=startTime){$("#appointmentStatus").textContent='Choose an end time after the start time.';return}const assignedTo=form.elements.assignee.value||null;st.appointments.push({id:id(),text,date,startTime,endTime,location:form.elements.location.value.trim(),assignedTo,assignedToName:st.householdPeople.find(person=>person.id===assignedTo)?.name||null,createdAt:iso()});form.reset();form.elements.startTime.value='09:00';form.elements.endTime.value='10:00';$("#appointmentStatus").textContent=`Saved ${text}.`;changed()};
-$("#addErrand").onsubmit=e=>{e.preventDefault();const form=e.currentTarget,text=form.elements.text.value.trim();if(!text)return;const assignedTo=form.elements.assignee.value||null;st.errands.push({id:id(),text,dueDate:form.elements.dueDate.value||null,showOnCalendar:form.elements.showOnCalendar.checked,assignedTo,assignedToName:st.householdPeople.find(person=>person.id===assignedTo)?.name||null,done:false,createdAt:iso()});form.reset();changed()};
+$('#addErrand').onsubmit=async e=>{
+ e.preventDefault();const form=e.currentTarget,text=form.elements.text.value.trim();if(!text)return;const values={text,dueDate:form.elements.dueDate.value||null,showOnCalendar:form.elements.showOnCalendar.checked,assignedTo:form.elements.assignee.value||null},file=form.elements.image.files?.[0],button=form.querySelector('button[type=submit],button:not([type])');button.disabled=true;$('#errandStatus').textContent='';
+ try{const image=file?await readItemImage(file):null;st.errands.push({...values,id:id(),assignedToName:st.householdPeople.find(person=>person.id===values.assignedTo)?.name||null,done:false,createdAt:iso(),...(image?{image}:{})});form.reset();changed()}catch(error){$('#errandStatus').textContent=error.message}finally{button.disabled=false}
+};
+
 $("#addNote").onsubmit=e=>{e.preventDefault();const input=e.currentTarget.elements.note,text=input.value.trim();if(!text)return;const actor=currentActor();ensurePerson(st,actor);st.notes.push({id:id(),text,createdAt:iso(),createdBy:actor.id,createdByName:actor.name});input.value='';changed()};
 
 $("#addCalendarEvent").onclick=()=>{const f=$('#calendarEventForm');f.reset();f.elements.date.value=localDateKey(new Date());$('#calendarEventStatus').textContent='';$('#calendarEventDialog').showModal()};
@@ -477,7 +500,7 @@ $('#calendarEventForm').onsubmit=e=>{e.preventDefault();const f=e.currentTarget,
 $('#previousCalendarMonth').onclick=()=>{calendarMonth=calendarStep(calendarMonth,-1);renderCalendar()};
 $('#nextCalendarMonth').onclick=()=>{calendarMonth=calendarStep(calendarMonth,1);renderCalendar()};
 
-$('#connectShortcut').onclick=()=>showPage('preferences');$('#closeSettings').onclick=()=>showPage('house');
+$('#connectShortcut').onclick=()=>{showPage('preferences');settingsTab('account')};$('#closeSettings').onclick=()=>showPage('house');
 $('#calendarView').value=localStorage.getItem('mc-calendar-view')||'month';$('#calendarRecurring').checked=localStorage.getItem('mc-calendar-recurring')!=='off';$('#calendarSetDay').checked=localStorage.getItem('mc-calendar-set-day')!=='off';
 $('#calendarView').onchange=()=>{localStorage.setItem('mc-calendar-view',$('#calendarView').value);renderCalendar()};$('#calendarRecurring').onchange=()=>{localStorage.setItem('mc-calendar-recurring',$('#calendarRecurring').checked?'on':'off');renderCalendar()};$('#calendarSetDay').onchange=()=>{localStorage.setItem('mc-calendar-set-day',$('#calendarSetDay').checked?'on':'off');renderCalendar()};
 document.addEventListener('calendar-jump',e=>{calendarMonth=new Date(e.detail.date);renderCalendar()});
@@ -492,6 +515,7 @@ $("#keepReward").onclick=()=>{$("#rewardDialog").close();
 showPage("rewards")};
 
 function openMystery(){
+ $("#keepReward").textContent="Add to my shelf ✦";$("#rewardDialog .eyebrow").textContent="MYSTERY UNLOCKED";
  const reward=revealReward(st);
 if(!reward)return;
 
@@ -527,32 +551,17 @@ function renderRewards(){
  const shelf=$("#rewardCollection");
 shelf.hidden=false;shelf.replaceChildren();
 
- for(const reward of [...(st.rewards||[])].sort((a,b)=>b.index-a.index)){
-  const prize=prizes[reward.prizeIndex];
-if(!prize)continue;
-
-  const card=document.createElement("article"),icon=document.createElement("span"),name=document.createElement("h3"),caption=document.createElement("p"),treat=document.createElement("p");
-
-  card.className="reward-card "+prize.colour;
-icon.textContent=prize.icon;
-icon.className="collectible-icon";
-name.textContent=prize.name+(reward.edition>1?" · Edition "+reward.edition:"");
-caption.textContent=prize.title;
-treat.textContent=prize.treat;
-card.append(icon,name,caption,treat);
-shelf.append(card);
-
+ $('#totalRewardsFound').textContent=`Total found: ${(st.rewards||[]).length}`;
+ const rewards=[...(st.rewards||[])].sort((a,b)=>b.index-a.index);
+ const cabinets=Math.max(1,Math.ceil(rewards.length/12));
+ for(let page=0;page<cabinets;page++){
+  const cabinet=document.createElement('div');cabinet.className='prize-cabinet';
+  for(let row=0;row<3;row++){const rail=document.createElement('div');rail.className='prize-rail';rail.style.top=[31,59,87][row]+'%';
+   for(const reward of rewards.slice(page*12+row*4,page*12+row*4+4)){const prize=prizes[reward.prizeIndex];if(!prize)continue;const item=document.createElement('button');item.className='shelf-prize';item.type='button';item.textContent=prize.icon;item.title=prize.name;item.setAttribute('aria-label','About '+prize.name+(reward.edition>1?' · Edition '+reward.edition:''));item.onclick=()=>{$('#keepReward').textContent='Close';$('#rewardDialog .eyebrow').textContent='YOUR COLLECTION';$('#revealedIcon').textContent=prize.icon;$('#revealedName').textContent=prize.name;$('#revealedTitle').textContent=prize.title;$('#revealedTreat').textContent=prize.treat;$('#rewardDialog').className=prize.colour;$('#rewardDialog').showModal()};rail.append(item)}
+   cabinet.append(rail)
+  }shelf.append(cabinet)
  }
- const locked=document.createElement("article");
-locked.className="reward-card locked";
-
- const symbol=document.createElement("span"),title=document.createElement("h3"),hint=document.createElement("p");
-symbol.className="collectible-icon";
-symbol.textContent="✦ ? ✦";
-title.textContent="A surprise is waiting";
-hint.textContent=ready?"Open a gift to find out who's inside.":p.remaining+" more tasks to unlock.";
-locked.append(symbol,title,hint);
-shelf.append(locked);
+ if(!rewards.length){const empty=document.createElement('p');empty.textContent='Your shelf is waiting for its first prize.';shelf.append(empty)}
 
 }
 $("#add").onsubmit=e=>{e.preventDefault();
@@ -569,23 +578,19 @@ document.body.dataset.view=page;
 const categoryBar=document.querySelector('.category-bar');if(page==='wins')$('#dataFilters').append(categoryBar);else $('#categories').before(categoryBar);
 $$(".page").forEach(x=>x.classList.add('hide'));
 $("#"+page).classList.remove('hide');
+if(page==='preferences')settingsTab('general');
 if(page==='other'){markActivitySeen('shopping');renderHousehold();showOtherView(otherView)}else if(page==='notes'){markActivitySeen('notes');renderHousehold()}else if(page==='calendar'){renderCalendar()}
 localStorage.setItem('mc-view-v2',page);
 showRoom(page==='house'&&st.rooms.some(r=>r.id===room)?room:null);
 window.scrollTo({top:0,behavior:'instant'})}
-$$("nav button[data-tab]").forEach(b=>b.onclick=()=>navigate(b.dataset.tab));
+$$("nav button[data-tab]").forEach(b=>b.onclick=()=>{if(['wins','data'].includes(b.dataset.tab))sessionStorage.setItem('mc-data-tab','overview');navigate(b.dataset.tab);if(['wins','data'].includes(b.dataset.tab))renderStats(st,categoryFilter,personFilter,changed)});
 $$(".filters button").forEach(b=>b.onclick=()=>{$$(".filters button").forEach(x=>x.classList.remove("on"));
 b.classList.add("on");
 for(const tab of $$(".filters button"))tab.setAttribute("aria-pressed",String(tab===b));filter=b.dataset.filter;
 render()});
 
-$("#settings").onclick=()=>{$("#setup").classList.remove("hide");
-$("#setup").scrollIntoView({block:"start"});
-$("#url").value=cfg.url||"";
-$("#key").value=cfg.key||"";
-if(db)db.auth.getSession().then(({data})=>{if(data.session&&!sharingBusy&&!busy)runSharing(refreshHouses)}).catch(()=>{});
-};
-$("#cancel").onclick=()=>$("#setup").classList.add("hide");
+$('#settings').onclick=()=>{showPage('preferences');settingsTab('account')};
+$('#cancel').onclick=()=>settingsTab('general');
 $("#saveCfg").onclick=async()=>{
   const url=$("#url").value.trim().replace(/\/$/,""),key=$("#key").value.trim();
 
@@ -623,7 +628,7 @@ $("#signOut").onclick=async()=>{if(busy)return;
 try{if("PushManager" in window)await disablePush(db)}catch{}
 if(db)await db.auth.signOut();
 $("#account").textContent="Signed out. Your local board is still saved on this device.";
-status("Local")};
+updateSignInUI(false);status("Local")};
 
 function notificationStatus(){
  const output=$("#notificationSetupStatus"),unavailable=pushAvailability();
@@ -763,11 +768,13 @@ if(!file)return;
     validateV2(board);
 
     st=merge(empty(),board,st);
+const removedDuplicates=applyBackupCleanup(st,board.duplicateCleanup);
+const removedTests=applyBackupTestCleanup(st,board.duplicateCleanup);
 activateDue(st);
 categoryFilter="";$('#recurringRoom').value="";
 changed();
 const unfinished=board.tasks.filter(t=>!t.done).length;
-$("#backupStatus").textContent=`Imported ${board.tasks.length} task records: ${unfinished} unfinished and ${board.tasks.length-unfinished} completed, plus ${board.side.length} Side Quests and ${(board.templates||[]).length} reusable templates. View unfinished tasks in More → All tasks, Side Quests in their own tab, and templates in More → Reusable tasks. Existing items are kept; matching IDs use this backup.`;
+$("#backupStatus").textContent=`Imported ${board.tasks.length} task records: ${unfinished} unfinished and ${board.tasks.length-unfinished} completed, plus ${board.side.length} Side Quests and ${(board.templates||[]).length} reusable templates. View tasks in More → Active tasks and templates in More → Recurring & reusable tasks. ${removedDuplicates?`Removed ${removedDuplicates} duplicate unfinished tasks from this cleaned backup. `:''}${removedTests?`Removed ${removedTests} labelled test records. `:''}Matching IDs use this backup; other existing items are kept.`;
 
   }catch(error){$("#backupStatus").textContent=error.message}
   e.target.value="";
@@ -793,9 +800,11 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=cohesion-20261008-v6").catch(console.error);
-render();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=streamline-20261009-v2").catch(console.error);
+updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
 connect();
+
+function fitDialogs(){document.documentElement.style.setProperty('--dialog-height',`${window.visualViewport?.height||window.innerHeight}px`);document.documentElement.style.setProperty('--dialog-offset',`${window.visualViewport?.offsetTop||0}px`);const field=document.activeElement;if(field?.matches('dialog input,dialog textarea'))requestAnimationFrame(()=>field.scrollIntoView({block:'nearest'}))}fitDialogs();window.visualViewport?.addEventListener('resize',fitDialogs);document.addEventListener('focusin',event=>{if(event.target.matches('dialog input,dialog textarea'))requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest'}))});

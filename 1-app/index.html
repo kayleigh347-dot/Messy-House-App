@@ -10,59 +10,20 @@
 <link rel="stylesheet" href="stage-one.css">
 <link rel="stylesheet" href="mobile.css">
 <title>Mission Control</title>
-<link rel="stylesheet" href="features.css?v=cohesion-20261008-v6">
-<link rel="stylesheet" href="house-calendar.css?v=cohesion-20261008-v6">
-<link rel="stylesheet" href="cohesion.css?v=cohesion-20261008-v6">
+<link rel="stylesheet" href="features.css?v=streamline-20261009-v2">
+<link rel="stylesheet" href="house-calendar.css?v=streamline-20261009-v2">
+<link rel="stylesheet" href="cohesion.css?v=streamline-20261009-v2">
 </head>
 <body class="dark-mode">
 <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs><filter id="character-edge-cleanup" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="erode" radius="0.65" result="inset"/><feGaussianBlur in="inset" stdDeviation="0.25" result="soft"/><feComposite in="SourceGraphic" in2="soft" operator="in"/></filter></defs></svg>
 <main>
 
-<section id="setup" class="card hide">
-<h2>Keep your board on both devices</h2>
-<p>Your existing Supabase project is already configured. Sign in with the same email to sync your saved board.</p>
-<p class="meta">For a separate preview address, add that address to your existing project’s allowed authentication redirect URLs. Keep your current project and database.</p>
-<label>Supabase Project URL<input id="url">
-</label>
-<label>Public publishable / anon key<input id="key">
-</label>
-<button id="saveCfg">Save & connect</button>
-<button id="cancel">Close</button>
-<p id="account">Your board stays on this device until you sign in.</p>
-<label>Email<input id="email" type="email" autocomplete="email">
-</label>
-<button id="signIn">Email me a sign-in link</button>
-<button id="signOut">Sign out</button>
-<button type="button" id="enableNotifications">Enable external notifications</button>
-<button type="button" id="disableNotifications">Turn off external notifications</button>
-<p id="notificationSetupStatus" class="meta" role="status">In-app task alerts work automatically. Device alerts are optional.</p>
-<section id="houseSharing" aria-labelledby="sharingHeading">
-<h3 id="sharingHeading">Share my house</h3>
-<p>Each person signs in with their own email. Members can add, edit and complete tasks in the shared house.</p>
-<button type="button" id="loadHouses">Refresh house list</button>
-<label>House<select id="sharedHouseChoice" aria-label="Choose house"><option value="">My house</option></select></label>
-<button type="button" id="openSharedHouse">Open selected house</button>
-<p id="currentHouseLabel">Current house: My house</p>
-<button type="button" id="createHouseInvite">Create invite for my house</button>
-<button type="button" id="cancelHouseInvite">Cancel unused invite</button>
-<label id="houseInviteResult" hidden>Send this code to the person you want to invite<input id="houseInviteCode" readonly></label>
-<p>Invites are single-use and expire after 7 days. Send the code yourself; no email is sent automatically.</p>
-<label>Invite code<input id="joinHouseCode" autocomplete="off" spellcheck="false"></label>
-<button type="button" id="joinHouse">Join house</button>
-<h4>People with access to my house</h4>
-<div id="houseMembers"></div>
-<p id="sharingStatus" role="status"></p>
-<p id="sharingSetupHelp" hidden>House sharing needs its database update. <a href="supabase-sharing.sql" download>Download the sharing update</a> and run it in your existing Supabase project’s SQL Editor, then try again.</p>
-</section>
-<p id="msg" role="status">
-</p>
-</section>
 <section id="taskNotice" class="card task-notice hide" role="status" aria-live="polite">
 <strong id="taskNoticeTitle">New shared task</strong>
 <p id="taskNoticeText"></p>
 <button type="button" id="dismissTaskNotice">Got it</button>
 </section>
-<div class="sync-line"><span id="sync">Local</span><button id="connectShortcut" class="text-button">Settings</button></div>
+<div class="sync-line"><button id="connectShortcut" class="text-button">Log in to sync</button><span id="sync" class="hide" role="status">Local</span></div>
 <section class="progress">
 <div>
 <b id="doneN">0 done</b>
@@ -70,7 +31,7 @@
 </div>
 <progress id="bar" max="100" value="0">
 </progress>
-<p>Progress counts. The dust bunnies are getting nervous.</p>
+
 </section>
 <div class="category-bar">
 <label for="categoryFilter">Room</label>
@@ -106,21 +67,19 @@
 <button id="moreNav">More</button>
 </nav>
 <section id="house" class="page hide">
-<div class="house-toolbar">
-<span>One room. One small step.</span>
-</div>
+
 <div id="houseRooms">
 </div>
 <section class="household-dashboard" aria-label="Household dashboard">
 <div class="household-activity">
-<button type="button" id="homeShopping" class="household-card"><strong>Household organiser</strong><span>Shopping, appointments &amp; errands</span><span id="homeShoppingStatus">Nothing waiting</span></button>
+<button type="button" id="homeShopping" class="household-card"><strong>Household organiser</strong><span id="homeShoppingStatus">Nothing waiting</span></button>
 <button type="button" id="homeCalendar" class="household-card"><strong>Calendar</strong><span id="homeCalendarStatus">Open household calendar</span></button>
 <button type="button" id="homeNotes" class="household-card"><strong>House notes</strong><span id="homeNotesStatus">No new notes</span></button>
 </div>
 <section class="scoreboard" aria-labelledby="scoreboardHeading">
 <h2 id="scoreboardHeading">Household scoreboard</h2>
 <div id="scoreboardList"></div>
-<p class="meta">One point for every completed job. The period is chosen in Task Data.</p>
+
 </section>
 </section>
 <section class="room-task-panel">
@@ -171,22 +130,22 @@
 <label>Due by<input name="dueDate" type="date"></label><label class="checkbox-label"><input type="checkbox" name="showOnCalendar" checked>Show on calendar</label>
 <label>Assigned to<select name="assignee"><option value="">Anyone</option></select></label>
 </div></details>
-<button>Add errand</button>
+<label>Upload image<input name="image" type="file" accept="image/*"></label><p id="errandStatus" role="status"></p><button>Add errand</button>
 </form>
 <div id="errandList" class="shared-list"></div>
 </section>
 </section>
 <section id="calendar" class="page hide">
 <div class="calendar-heading">
-<div><h2>Household calendar</h2><p class="meta">Appointments, errands and recurring tasks, shared with your household.</p></div>
+<div><h2>Household calendar</h2></div>
 <div class="calendar-actions">
 
-<button type="button" id="addCalendarEvent">＋ Add to calendar</button>
+<button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" id="addCalendarEvent">＋ Add to calendar</button>
 
 
 </div>
 </div>
-<div class="calendar-view-controls"><label class="calendar-view-label"><select aria-label="Calendar view" id="calendarView"><option value="month">Monthly</option><option value="week">Weekly</option></select></label><label class="checkbox-label"><input id="calendarRecurring" type="checkbox" checked>Recurring</label><label class="checkbox-label"><input id="calendarSetDay" type="checkbox" checked>Set day</label></div><details class="optional-section calendar-room-filter"><summary id="calendarRoomFilterSummary">Room filter · All rooms</summary><div class="optional-fields"><label>Room<select id="calendarRoomFilter"><option value="">All rooms &amp; household</option></select></label></div></details><details class="calendar-legend-wrap"><summary>Room symbols</summary><div id="calendarLegend"></div></details><div class="calendar-month-toolbar">
+<div class="calendar-view-controls"><label class="calendar-view-label"><select aria-label="Calendar view" id="calendarView"><option value="month">Monthly</option><option value="week">Weekly</option></select></label><label class="checkbox-label"><input id="calendarRecurring" type="checkbox" checked>Recurring</label><label class="checkbox-label"><input id="calendarSetDay" type="checkbox" checked>Set day</label></div><label class="calendar-room-filter"><span id="calendarRoomFilterSummary">Room filter · All rooms</span><select id="calendarRoomFilter" aria-label="Room filter"><option value="">All rooms &amp; household</option></select></label><div class="calendar-month-toolbar">
 <button type="button" id="previousCalendarMonth" aria-label="Previous month">←</button>
 <h3 id="calendarMonthLabel"></h3>
 <button type="button" id="nextCalendarMonth" aria-label="Next month">→</button>
@@ -210,7 +169,8 @@
 </h2>
 <p id="guardianName">
 </p>
-</div>
+</div><div id="roomTabs" class="room-tabs folder-tabs" aria-label="Room task categories">
+</div><div id="roomSideTabs" class="folder-tabs" aria-label="Sidequest tabs" hidden></div><div id="roomRecurringStatusTabs" class="folder-tabs" hidden></div><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><span id="roomRecurringViews" class="task-list-toolbar" hidden><button type="button" id="roomRecurringToggle" class="task-layout-toggle">Calendar view</button></span><button id="roomQuickAdd" class="add-task-main">＋ Add task</button></div>
 <details id="roomSceneDetails" class="room-scene-details"><summary>Room scene <span id="roomSceneState"></span></summary>
 <div id="roomScene">
 
@@ -228,18 +188,15 @@
 </progress>
 <p id="roomMood">
 </p>
-<details>
-<summary>How mess works</summary>
-<p>Do Now tasks add mess according to their impact. Each recurring occurrence adds mess once when due and stays steady until completed. Future scheduled tasks and Side Quests add no mess. Completing tasks brings the percentage down.</p>
-</details>
+
 </div>
 </details>
 <section class="room-task-panel">
-<h3>Room tasks</h3>
-<div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button id="roomQuickAdd" class="add-task-main">＋ Add task</button></div>
-<div id="roomTabs" class="room-tabs folder-tabs" aria-label="Room task categories">
-</div>
-<div id="roomRecurringViews" class="task-list-toolbar" hidden><button type="button" id="roomRecurringToggle" class="task-layout-toggle">Calendar view</button></div><div id="roomRecurringStatusTabs" class="folder-tabs" hidden></div>
+
+
+
+
+
 <div id="roomTasks">
 </div>
 <div id="roomRecurringCalendar" hidden></div>
@@ -247,16 +204,16 @@
 </section>
 </section>
 <section id="doing" class="page hide">
-<h2>Doing Now</h2>
-<p class="meta">A flat shortlist of the tasks you plan to tackle. Tasks stay in their original rooms.</p>
+<h2>Doing Now</h2><div class="folder-tabs" id="doingTabs"><button type="button" data-doing-tab="mine" aria-pressed="true">Doing Now</button><button type="button" data-doing-tab="attention" aria-pressed="false">Needs done</button></div>
+
 <div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" class="add-task-main" data-add-task>＋ Add task</button></div>
-<div class="folder-tabs" id="doingTabs"><button type="button" data-doing-tab="mine" aria-pressed="true">Doing Now</button><button type="button" data-doing-tab="attention" aria-pressed="false">Needs done</button></div>
+
 <div id="doingList"></div>
 <div id="attentionList" hidden></div>
 <button type="button" id="doingAdd" class="add-task-main">＋ Add task</button>
 </section>
 <section id="now" class="page">
-<h2>Active tasks</h2><p id="allTaskSummary" class="meta" role="status"></p><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" class="add-task-main" data-add-task>＋ Add task</button></div>
+<h2>Tasks</h2><p id="allTaskSummary" class="hide" role="status"></p><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" class="add-task-main" data-add-task>＋ Add task</button></div>
 <form id="add" hidden>
 <input id="task" placeholder="Add something that needs doing…" maxlength="180">
 <input id="area" list="categories" value="General" aria-label="Task category" placeholder="Room or category">
@@ -267,7 +224,7 @@
 <button type="button" class="add-task-main bottom-add" data-add-task>＋ Add task</button>
 </section>
 
-<section id="side" class="page hide"><h2>Side quests</h2><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" class="add-task-main" data-add-task>＋ Add task</button></div>
+<section id="side" class="page hide"><h2>Side quests</h2><div id="sideTabs" class="folder-tabs" aria-label="Sidequest tabs"></div><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" class="add-task-main" data-add-task>＋ Add sidequest</button></div>
 <form id="addSide" hidden>
 <input id="sideText" placeholder="Park a side quest…">
 <input id="sideArea" list="categories" value="General" aria-label="Side quest category" placeholder="Room or category">
@@ -277,19 +234,15 @@
 </select>
 <button>Park</button>
 </form>
-<div class="filters folder-tabs">
-<button data-filter="all" class="on" aria-pressed="true">All</button>
-<button data-filter="organisation">Organisation</button>
-<button data-filter="hobby">Hobby / craft</button>
-</div>
+
 <div id="sideList">
 </div>
-<button type="button" class="add-task-main bottom-add" data-add-task>＋ Add task</button>
+<button type="button" class="add-task-main bottom-add" data-add-task>＋ Add sidequest</button>
 </section>
 <section id="library" class="page hide">
-<h2>Reusable jobs</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="true">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="false">Recurring</button></div>
-<p>Add a fresh task whenever you need it. These do not repeat automatically.</p>
-<div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" id="openReusable" class="add-task-main" data-open-reusable>＋ Add reusable task</button></div><dialog id="reusableDialog"><h2>Add reusable task</h2><form id="addReusable" class="editor"><label>Task name<input name="text" required maxlength="180" placeholder="New reusable task…"></label><label>Room<select name="room" required aria-label="Room"></select></label><div class="dialog-actions"><button>Add reusable task</button><button type="button" onclick="this.closest('dialog').close()">Cancel</button></div></form></dialog>
+<h2>Recurring &amp; reusable tasks</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="true">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="false">Recurring</button></div>
+
+<div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><button type="button" id="openReusable" class="add-task-main" data-open-reusable>＋ Add reusable task</button></div><dialog id="reusableDialog" tabindex="-1"><h2>Add reusable task</h2><form id="addReusable" class="editor"><label>Task name<input name="text" required maxlength="180" placeholder="New reusable task…"></label><label>Room<select name="room" required aria-label="Room"></select></label><label class="checkbox-label"><input name="doingNow" type="checkbox">Add to Doing Now</label><div class="dialog-actions"><button>Add reusable task</button><button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button></div></form></dialog>
 <label>Show reusable tasks<select id="templateRoomFilter"><option value="">All rooms</option></select></label>
 <div id="templateList">
 </div>
@@ -302,7 +255,7 @@
 </section>
 <section id="rooms" class="page hide">
 <h2>Your rooms</h2>
-<p>Make this house yours. Archived rooms keep their tasks and history.</p>
+
 <form id="addRoom">
 <input id="roomName" required maxlength="100" placeholder="Room name" aria-label="New room name">
 <button>Add room</button>
@@ -313,13 +266,13 @@
 <section id="wins" class="page hide">
 <h2>Task Data</h2>
 <div class="folder-tabs" id="dataTabs" aria-label="Task Data sections"><button type="button" data-data-tab="overview" aria-pressed="true">Overview</button><button type="button" data-data-tab="details" aria-pressed="false">Details</button><button type="button" data-data-tab="calendar" aria-pressed="false">Calendar</button></div>
-<div id="dataFilters" class="data-filters"><label>Set time<select id="statsPeriod"><option value="today">Today</option><option value="week">This week</option><option value="21">Last 3 weeks</option><option value="month" selected>This month</option><option value="28">Last 4 weeks</option><option value="90">Last 90 days</option><option value="0">All recorded time</option></select></label><label>Graph by<select id="trendGranularity"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option></select></label><label>Person<select id="statsPerson"><option value="">Everyone</option></select></label></div>
+<div id="dataCategoryTabs" data-data-panel="details" hidden></div><div id="dataFilters" class="data-filters"><label>Set time<select id="statsPeriod"><option value="today">Today</option><option value="week">This week</option><option value="21">Last 3 weeks</option><option value="month" selected>This month</option><option value="28">Last 4 weeks</option><option value="90">Last 90 days</option><option value="0">All recorded time</option></select></label><label>Graph by<select id="trendGranularity"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option></select></label><label>Person<select id="statsPerson"><option value="">Everyone</option></select></label></div>
 <div id="winsList" data-data-panel="overview"></div>
 <div id="dataStats" data-data-panel="details" hidden></div>
 <div id="dataCalendar" data-data-panel="calendar" hidden></div>
 </section>
 <section id="rewards" class="page hide">
-<h2>The mystery shelf</h2>
+<h2>The mystery shelf</h2><p id="totalRewardsFound" class="shelf-total"></p>
 <p id="rewardShelfStatus" role="status">
 </p>
 <button id="revealNext" class="reveal-button">Open a mystery</button>
@@ -356,7 +309,7 @@
 <label>Room name<input name="name" required maxlength="100">
 </label>
 <button>Save room name</button>
-<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+<button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
 </form>
 </dialog>
 <dialog id="confirmAction">
@@ -364,7 +317,7 @@
 </p>
 <button id="confirmAll" hidden>Delete from all rooms</button>
 <button id="confirmYes">Delete template</button>
-<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+<button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
 </dialog>
 <dialog id="calendarEventDialog">
 <h2>Add to calendar</h2>
@@ -403,7 +356,7 @@
 <option value="14">
 <option value="30">
 </datalist>
-<p class="meta">Age counts from when the task was added. The allowance counts from when the task becomes active.</p>
+
 <label>Room mess impact<select name="impact">
 <option value="small">Small</option>
 <option value="normal">Normal</option>
@@ -443,45 +396,39 @@
 <label>
 <input type="checkbox" name="weekday" value="6">Sat</label>
 </div>
-<p class="meta">Completing a recurring task records a completion and schedules the next occurrence from that completion day. Future tasks stay in their rooms and become active on their scheduled day.</p>
+
 </fieldset>
 </div></details>
+<label id="editQuestTab" hidden>Tab<select name="questType"></select></label><div id="editTaskImage" hidden></div>
 <button>Save changes</button>
-<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+<button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
 </form>
 </dialog>
-<dialog id="quickTask">
+<dialog id="quickTask" tabindex="-1">
 <h2>Add a task</h2>
 <div class="folder-tabs" id="quickTaskTabs"><button type="button" data-quick-tab="normal" aria-pressed="true">Normal</button><button type="button" data-quick-tab="recurring" aria-pressed="false">Recurring</button><button type="button" data-quick-tab="saved" aria-pressed="false">Saved tasks</button></div>
 <form id="quickTaskForm" class="editor">
 <label>Room<select name="room" required></select></label>
-<label data-normal-field>Task<input name="text" required maxlength="180" placeholder="A small next step…" list="quickSuggestions">
+<label data-normal-field>Task<input name="text" required maxlength="180" placeholder="A small next step…">
 </label>
 <label data-normal-field>Subtasks<textarea name="subtasks" rows="2" placeholder="One subtask per line"></textarea></label>
-<datalist id="quickSuggestions">
-</datalist>
+<datalist id="quickSuggestions" hidden></datalist>
 
 <section id="quickSavedMultiple" hidden>
 <h3>Saved tasks</h3>
-<p>Choose a room, tick the tasks you want, then press Add selected tasks.</p>
+
 <button type="button" id="quickSavedAll">Add all available saved tasks</button>
 <p id="quickSavedEmpty" class="meta"></p><div class="saved-task-options"></div>
 </section>
 <details class="optional-section" id="quickTaskOptions"><summary>Options</summary><div class="optional-fields">
-<label data-normal-field>Reusable tasks for this room<select name="template">
+<label data-normal-field data-task-only>Reusable tasks for this room<select name="template">
 <option value="">Choose a reusable task…</option>
 </select>
 </label>
 <label class="checkbox-label"><input type="checkbox" name="important">Needs attention</label>
 <label>Assigned to<select name="assignee"><option value="">Anyone</option></select>
 </label>
-<label>When<select name="bucket">
-<option value="now">Do Now</option>
-
-
-<option value="side">Side Quest</option>
-</select>
-</label>
+<input type="hidden" name="bucket" value="now">
 <label>Mess impact<select name="impact">
 <option value="small">Small</option>
 <option value="normal" selected>Normal</option>
@@ -489,7 +436,7 @@
 <option value="none">None</option>
 </select>
 </label>
-<label class="checkbox-label"><input type="checkbox" name="doingNow">Also add to Doing Now</label>
+
 <div id="quickRepeat" hidden>
 <label>Repeat every<input name="every" type="number" min="1" max="3650" value="1">
 </label>
@@ -498,35 +445,36 @@
 <option value="days">Days</option>
 </select>
 </label>
-<p>Change the schedule using Edit.</p>
+
 </div>
-<label id="quickSide" hidden>Quest type<select name="questType">
+<label id="quickSide" hidden>Tab<select name="questType">
 <option value="organisation">Organisation</option>
 <option value="hobby">Hobby / craft</option>
 </select>
 </label>
-<label class="checkbox-label" data-normal-field>
+<label class="checkbox-label" data-normal-field data-task-only>
 <input name="reusable" type="checkbox">Save to reusable tasks too</label>
-<label class="checkbox-label" data-normal-field>
+<label class="checkbox-label" data-normal-field data-task-only>
 <input name="allRooms" type="checkbox">All rooms · save a template in every room</label>
 <label id="quickNotifyLabel">Notify household member<select name="notifyRecipient"><option value="">No notification</option></select></label>
-<p class="meta">Only this room gets a task now. Templates are added manually when needed.</p>
+
 </div></details>
+<label class="checkbox-label" data-doing-now><input type="checkbox" name="doingNow">Add to Doing Now</label><label id="quickImageLabel" hidden>Upload image<input name="image" type="file" accept="image/*"></label><p id="quickTaskStatus" role="status"></p>
 <div class="dialog-actions">
 <button type="submit" id="quickSubmit">Add task</button>
-<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+<button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
 </div>
 </form>
 <div id="quickRecurringBody" hidden></div>
 </dialog>
-<dialog id="homelessEditor">
+<dialog id="homelessEditor" tabindex="-1">
 <h2>Homeless item</h2>
 <form id="homelessForm" class="editor">
 <label>Item<input name="text" required maxlength="180">
 </label>
 <div class="dialog-actions">
 <button>Save item</button>
-<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+<button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
 </div>
 </form>
 </dialog>
@@ -535,30 +483,69 @@
 <div class="more-actions">
 <button data-open="now">Active tasks</button><button data-open="library">Recurring &amp; reusable tasks</button><button data-open="imports">Upload tasks</button><button data-open="preferences">Settings &amp; backups</button>
 
-<button data-open="library">♧ Reusable tasks</button>
+
 <button data-open="data">Task data</button>
 <button data-open="rooms">⌂ Manage rooms</button>
 <button data-open="rewards">✦ Mystery Shelf</button>
 <button data-open="other">☷ Household organiser</button>
 <button data-open="notes">✎ House notes</button>
 <button data-open="calendar">📅 Calendar</button>
-<button id="backupShortcut">Settings &amp; backups</button><button id="connectionShortcut">Account, Supabase &amp; sharing</button>
+<button id="backupShortcut" hidden>Settings &amp; backups</button><button id="connectionShortcut" hidden>Account &amp; sync</button>
 </div>
 <form method="dialog">
 <button>Close</button>
 </form>
 </dialog>
-<section id="preferences" class="page hide"><div class="settings-heading"><h2>Settings</h2><button id="closeSettings" type="button">Close settings</button></div><section class="settings-backups"><h3>Backup &amp; tasks</h3><p id="backupStatus" role="status"></p><button id="export">Export board backup</button>
+<section id="preferences" class="page hide"><div class="settings-heading"><h2>Settings</h2><button id="closeSettings" type="button">Close settings</button></div><div class="folder-tabs" aria-label="Settings tabs"><button type="button" data-settings-tab="general" aria-pressed="true">Settings</button><button type="button" data-settings-tab="account" aria-pressed="false">Account &amp; sync</button></div><div id="generalSettings" data-settings-panel="general"><section class="settings-backups"><h3>Backup &amp; tasks</h3><p id="backupStatus" role="status"></p><button id="export">Export board backup</button>
 <label>Import board backup<input id="import" type="file" accept="application/json,.json">
 </label>
-<button data-open="imports">Upload tasks from CSV</button></section><h3>View &amp; characters</h3><label class="checkbox-label"><input id="simpleView" type="checkbox">Simplified view</label><p>Plain room lists and tasks, without illustrations or characters.</p><label>Character dialogue<select id="snarkLevel"><option value="off">Off</option><option value="gentle">Gentle teasing</option><option value="sharp">Extra snark</option></select></label></section>
-<section id="recurring" class="page hide"><h2>Recurring tasks</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="false">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="true">Recurring</button></div><p>Each room has its own completion schedule. Paused tasks do not become overdue or add mess.</p><button class="add-task-main" data-add-task>Add task</button><label>Room<select id="recurringRoom"><option value="">All rooms</option></select></label><details class="optional-section" id="recurringScheduleOptions"><summary>Scheduling</summary><div class="optional-fields schedule-tools"><button id="roomSchedule">Schedule tasks by room</button><button id="spreadTasks">Preview spread-out schedule</button><button id="pauseAll">Pause all for a holiday</button><button id="resumeAll">Resume paused tasks</button></div></details><button id="undoSchedule" disabled hidden>Undo schedule change</button><p id="recurringNotice" role="status"></p><div id="recurringStatusTabs" class="folder-tabs"><button type="button" data-recurring-status="needs" aria-pressed="true">Needs done now!</button><button type="button" data-recurring-status="ready" aria-pressed="false">Ready to do</button><button type="button" data-recurring-status="later" aria-pressed="false">Not yet</button></div><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button></div><div id="recurringList"></div><button class="add-task-main bottom-add" data-add-task>Add task</button></section>
-<section id="imports" class="page hide"><h2>Upload tasks</h2><p>Add new tasks without replacing your existing list. For matching active tasks in the same room, you choose whether to skip or add another copy.</p><a href="task-upload-template.csv" download>Download CSV template</a> · <a href="TASK-UPLOAD-GUIDE.md" download>Download instructions</a><label>Choose CSV file<input id="taskUpload" type="file" accept=".csv,text/csv"></label><p id="importNotice" role="status"></p><div id="importPreview"></div><button id="applyImport" disabled>Add these tasks</button><button id="undoImport" disabled>Undo last import</button></section>
+<button data-open="imports">Upload tasks from CSV</button></section><h3>View &amp; characters</h3><label class="checkbox-label"><input id="simpleView" type="checkbox">Simplified view</label><label>Character dialogue<select id="snarkLevel"><option value="off">Off</option><option value="gentle">Gentle teasing</option><option value="sharp">Extra snark</option></select></label></div><section id="setup" data-settings-panel="account" class="card" hidden>
+<h3>Account &amp; sync</h3>
+
+
+<label>Supabase Project URL<input id="url">
+</label>
+<label>Public publishable / anon key<input id="key">
+</label>
+<button id="saveCfg">Save & connect</button>
+<button id="cancel" hidden>Close</button>
+<p id="account">Your board stays on this device until you sign in.</p>
+<label>Email<input id="email" type="email" autocomplete="email">
+</label>
+<button id="signIn">Email me a sign-in link</button>
+<button id="signOut">Sign out</button>
+<button type="button" id="enableNotifications">Enable external notifications</button>
+<button type="button" id="disableNotifications">Turn off external notifications</button>
+<p id="notificationSetupStatus" class="meta" role="status">In-app task alerts work automatically. Device alerts are optional.</p>
+<section id="houseSharing" aria-labelledby="sharingHeading">
+<h3 id="sharingHeading">Share my house</h3>
+<p>Each person signs in with their own email. Members can add, edit and complete tasks in the shared house.</p>
+<button type="button" id="loadHouses">Refresh house list</button>
+<label>House<select id="sharedHouseChoice" aria-label="Choose house"><option value="">My house</option></select></label>
+<button type="button" id="openSharedHouse">Open selected house</button>
+<p id="currentHouseLabel">Current house: My house</p>
+<button type="button" id="createHouseInvite">Create invite for my house</button>
+<button type="button" id="cancelHouseInvite">Cancel unused invite</button>
+<label id="houseInviteResult" hidden>Send this code to the person you want to invite<input id="houseInviteCode" readonly></label>
+<p>Invites are single-use and expire after 7 days. Send the code yourself; no email is sent automatically.</p>
+<label>Invite code<input id="joinHouseCode" autocomplete="off" spellcheck="false"></label>
+<button type="button" id="joinHouse">Join house</button>
+<h4>People with access to my house</h4>
+<div id="houseMembers"></div>
+<p id="sharingStatus" role="status"></p>
+<p id="sharingSetupHelp" hidden>House sharing needs its database update. <a href="supabase-sharing.sql" download>Download the sharing update</a> and run it in your existing Supabase project’s SQL Editor, then try again.</p>
+</section>
+<p id="msg" role="status">
+</p>
+</section>
+</section>
+<section id="recurring" class="page hide"><h2>Recurring &amp; reusable tasks</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="false">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="true">Recurring</button></div><div id="recurringStatusTabs" class="folder-tabs"><button type="button" data-recurring-status="needs" aria-pressed="true">Needs done now!</button><button type="button" data-recurring-status="ready" aria-pressed="false">Ready to do</button><button type="button" data-recurring-status="later" aria-pressed="false">Not yet</button></div><button class="add-task-main" data-add-task>Add task</button><label>Room<select id="recurringRoom"><option value="">All rooms</option></select></label><details class="optional-section" id="recurringScheduleOptions"><summary>Scheduling</summary><div class="optional-fields schedule-tools"><button id="roomSchedule">Schedule tasks by room</button><button id="spreadTasks">Preview spread-out schedule</button><button id="pauseAll">Pause all for a holiday</button><button id="resumeAll">Resume paused tasks</button></div></details><button id="undoSchedule" disabled hidden>Undo schedule change</button><p id="recurringNotice" role="status"></p><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button></div><div id="recurringList"></div><button class="add-task-main bottom-add" data-add-task>Add task</button></section>
+<section id="imports" class="page hide"><h2>Upload tasks</h2><a href="task-upload-template.csv" download>Download CSV template</a> · <a href="TASK-UPLOAD-GUIDE.md" download>Download instructions</a><label>Choose CSV file<input id="taskUpload" type="file" accept=".csv,text/csv"></label><p id="importNotice" role="status"></p><div id="importPreview"></div><button id="applyImport" disabled>Add these tasks</button><button id="undoImport" disabled>Undo last import</button></section>
 <button id="simpleSettings" type="button" aria-label="Settings, character preferences and backups" title="Settings" hidden>⚙</button>
 <div id="featureToast" role="status" aria-live="polite" hidden></div><div id="focusStatus" hidden></div>
 <dialog id="featureDialog"><div id="featureDialogBody"></div><button type="button" onclick="this.closest('dialog').close()">Close</button></dialog>
 </main>
-<script type="module" src="app.js?v=cohesion-20261008-v6">
+<script type="module" src="app.js?v=streamline-20261009-v2">
 </script>
 </body>
 </html>

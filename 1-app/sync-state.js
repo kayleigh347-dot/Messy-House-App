@@ -11,7 +11,7 @@ export function openHouseState(remote,cached,owner,houseId){
 export function merge(base,local,remote){
   base=normalize(base);local=normalize(local);remote=normalize(remote);
   const out=structuredClone(remote);
-  for(const key of ['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings']){
+  for(const key of ['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs']){
     const before=new Map((base[key]||[]).map(x=>[x.id,x]));
     const mine=new Map((local[key]||[]).map(x=>[x.id,x]));
     const result=new Map((remote[key]||[]).map(x=>[x.id,structuredClone(x)]));

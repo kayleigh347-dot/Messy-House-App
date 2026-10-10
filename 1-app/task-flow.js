@@ -44,9 +44,13 @@ export function captureCompletion(task,at,winId,nextTaskId=null,previous={}){
  task.completedAt=at;task.completionUndo={winId,nextTaskId,previous};
 }
 
-export function undoCompletion(state,task){
+export function undoCompletion(state,task,{fromChild=false}={}){
  if(!task?.done)return false;
- const parent=[...state.tasks,...(state.side||[])].find(t=>t.id===task.parentId);if(parent?.done)undoCompletion(state,parent);
+ const items=[...state.tasks,...(state.side||[])],undoState=task.completionUndo||{};
+ if(undoState.nextTaskId&&[...items.filter(item=>item.id===undoState.nextTaskId),...descendants(items,undoState.nextTaskId)].some(item=>item.done))return false;
+ const family=descendants(items,task.id),record=state.wins.find(win=>win.taskId===task.id);
+ if(record?.aggregate&&!fromChild){const latest=family.filter(item=>item.done&&!items.some(child=>child.parentId===item.id)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)))[0];if(latest)return undoCompletion(state,latest)}
+ const parent=items.find(t=>t.id===task.parentId);if(parent?.done&&!undoCompletion(state,parent,{fromChild:true}))return false;
  const undo=task.completionUndo||{};
  state.wins=state.wins.filter(win=>win.id!==(undo.winId||'win-'+task.id)&&win.taskId!==task.id);
  if(undo.nextTaskId){const removed=new Set([undo.nextTaskId,...descendants(state.tasks,undo.nextTaskId).map(t=>t.id)]);state.tasks=state.tasks.filter(item=>!removed.has(item.id))}

@@ -1,5 +1,5 @@
 export const EVERY=5;
-import {archivedCompletionCount} from './completion-history.js';
+import {archivedCompletionCount,completionPoints} from './completion-history.js';
 export const prizes=[
  {name:'Mooncat',icon:'🐈‍⬛',colour:'lavender',title:'A tiny guardian of unfinished things',treat:'The dust has filed a formal complaint. Excellent work.'},
  {name:'Pocket Dragon',icon:'🐉',colour:'peach',title:'Collector of small victories',treat:'A tiny dragon, an enormous fan of your competence.'},
@@ -17,12 +17,12 @@ export const prizes=[
 export function migrateRewards(state){
  state.settings ||= [];state.rewards ||= [];
  let policy=state.settings.find(x=>x.id==='reward-policy');
- if(!policy){const wins=new Set(state.wins.map(w=>w.id)).size+archivedCompletionCount(state);policy={id:'reward-policy',baselineWins:wins,baselineEarned:Math.max(Math.floor(wins/3),0,...state.rewards.map(r=>r.index||0))};state.settings.push(policy)}
+ if(!policy){const wins=new Set(state.wins.filter(completionPoints).map(w=>w.id)).size+archivedCompletionCount(state);policy={id:'reward-policy',baselineWins:wins,baselineEarned:Math.max(Math.floor(wins/3),0,...state.rewards.map(r=>r.index||0))};state.settings.push(policy)}
  const progress=rewardProgress(state);
  for(const index of progress.available)state.rewards.push({id:'reward-'+index,index,prizeIndex:((index-1)*7)%prizes.length,edition:Math.floor((index-1)/prizes.length)+1,at:state.wins[0]?.at||new Date(0).toISOString()});
 }
 export function rewardProgress(state){
- const wins=new Set(state.wins.map(w=>w.id)).size+archivedCompletionCount(state),policy=state.settings?.find(x=>x.id==='reward-policy');
+ const wins=new Set(state.wins.filter(completionPoints).map(w=>w.id)).size+archivedCompletionCount(state),policy=state.settings?.find(x=>x.id==='reward-policy');
  const baseline=policy?.baselineWins||0,earned=(policy?.baselineEarned||0)+Math.floor(Math.max(0,wins-baseline)/EVERY);
  const claimed=new Set((state.rewards||[]).map(r=>r.id));
  const available=Array.from({length:earned},(_,i)=>i+1).filter(n=>!claimed.has('reward-'+n));

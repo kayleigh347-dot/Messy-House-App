@@ -1,7 +1,7 @@
 import {activeTask} from './task-flow.js?v=purple-subtasks-1';
-import {normalizeSubtasks} from './subtasks.js';
+import {normalizeSubtasks,childrenOf,rootTask,repeatChildren} from './subtasks.js';
 import {migrateRewards} from './rewards.js';
-import {creditLegacyCompletions,archiveOldCompletions} from './completion-history.js';
+import {creditLegacyCompletions,archiveOldCompletions,enrichCompletionRecords} from './completion-history.js';
 export const DAY=86400000;
 export function taskAge(t,now=Date.now()){
  const created=Date.parse(t.created);
@@ -51,7 +51,7 @@ export const INITIAL_ROOMS=[
 export const roomId=name=>'area-'+encodeURIComponent(name.trim().toLowerCase());
 export function normalize(input){
  const state=structuredClone(input);
- for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings'])state[key]||=[];
+ for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs'])state[key]||=[];
  state.rooms ||= INITIAL_ROOMS.map(([id,name,guardian],order)=>({id:'room-'+id,name,guardian,order,archived:false}));
  for(const key of ['tasks','side','wins','templates','homeless'])state[key].forEach((t,index)=>{
   const name=typeof t.area==='string'&&t.area.trim()?t.area.trim():'General';
@@ -65,6 +65,7 @@ export function normalize(input){
   if(!TASK_PRIORITIES.includes(t.priority))t.priority='mid';
  });
  for(const key of ['tasks','side'])normalizeSubtasks(state[key]);
+ completeReadyParents(state);
  // Retain an overloaded room's scale until its current mess is cleared.
  for(const room of state.rooms){
   const mess=roomMess(state,room.id);
@@ -73,14 +74,15 @@ export function normalize(input){
  const doing=state.tasks.filter(t=>t.doingNow).sort((a,b)=>(a.doingNowOrder??a.order??0)-(b.doingNowOrder??b.order??0));
  doing.forEach((task,index)=>{if(!Number.isFinite(task.doingNowOrder))task.doingNowOrder=index});
  creditLegacyCompletions(state);
+ enrichCompletionRecords(state);
  archiveOldCompletions(state);
  migrateRewards(state);
- state.schemaVersion=6;
+ state.schemaVersion=7;
  return state;
 }
 export function validateV2(board){
- for(const key of ['rooms','templates','homeless'])if(board[key]!==undefined){
-  if(!Array.isArray(board[key])||board[key].some(x=>!x||typeof x.id!=='string'||typeof x[key==='rooms'?'name':'text']!=='string'))throw new Error('Backup contains invalid '+key+'.');
+ for(const key of ['rooms','templates','homeless','sideTabs'])if(board[key]!==undefined){
+  if(!Array.isArray(board[key])||board[key].some(x=>!x||typeof x.id!=='string'||typeof x[['rooms','sideTabs'].includes(key)?'name':'text']!=='string'))throw new Error('Backup contains invalid '+key+'.');
   if(new Set(board[key].map(x=>x.id)).size!==board[key].length)throw new Error('Backup contains duplicate '+key+'.');
  }
  for(const t of [...board.tasks,...(board.templates||[])]){
@@ -153,4 +155,20 @@ export function roomMess(st,roomId,now=Date.now()){
  const capacity=Math.max(thresholds.disaster,Number.isFinite(stored)?stored:0,score);
  const scaledScore=score/capacity*thresholds.disaster;
  return {score,capacity,percent:Math.min(100,Math.round(score/capacity*1000)/10),count:tasks.length,state:scaledScore>=thresholds.disaster?'DISASTER':scaledScore>=thresholds.messy?'MESSY':score>=thresholds.clean?'CLEAN':'SPOTLESS'};
+}
+
+// Also settle parents after two devices finish different final subtasks concurrently.
+export function completeReadyParents(state){
+ for(const kind of ['tasks','side']){
+  const items=state[kind];let settled=true;
+  while(settled){settled=false;for(const task of [...items]){
+   if(task.done)continue;const children=childrenOf(items,task.id);if(!children.length||!children.every(child=>child.done))continue;
+   const records=children.map(child=>state.wins.find(win=>win.taskId===child.id||win.id==='win-'+child.id)),dates=children.map((child,index)=>Date.parse(child.completedAt||records[index]?.at));if(dates.some(date=>!Number.isFinite(date)))continue;
+   const index=dates.indexOf(Math.max(...dates)),at=new Date(dates[index]).toISOString(),actor=records[index],root=rootTask(items,task),due=Date.parse(task.nextDue||task.dueDate),previous={hasNextDue:Object.hasOwn(task,'nextDue'),nextDue:task.nextDue,hasLastDone:Object.hasOwn(task,'lastDone'),lastDone:task.lastDone};
+   const record={id:'win-'+task.id,taskId:task.id,text:task.text,roomId:task.roomId,area:task.area,kind:kind==='side'?'side':'task',at,parentId:task.parentId||null,rootTaskId:root.id,rootText:root.text,recurrence:task.recurrence||null,rootRecurrence:root.recurrence||null,sourceTemplateId:task.sourceTemplateId||null,rootSourceTemplateId:root.sourceTemplateId||null,aggregate:true,points:0,dueAt:Number.isFinite(due)?new Date(due).toISOString():null,overdueMs:Number.isFinite(due)?Math.max(0,dates[index]-due):null,completedBy:actor?.completedBy||null,completedByName:actor?.completedByName||null};
+   if(!state.wins.some(win=>win.id===record.id))state.wins.unshift(record);task.done=true;task.completedAt=at;task.lastDone=at;let next=null;
+   if(kind==='tasks'&&!task.parentId&&task.recurrence){next=scheduleNext(task,new Date(at));if(next&&!items.some(item=>item.id===next.id))items.push(next,...repeatChildren(items,task,next))}
+   task.completionUndo={winId:record.id,nextTaskId:next?.id||null,previous};settled=true;
+  }}
+ }
 }

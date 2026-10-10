@@ -1,5 +1,5 @@
 import {periodStart} from './periods.js';
-import {uniqueWins,completionPeople} from './completion-history.js';
+import {uniqueWins,completionPeople,completionPoints} from './completion-history.js';
 
 const dateKey=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const bucketKey=(date,unit)=>{
@@ -16,7 +16,7 @@ export function completionTrend(state,unit='day',now=new Date(),roomId='',option
  const people=completionPeople(state),byName=pattern=>people.find(person=>pattern.test(person.name||'')),chosen=[byName(/^kayleigh/i),byName(/^(andy|andrew)/i)];
  const rows=chosen.map((person,index)=>({id:person?.id||'',name:person?.name||['Kayleigh','Andy'][index],counts:buckets.map(()=>0)}));
  const positions=new Map(buckets.map((bucket,index)=>[bucket.key,index]));
- for(const win of uniqueWins(state)){if(roomId&&win.roomId!==roomId)continue;const date=new Date(win.at);if(+date>+now||(hasPeriod&&+date<start)||(options.personId&&win.completedBy!==options.personId))continue;const row=rows.find(item=>item.id&&item.id===win.completedBy);if(!row||!Number.isFinite(+date))continue;const position=positions.get(bucketKey(date,unit));if(position!==undefined)row.counts[position]++}
+ for(const win of uniqueWins(state).filter(completionPoints)){if(roomId&&win.roomId!==roomId)continue;const date=new Date(win.at);if(+date>+now||(hasPeriod&&+date<start)||(options.personId&&win.completedBy!==options.personId))continue;const row=rows.find(item=>item.id&&item.id===win.completedBy);if(!row||!Number.isFinite(+date))continue;const position=positions.get(bucketKey(date,unit));if(position!==undefined)row.counts[position]++}
  if(unit==='month')for(const archived of state.completionArchive||[]){if(roomId&&archived.roomId!==roomId)continue;if(options.personId&&archived.completedBy!==options.personId)continue;if(hasPeriod&&String(options.period)!=='0'&&Date.parse(archived.month+'-01')<start)continue;const row=rows.find(item=>item.id&&item.id===archived.completedBy),position=positions.get(archived.month);if(row&&position!==undefined)row.counts[position]+=Number(archived.count)||0}
  return {buckets,rows:options.personId?rows.filter(row=>row.id===options.personId):rows};
 }

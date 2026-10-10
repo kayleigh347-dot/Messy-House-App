@@ -1,5 +1,5 @@
 import {periodStart} from './periods.js';
-import {uniqueWins,hasRecordedPerson,displayPersonName} from './completion-history.js';
+import {uniqueWins,hasRecordedPerson,displayPersonName,completionPoints} from './completion-history.js';
 const clean=value=>String(value||'').trim();
 
 export function personName(email=''){
@@ -24,7 +24,7 @@ export function householdScoreboard(state,period=0){
   if(period!=='0'&&period!==0&&(!Number.isFinite(Date.parse(win.at))||Date.parse(win.at)<periodStart(period)||Date.parse(win.at)>Date.now()))continue;
   if(!hasRecordedPerson(win))continue;
   if(!people.has(win.completedBy))people.set(win.completedBy,{id:win.completedBy,name:win.completedByName||'Household member',points:0});
-  people.get(win.completedBy).points++;
+  people.get(win.completedBy).points+=completionPoints(win);
  }
  if(period==='0'||period===0)for(const row of state.completionArchive||[]){if(!row.completedBy)continue;if(!people.has(row.completedBy))people.set(row.completedBy,{id:row.completedBy,name:row.completedByName||'Former household member',points:0});people.get(row.completedBy).points+=row.count||0}
  return [...people.values()].sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));

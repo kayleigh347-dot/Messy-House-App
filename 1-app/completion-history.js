@@ -15,7 +15,7 @@ export function archiveOldCompletions(state,now=Date.now()){
   if(!Number.isFinite(previous)||at>previous){
    const month=new Date(at).toISOString().slice(0,7),personId=hasRecordedPerson(win)?win.completedBy:'',roomId=win.roomId||'';
    const id=`archive:${month}:${roomId}:${personId}`,row=groups.get(id)||{id,month,roomId,completedBy:personId,completedByName:win.completedByName||'',count:0};
-   row.count++;groups.set(id,row);archived++;
+   row.count+=completionPoints(win);if(row.count)groups.set(id,row);archived++;
   }
  }
  state.wins=retained;state.completionArchive=[...groups.values()];
@@ -41,4 +41,38 @@ export function completionPeople(state){
  for(const win of uniqueWins(state))if(hasRecordedPerson(win)&&!people.has(win.completedBy))people.set(win.completedBy,{id:win.completedBy,name:win.completedByName||'Former household member'});
  for(const row of state.completionArchive||[])if(row.completedBy&&!people.has(row.completedBy))people.set(row.completedBy,{id:row.completedBy,name:row.completedByName||'Former household member'});
  return [...people.values()];
+}
+
+// Preserve the main task relationship even after old completed tasks are pruned.
+export function enrichCompletionRecords(state){
+ const tasks=new Map([...(state.tasks||[]),...(state.side||[])].map(task=>[task.id,task]));
+ for(const win of state.wins||[]){
+  const task=tasks.get(win.taskId||win.id.replace(/^win-/,''));if(!task)continue;
+  let root=task;const seen=new Set();while(root.parentId&&!seen.has(root.id)){seen.add(root.id);const parent=tasks.get(root.parentId);if(!parent)break;root=parent}
+  win.parentId??=task.parentId||null;win.rootTaskId??=root.id;win.rootText??=root.text;win.rootRecurrence??=root.recurrence||null;win.rootSourceTemplateId??=root.sourceTemplateId||null;
+  const children=[...tasks.values()].filter(child=>child.parentId===task.id);
+  if(children.length){win.aggregate=true;win.points=0}
+ }
+}
+export const completionPoints=win=>win.aggregate||win.points===0?0:1;
+export function completionGroups(state,{roomId='',personId='',start=-Infinity,end=Infinity,category='all'}={}){
+ const all=uniqueWins(state),groups=new Map(),tasks=new Map([...(state.tasks||[]),...(state.side||[])].map(task=>[task.id,task]));
+ for(const win of all){
+  const task=tasks.get(win.taskId||win.id.replace(/^win-/,''));let root=task;const seen=new Set();while(root?.parentId&&!seen.has(root.id)){seen.add(root.id);root=tasks.get(root.parentId)||root;if(seen.has(root.id))break}
+  const rootId=win.rootTaskId||root?.id||win.taskId||win.id.replace(/^win-/,''),rootWin=all.find(item=>(item.taskId||item.id.replace(/^win-/,''))===rootId&&!item.parentId);
+  const saved=state.templates?.find(template=>template.sourceId===rootId||template.sourceId===rootWin?.id);
+  if(!groups.has(rootId))groups.set(rootId,{id:rootId,text:win.rootText||root?.text||rootWin?.text||win.text,roomId:win.roomId||root?.roomId,area:win.area,recurrence:win.rootRecurrence||root?.recurrence||rootWin?.recurrence,sourceTemplateId:win.rootSourceTemplateId||root?.sourceTemplateId||rootWin?.sourceTemplateId||saved?.id,rootWin,records:[]});groups.get(rootId).records.push(win);
+ }
+ return [...groups.values()].map(group=>{
+  const records=group.records.filter(win=>Date.parse(win.at)>=start&&Date.parse(win.at)<=end&&(!personId||win.completedBy===personId)&&(!personId||completionPoints(win)));
+  const children=records.filter(win=>(win.taskId||win.id.replace(/^win-/,''))!==group.id),direct=records.find(win=>(win.taskId||win.id.replace(/^win-/,''))===group.id);
+  const type=group.recurrence?'recurring':group.sourceTemplateId?'reusable':'other';
+  return {...group,category:type,shownRecords:records,children,direct,at:records.map(win=>win.at).sort().at(-1),points:records.reduce((sum,win)=>sum+completionPoints(win),0)};
+ }).filter(group=>group.shownRecords.length&&(!roomId||group.roomId===roomId)&&(category==='all'||group.category===category)).sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+}
+export function deleteCompletionGroup(state,group){
+ const ids=new Set(group.records.map(win=>win.id)),taskIds=new Set(group.records.map(win=>win.taskId||win.id.replace(/^win-/,'')));
+ state.wins=state.wins.filter(win=>!ids.has(win.id));
+ for(const key of ['tasks','side'])state[key]=(state[key]||[]).filter(task=>!(task.done&&taskIds.has(task.id)));
+ return ids.size;
 }

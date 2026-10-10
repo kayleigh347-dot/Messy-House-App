@@ -8,7 +8,6 @@ export function initNavigation(render,initial='house'){
  onRoute=render;
  window.addEventListener('popstate',e=>{
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());
-  document.querySelector('#setup')?.classList.add('hide');
   const route=e.state?.mc?e.state:{mc:true,page:'house',room:null};
   onRoute(route);
  });
