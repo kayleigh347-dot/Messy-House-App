@@ -13,4 +13,3 @@ This folder is the only working copy for files used by the GitHub Pages site.
 Before editing this repository, save its current working files to `../backup/previous-version/`, excluding `.git` and generated or downloaded folders. Build the replacement backup in a temporary folder and verify it before removing the older backup.
 
 Keep only that one previous-version backup. This repository remains the current app folder, and Git history provides access to older versions. Do not create numbered edit copies, retry copies, or another active source folder.
-Add rolling backup rule
