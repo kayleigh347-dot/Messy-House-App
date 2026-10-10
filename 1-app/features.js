@@ -1,7 +1,7 @@
 import {scheduleFields,scheduleSnapshot,recurringScheduleTasks,nextDueDate,setNextDue,schedulePlan,unchangedScheduleTasks} from './recurring-schedule.js?v=schedule-20261010-v1';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {createSymbolCalendar,scheduledCalendarState,roomSymbol,moveCalendarRoom,undoCalendarRoomMove} from './house-calendar.js?v=release-20261010-v3';
-import {initTimer,tickTimer,startFocus} from './focus-timer.js?v=phone-timer-free-20261010-v1';
+import {initTimer,tickTimer,startFocus} from './focus-timer.js?v=automate-fix-20261010-v1';
 export {startFocus};
 import {placeNewTasksFirst,freshTask,nextOccurrence,recurrenceLabel,roomMess,DAY,priorityOrdered} from './v2-state.js?v=new-tasks-first-20261010-v1';
 import {taskDeadline} from './task-extras.js?v=new-tasks-first-20261010-v1';

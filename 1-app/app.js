@@ -8,7 +8,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=new-tasks-first-20261010-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=automate-fix-20261010-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -871,7 +871,7 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=phone-timer-free-20261010-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=automate-fix-20261010-v1").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;

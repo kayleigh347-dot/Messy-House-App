@@ -37,12 +37,27 @@ function addPhoneTimer(body,form){
  form.insertBefore(panel,form.children[1]);const phone=panel.querySelector('[data-phone]'),secret=panel.querySelector('[data-secret]'),account=panel.querySelector('[data-account]'),device=panel.querySelector('[data-device]'),shortcut=panel.querySelector('[data-shortcut]'),status=panel.querySelector('[data-phone-status]'),button=panel.querySelector('[data-phone-start]');
  phone.value=localStorage.getItem('mc-phone-timer-type')||(/iPhone|iPad/.test(navigator.userAgent)?'iphone':'android');secret.value=localStorage.getItem('mc-phone-timer-automate-secret')||'';account.value=localStorage.getItem('mc-phone-timer-automate-account')||'';device.value=localStorage.getItem('mc-phone-timer-automate-device')||'';shortcut.value=localStorage.getItem('mc-phone-timer-shortcut')||'House Timer';
  const update=()=>{panel.querySelector('[data-android]').hidden=phone.value!=='android';panel.querySelector('[data-iphone]').hidden=phone.value!=='iphone';localStorage.setItem('mc-phone-timer-type',phone.value)};phone.onchange=update;update();
+ const saveConnection=()=>{
+  if(!secret.value.trim()||!account.value.trim()||!account.reportValidity()){status.textContent='Set up Automate and enter its secret and Google account first.';panel.querySelector('details').open=true;return false}
+  for(const [name,value] of [['secret',secret.value.trim()],['account',account.value.trim()],['device',device.value.trim()]])localStorage.setItem('mc-phone-timer-automate-'+name,value);
+  return true;
+ };
+ const requestFor=seconds=>new URLSearchParams({secret:secret.value.trim(),to:account.value.trim(),device:device.value.trim(),priority:'normal',payload:String(seconds)});
+ const saveButton=document.createElement('button'),testButton=document.createElement('button');saveButton.type=testButton.type='button';saveButton.textContent='Save connection';testButton.textContent='Test 1-minute timer';panel.querySelector('[data-android]').append(saveButton,testButton);
+ saveButton.onclick=()=>{if(saveConnection())status.textContent='Connection saved on this device.'};
+ testButton.onclick=()=>{
+  if(!saveConnection())return;stopPreview();
+  // A normal form opens the server's real reply, which no-cors fetch cannot read.
+  const testForm=document.createElement('form');testForm.method='POST';testForm.action='https://llamalab.com/automate/cloud/message';testForm.target='_blank';testForm.rel='noopener noreferrer';testForm.enctype='application/x-www-form-urlencoded';
+  for(const [name,value] of requestFor(60)){const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;testForm.append(input)}
+  document.body.append(testForm);testForm.submit();testForm.remove();
+  status.textContent='Test submitted. Automate’s response opens in another tab; check it for an error, then check your phone Clock.';
+ };
  button.onclick=async()=>{if(!form.elements.minutes.reportValidity())return;const seconds=Number(form.elements.minutes.value)*60;stopPreview();
   if(phone.value==='iphone'){const name=shortcut.value.trim();if(!name){status.textContent='Enter your shortcut name.';panel.querySelector('details').open=true;return}localStorage.setItem('mc-phone-timer-shortcut',name);window.location.href='shortcuts://run-shortcut?name='+encodeURIComponent(name)+'&input=text&text='+seconds;status.textContent='Opening Shortcuts. Check that your Clock timer started.';return}
-  if(!secret.value.trim()||!account.value.trim()||!account.reportValidity()){status.textContent='Set up Automate and enter its secret and Google account first.';panel.querySelector('details').open=true;return}
-  for(const [name,value] of [['secret',secret.value.trim()],['account',account.value.trim()],['device',device.value.trim()]])localStorage.setItem('mc-phone-timer-automate-'+name,value);
-  const request=new URLSearchParams({secret:secret.value.trim(),to:account.value.trim(),device:device.value.trim(),priority:'normal',payload:String(seconds)});
+  if(!saveConnection())return;
+  const request=requestFor(seconds);
   button.disabled=true;status.textContent='Sending timer request…';
-  try{await fetch('https://llamalab.com/automate/cloud/message',{method:'POST',body:request,mode:'no-cors',credentials:'omit',referrerPolicy:'no-referrer'});status.textContent='Request sent. Check your phone Clock to confirm it started.'}catch{status.textContent='Could not send the request. Check your connection and try again.'}finally{button.disabled=false}
+  try{await fetch('https://llamalab.com/automate/cloud/message',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:request,mode:'no-cors',credentials:'omit',referrerPolicy:'no-referrer'});status.textContent='Timer request submitted; delivery is not confirmed here. Check your phone Clock. If it has not started, use Test 1-minute timer to see Automate’s response.'}catch{status.textContent='Could not send the request. Check your connection and try again.'}finally{button.disabled=false}
  };
 }
