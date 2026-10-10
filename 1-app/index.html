@@ -413,7 +413,7 @@
 <div class="folder-tabs" id="quickTaskTabs"><button type="button" data-quick-tab="normal" aria-pressed="true">Normal</button><button type="button" data-quick-tab="recurring" aria-pressed="false">Recurring</button><button type="button" data-quick-tab="saved" aria-pressed="false">Saved tasks</button></div>
 <form id="quickTaskForm" class="editor">
 <label>Room<select name="room" required></select></label>
-<label data-normal-field>Task<input name="text" required maxlength="180" placeholder="A small next step…">
+<label data-normal-field>Task<input name="text" required maxlength="180" autocomplete="off" placeholder="A small next step…">
 </label>
 <label data-normal-field>Subtasks<textarea name="subtasks" rows="2" placeholder="One subtask per line"></textarea></label>
 <datalist id="quickSuggestions" hidden></datalist>
@@ -551,7 +551,7 @@
 <div id="featureToast" role="status" aria-live="polite" hidden></div><div id="focusStatus" hidden></div>
 <dialog id="featureDialog"><div id="featureDialogBody"></div><button type="button" onclick="this.closest('dialog').close()">Close</button></dialog>
 </main>
-<script type="module" src="app.js?v=schedule-20261010-v1">
+<script type="module" src="app.js?v=task-input-20261010-v1">
 </script>
 </body>
 </html>
