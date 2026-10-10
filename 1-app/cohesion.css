@@ -234,10 +234,6 @@ main .calendar-room-filter::after{content:"▾";position:absolute;right:12px;poi
 
 dialog[open],#quickTask[open],#featureDialog[open]{box-sizing:border-box;max-height:calc(var(--dialog-height,100dvh) - 24px);top:calc(var(--dialog-offset,0px) + var(--dialog-height,100dvh)/2);bottom:auto;left:0;right:0;margin:0 auto;transform:translateY(-50%)}
 
-/* Doing Now keeps task bodies and subtask controls available. */
-#doing .task-secondary-actions{display:block!important}
-#doing .subtasks>summary{cursor:default;pointer-events:none;list-style:none}
-#doing .subtask-chevron,#doing .task-layout-toggle{display:none!important}
 main .subtask-list>.subtask-card>.body>.task-secondary-actions>.task-quick-actions{display:flex!important}
 .doing-search{display:grid;gap:6px;margin:12px 0}
 .doing-search-result{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0}
@@ -248,8 +244,6 @@ main .subtask-list>.subtask-card>.body>.task-secondary-actions>.task-quick-actio
 body.task-compact-view main #doingList .task .task-quick-actions,
 body.task-compact-view main .subtask-list>.subtask-card .task-footer>.task-quick-actions{display:flex!important}
 
-#doing section.subtasks>h4{font-size:12px;font-weight:500;margin:8px 0;color:inherit}
-#doing .task-heading>strong{cursor:default!important}
 
 #doingTabs [data-doing-tab="laundry"]{background:#684497!important;color:#fff!important;border-color:#cda7ed!important}
 .laundry-panel{max-width:1000px;margin:20px auto;padding:20px;border:1px solid #9874b8;border-radius:18px;background:#29133d;text-align:center}
