@@ -18,14 +18,14 @@ test('Android request uses Automate exact content type and seconds without claim
  const app=setup();await app.fields.get('[data-phone-start]').onclick();const {url,options}=app.request();
  assert.equal(url,'https://llamalab.com/automate/cloud/message');assert.equal(new Request(url,options).headers.get('content-type'),'application/x-www-form-urlencoded');
  assert.equal(options.mode,'no-cors');assert.equal(options.body.get('payload'),'300');assert.equal(options.body.get('to'),'nobody@example.invalid');assert.equal(options.body.get('device'),'My phone');assert.equal(options.body.get('secret'),'dummy-secret');
- assert.match(app.status(),/delivery is not confirmed/);assert.doesNotMatch(app.status(),/Request sent\./);assert.equal(app.fields.get('[data-phone-start]').disabled,false);
+ assert.match(app.status(),/delivery cannot be confirmed/);assert.doesNotMatch(app.status(),/Request sent\./);assert.equal(app.fields.get('[data-phone-start]').disabled,false);
 });
 test('Save connection persists trimmed settings without sending a timer',()=>{
  const app=setup();app.created.find(n=>n.textContent==='Save connection').onclick();
  assert.equal(app.saved.get('mc-phone-timer-automate-secret'),'dummy-secret');assert.equal(app.saved.get('mc-phone-timer-automate-account'),'nobody@example.invalid');assert.equal(app.saved.get('mc-phone-timer-automate-device'),'My phone');assert.equal(app.request(),undefined);assert.match(app.status(),/Connection saved/);
 });
 test('One-minute test opens a form response with the same destination and 60 seconds',()=>{
- const app=setup();app.created.find(n=>n.textContent==='Test 1-minute timer').onclick();const form=app.submitted();
+ const app=setup();app.created.find(n=>n.textContent==='Check connection response').onclick();const form=app.submitted();
  assert.equal(form.action,'https://llamalab.com/automate/cloud/message');assert.equal(form.method,'POST');assert.equal(form.enctype,'application/x-www-form-urlencoded');assert.equal(form.target,'_blank');assert.equal(form.rel,'noopener noreferrer');
  assert.deepEqual(Object.fromEntries(form.children.map(n=>[n.name,n.value])),{secret:'dummy-secret',to:'nobody@example.invalid',device:'My phone',priority:'normal',payload:'60'});
  assert.match(app.status(),/check it for an error/);
@@ -33,4 +33,8 @@ test('One-minute test opens a form response with the same destination and 60 sec
 test('Invalid settings prevent requests and network failures restore the button',async()=>{
  const missing=setup();missing.fields.get('[data-secret]').value=' ';await missing.fields.get('[data-phone-start]').onclick();assert.equal(missing.request(),undefined);assert.equal(missing.fields.get('details').open,true);
  const failed=setup(async()=>{throw new Error('offline')});await failed.fields.get('[data-phone-start]').onclick();assert.match(failed.status(),/Could not send/);assert.equal(failed.fields.get('[data-phone-start]').disabled,false);
+});
+
+test('One-minute test sends 60 seconds while staying in the app',async()=>{
+ const app=setup();await app.created.find(n=>n.textContent==='Test 1-minute timer').onclick();assert.equal(app.request().options.body.get('payload'),'60');assert.equal(app.submitted(),undefined);assert.match(app.status(),/Check your phone Clock/);
 });
