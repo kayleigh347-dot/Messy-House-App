@@ -1,5 +1,5 @@
 import {roomHues} from './room-colours.js';
-import {recurrenceLabel} from './v2-state.js?v=schedule-20261010-v1';
+import {recurrenceLabel} from './v2-state.js?v=release-20261010-v3';
 import {localDateKey as dateKey} from './calendar.js';
 import {taskDeadline} from './task-extras.js';
 import {setNextDue} from './recurring-schedule.js?v=schedule-20261010-v1';

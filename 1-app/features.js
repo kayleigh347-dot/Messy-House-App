@@ -1,11 +1,11 @@
 import {scheduleFields,scheduleSnapshot,recurringScheduleTasks,nextDueDate,setNextDue,schedulePlan,unchangedScheduleTasks} from './recurring-schedule.js?v=schedule-20261010-v1';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
-import {createSymbolCalendar,scheduledCalendarState,roomSymbol,moveCalendarRoom,undoCalendarRoomMove} from './house-calendar.js?v=schedule-20261010-v1';
-import {initTimer,tickTimer,startFocus} from './focus-timer.js';
+import {createSymbolCalendar,scheduledCalendarState,roomSymbol,moveCalendarRoom,undoCalendarRoomMove} from './house-calendar.js?v=release-20261010-v3';
+import {initTimer,tickTimer,startFocus} from './focus-timer.js?v=release-20261010-v3';
 export {startFocus};
-import {freshTask,nextOccurrence,recurrenceLabel,roomMess,DAY,priorityOrdered} from './v2-state.js?v=schedule-20261010-v1';
+import {freshTask,nextOccurrence,recurrenceLabel,roomMess,DAY,priorityOrdered} from './v2-state.js?v=release-20261010-v3';
 import {taskDeadline} from './task-extras.js?v=overdue-20261010-v1';
-import {displayPersonName} from './completion-history.js?v=schedule-20261010-v1';
+import {displayPersonName} from './completion-history.js?v=release-20261010-v3';
 const $=s=>document.querySelector(s), el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n}, button=(text,run)=>{const n=el('button',text);n.type='button';n.onclick=run;return n};
 const dateKey=d=>{d=new Date(d);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 let roomMoveUndo=[];
@@ -135,4 +135,4 @@ async function readUpload(e){importDraft=[];$('#applyImport').disabled=true;$('#
  }catch(error){$('#importNotice').textContent=error.message}}
 function applyImport(){const state=api.get(),keys=new Set(state.tasks.filter(t=>!t.done).map(importKey));let newDuplicates=0;for(const item of importDraft){if(item.add&&!item.duplicate&&keys.has(importKey(item.task))){item.duplicate=true;newDuplicates++}}if(newDuplicates){featureToast('Some tasks now match active tasks. Choose whether to add those duplicates.');const root=$('#importPreview');root.replaceChildren();for(const item of importDraft){const label=el('label'),c=el('input');c.type='checkbox';c.checked=item.add&&!item.duplicate;item.add=c.checked;c.onchange=()=>item.add=c.checked;label.className='checkbox-label';label.append(c,el('span',item.task.text+' · '+item.task.area+(item.duplicate?' — duplicate: tick to add anyway':'')));root.append(label)}return}importUndo=[];for(const item of importDraft.filter(x=>x.add)){const t=item.task;t.order=state.tasks.length;if(t.doingNow)t.doingNowOrder=Math.max(-1,...state.tasks.map(x=>x.doingNowOrder??-1))+1;state.tasks.push(t);importUndo.push(structuredClone(t))}importDraft=[];$('#applyImport').disabled=true;$('#undoImport').disabled=!importUndo.length;api.save();$('#importNotice').textContent=`Added ${importUndo.length} tasks. Existing tasks were kept.`;$('#importPreview').replaceChildren()}
 function undoImport(){const state=api.get();let removed=0;state.tasks=state.tasks.filter(t=>{const original=importUndo.find(x=>x.id===t.id);if(original&&!t.done&&JSON.stringify(t)===JSON.stringify(original)){removed++;return false}return true});importUndo=[];$('#undoImport').disabled=true;api.save();$('#importNotice').textContent=`Removed ${removed} imported tasks. Tasks edited or completed since import were kept.`}
-export {renderLocalCalendar} from './house-calendar.js?v=schedule-20261010-v1';
+export {renderLocalCalendar} from './house-calendar.js?v=release-20261010-v3';

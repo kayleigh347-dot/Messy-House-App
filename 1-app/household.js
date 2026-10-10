@@ -1,5 +1,5 @@
 import {periodStart} from './periods.js';
-import {uniqueWins,hasRecordedPerson,displayPersonName,completionPoints} from './completion-history.js?v=schedule-20261010-v1';
+import {uniqueWins,hasRecordedPerson,displayPersonName,completionPoints} from './completion-history.js?v=release-20261010-v3';
 const clean=value=>String(value||'').trim();
 
 export function personName(email=''){

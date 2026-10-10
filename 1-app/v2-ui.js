@@ -2,16 +2,16 @@ import {nextDueDate,setNextDue} from './recurring-schedule.js?v=schedule-2026101
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=schedule-20261010-v1';
-import {createSymbolCalendar} from './house-calendar.js?v=schedule-20261010-v1';
+import {createSymbolCalendar} from './house-calendar.js?v=release-20261010-v3';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
 import {saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=overdue-20261010-v1';
 import {activeTask,completedToday} from './task-flow.js?v=schedule-20261010-v1';
 import {navigate} from './navigation.js';
 import {messPieces,renderRoomMess} from './room-mess.js';
-import {displayPersonName} from './completion-history.js?v=schedule-20261010-v1';
+import {displayPersonName} from './completion-history.js?v=release-20261010-v3';
 import {updateCompanion,leaveCompanion} from './room-companion.js?v=mobile-1';
-import {ordered,priorityOrdered,move,freshTask,roomMess} from './v2-state.js?v=schedule-20261010-v1';
+import {ordered,priorityOrdered,move,freshTask,roomMess} from './v2-state.js?v=release-20261010-v3';
 let getState,save,makeTaskCard,collaboration={},selectedRoom=null,roomBucket="now",roomRecurringView='list',roomRecurringMonth=new Date(),roomRecurringSelectedDay=null,roomRecurringStatus='all',roomSideFilter='all';
 let navigationDebugModule,navigationDebugImport;
 function syncNavigationDebug(scene,roomId){

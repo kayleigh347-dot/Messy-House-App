@@ -1,4 +1,4 @@
-import {alarmSongs,songById,createAlarmPlayer,prepareAlarm} from './alarm-music.js';
+import {alarmSongs,songById,createAlarmPlayer,prepareAlarm} from './alarm-music.js?v=release-20261010-v3';
 const key='mc-focus-timer-v1',positionKey='mc-focus-position-v2';
 let api,root,mini,label,clock,ringNote,lastToastId;
 const read=()=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};

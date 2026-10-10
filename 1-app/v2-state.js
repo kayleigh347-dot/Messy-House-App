@@ -1,8 +1,8 @@
 import {activeTask,recurringDueNotification} from './task-flow.js?v=schedule-20261010-v1';
 import {normalizeSubtasks,childrenOf,rootTask,repeatChildren} from './subtasks.js';
-import {seedCommonTasks} from './common-tasks.js';
-import {migrateRewards} from './rewards.js';
-import {creditLegacyCompletions,archiveOldCompletions,enrichCompletionRecords} from './completion-history.js?v=schedule-20261010-v1';
+import {seedCommonTasks} from './common-tasks.js?v=release-20261010-v3';
+import {migrateRewards} from './rewards.js?v=release-20261010-v3';
+import {creditLegacyCompletions,archiveOldCompletions,enrichCompletionRecords} from './completion-history.js?v=release-20261010-v3';
 export const DAY=86400000;
 export function taskAge(t,now=Date.now()){
  const created=Date.parse(t.created);
