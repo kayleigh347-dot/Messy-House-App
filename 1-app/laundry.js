@@ -1,4 +1,4 @@
-import {scheduleNext} from './v2-state.js?v=laundry-uniform-20261010-v1';
+import {scheduleNext} from './v2-state.js?v=laundry-uniform-20261010-v2';
 import {repeatChildren,childrenOf} from './subtasks.js';
 import {completionRecord} from './task-stats.js';
 

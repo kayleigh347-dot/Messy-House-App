@@ -1,16 +1,16 @@
-import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v1';
-import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep} from './laundry.js?v=laundry-uniform-20261010-v1';
+import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v2';
+import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep} from './laundry.js?v=laundry-uniform-20261010-v2';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=streamline-20261009-v2';
-import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v1';
+import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
-import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v1';
+import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=laundry-uniform-20261010-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=laundry-uniform-20261010-v2';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
-import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v1';
+import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
 import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification,taskNoticeForPerson} from './task-flow.js?v=schedule-20261010-v1';
 
@@ -22,7 +22,7 @@ import {navigate,initNavigation} from './navigation.js';
 
 import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=task-input-20261010-v1";
 
-import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=laundry-uniform-20261010-v1";
+import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=laundry-uniform-20261010-v2";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
@@ -48,9 +48,9 @@ let calendarMonth=new Date();
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random(), iso=()=>new Date().toISOString();
 
 function local(){localStorage.setItem(S,JSON.stringify(st))}
-import {rewardProgress,revealReward,prizes} from "./rewards.js?v=laundry-uniform-20261010-v1";
+import {rewardProgress,revealReward,prizes} from "./rewards.js?v=laundry-uniform-20261010-v2";
 
-import {merge, empty,openHouseState,reconcileSync} from "./sync-state.js?v=laundry-uniform-20261010-v1";
+import {merge, empty,openHouseState,reconcileSync} from "./sync-state.js?v=laundry-uniform-20261010-v2";
 
 const M="mc-sync-v2";
 
@@ -871,7 +871,7 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-uniform-20261010-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-uniform-20261010-v2").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;

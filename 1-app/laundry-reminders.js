@@ -1,4 +1,4 @@
-import {laundryProgress} from './laundry.js?v=laundry-uniform-20261010-v1';
+import {laundryProgress} from './laundry.js?v=laundry-uniform-20261010-v2';
 const TWO_HOURS=2*60*60*1000,HALF_HOUR=30*60*1000;
 export function laundryReminder(state,cycle,now=Date.now()){
  const progress=laundryProgress(state,cycle);if(progress.index!==1)return null;

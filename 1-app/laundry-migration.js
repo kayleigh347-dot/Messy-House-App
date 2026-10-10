@@ -17,3 +17,17 @@ export function migrateKitchenLaundry(state){
  for(const task of state.templates||[])if((kitchen.includes(task.roomId)||/^kitchen$/i.test(task.area))&&laundryName(task.text)){task.roomId='room-laundry';task.area='Laundry'}
  return true;
 }
+
+// Restore the selected backup's missing uniform steps once, without replacing live progress.
+const uniformSeries='7db69e67-90f5-4a25-aded-e5cc614f4c2a';
+const backupSteps=['Sort laundry to go in','gather uniform','wash darks','put out darks','wash whites','put out whites','Remove dye from tops if possible'];
+export function restoreUniformBackupSteps(state){
+ for(const parent of state.settings||[]){
+  if(!parent.laundryUniform||parent.done||parent.uniformBackupStepsImported||(parent.seriesId||parent.id)!==uniformSeries)continue;
+  const children=state.settings.filter(item=>item.parentId===parent.id);
+  for(const [index,text] of backupSteps.entries())if(!children.some(item=>item.text.trim().toLowerCase()===text.toLowerCase())){
+   state.settings.push({id:parent.id+'-backup-step-'+index,parentId:parent.id,text,order:Math.max(0,...children.map(item=>item.order||0))+index+1,area:'Laundry',roomId:'room-laundry',done:false,laundryImported:true,created:parent.created,nextDue:parent.nextDue});
+  }
+  parent.uniformBackupStepsImported=true;
+ }
+}

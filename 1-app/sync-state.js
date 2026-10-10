@@ -1,4 +1,4 @@
-import {normalize,activateDue} from "./v2-state.js?v=laundry-uniform-20261010-v1";
+import {normalize,activateDue} from "./v2-state.js?v=laundry-uniform-20261010-v2";
 export const empty=()=>({tasks:[],side:[],wins:[],rewards:[],shopping:[],appointments:[],errands:[],notes:[],householdPeople:[],notifications:[],current:null});
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 // Only a saved copy of this exact account + house may participate in its merge.
