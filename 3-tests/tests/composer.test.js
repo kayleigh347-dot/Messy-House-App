@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {saveReusable,roomTemplates} from '../task-extras.js';
-import {freshTask} from '../v2-state.js';
+import {freshTask,placeNewTasksFirst,ordered} from '../v2-state.js';
 const source=readFileSync(new URL('../v2-ui.js',import.meta.url),'utf8');
 test('actual task composer adds only one active task when saving templates for every room',()=>{
  const st={rooms:[{id:'a',name:'A'},{id:'b',name:'B'}],tasks:[],side:[],templates:[],householdPeople:[]};
@@ -11,14 +11,14 @@ test('actual task composer adds only one active task when saving templates for e
  const form={elements,dataset:{},reset(){elements.impact.value='normal';elements.every.value='1';elements.period.value='weeks'}},dialog={querySelector:()=>field(),showModal(){},close(){}},suggestions=field();let saved=0;
  const document={querySelector:s=>s==='#quickTask'?dialog:s==='#quickTaskForm'?form:suggestions,querySelectorAll:()=>[]};
  const snippet=source.slice(source.indexOf('export function quickAdd('),source.indexOf('function installInlineTemplates(')).replace('export ','');
- const open=new Function('document','getState','ordered','Option','roomTemplates','quickFields','freshTask','saveReusable','save','crypto','fillQuestTabs',snippet+';return quickAdd')(document,()=>st,x=>x,function(){},roomTemplates,()=>{},freshTask,saveReusable,()=>saved++,globalThis.crypto,()=>{});
+ const open=new Function('document','getState','ordered','Option','roomTemplates','quickFields','freshTask','saveReusable','save','crypto','fillQuestTabs','placeNewTasksFirst',snippet+';return quickAdd')(document,()=>st,x=>x,function(){},roomTemplates,()=>{},freshTask,saveReusable,()=>saved++,globalThis.crypto,()=>{},placeNewTasksFirst);
  open('a',{text:'Clean windows'});elements.reusable.checked=true;elements.allRooms.checked=true;form.onsubmit({preventDefault(){}});
  assert.equal(saved,1);assert.equal(st.tasks.length,1);assert.equal(st.tasks[0].roomId,'a');assert.equal(st.templates.length,2);assert.equal(st.tasks[0].text,'Clean windows');
  open('b');elements.text.value='';
  form.querySelectorAll=()=>[{value:st.templates.find(t=>t.roomId==='b').id}];
  form.dataset.mode='saved';form.onchange();assert.equal(elements.text.required,false,'saved tab removes native typed-task requirement');
  form.onsubmit({preventDefault(){}});
- assert.equal(st.tasks.length,2);assert.equal(st.tasks[1].roomId,'b');assert.equal(st.tasks[1].text,'Clean windows');
+ assert.equal(st.tasks.length,2);assert.equal(st.tasks[1].roomId,'b');assert.equal(st.tasks[1].text,'Clean windows');assert.equal(ordered(st.tasks)[0].roomId,'b','new task appears first');
  form.querySelectorAll=()=>[];form.dataset.mode='normal';form.onchange();assert.equal(elements.text.required,true,'normal tab requires a typed task');
 });
 

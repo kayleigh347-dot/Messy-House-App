@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {ordered} from '../v2-state.js';
 import {addSavedTasks} from '../task-extras.js';
 
 test('adding several templates creates fresh tasks in their own rooms without changing templates or existing tasks',()=>{
@@ -8,7 +9,8 @@ test('adding several templates creates fresh tasks in their own rooms without ch
  const state={templates,rooms:[{id:'room-a'},{id:'room-b'}],tasks:[existing]};let id=0;
  assert.equal(addSavedTasks(state,['a','b','a'],()=>`new-${++id}`,'2026-09-22T12:00:00Z'),2);
  assert.deepEqual(state.tasks.map(t=>t.id),['old','new-1','new-2']);
- assert.deepEqual(state.tasks.map(t=>t.order),[8,9,10]);
+ assert.equal(existing.order,8);
+ assert.deepEqual(ordered(state.tasks).map(t=>t.id),['new-1','new-2','old']);
  assert.deepEqual(state.tasks.slice(1).map(t=>t.roomId),['room-b','room-a']);
  assert.equal(state.tasks[2].notes,'Frames too');assert.equal(state.tasks[2].allowanceDays,3);assert.equal(state.tasks[2].messImpact,'small');
  for(const task of state.tasks.slice(1)){assert.equal(task.bucket,'now');assert.equal(task.done,false);assert.equal(task.created,'2026-09-22T12:00:00Z')}
