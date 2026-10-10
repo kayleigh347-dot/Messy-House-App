@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {laundryProgress,completeLaundryStep,laundrySteps} from '../laundry.js';
+import {laundryProgress,completeLaundryStep,laundrySteps,laundryTasks,addLaundryTask,completeLaundryTask} from '../laundry.js';
 import {normalize} from '../v2-state.js';
 import {rewardCounts} from '../rewards.js';
 import {merge} from '../sync-state.js';
@@ -32,4 +32,36 @@ test('two devices completing the same laundry step merge to one point and one ne
 });
 test('completion records recover progress when an older settings row arrives in sync',()=>{
  const state=board();completeLaundryStep(state,0,actor,at);completeLaundryStep(state,1,actor,at);state.settings[0].completedSteps=1;assert.equal(laundryProgress(state).completed,2);
+});
+
+test('dryer has an independent three-step cycle and points',()=>{
+ const state=board(),steps=['Put washing on','Put in dryer','Empty dryer'];
+ completeLaundryStep(state,0,actor,at);
+ for(let i=0;i<3;i++){
+  assert.equal(laundryProgress(state,'dryer').text,steps[i]);
+  assert.ok(completeLaundryStep(state,i,actor,at,'dryer'));
+  assert.equal(laundryProgress(state).completed,1);
+ }
+ assert.equal(laundryProgress(state,'dryer').index,0);
+ assert.equal(rewardCounts(state).wins,4);
+ assert.equal(new Set(state.wins.map(win=>win.id)).size,4);
+ assert.equal(laundryProgress(JSON.parse(JSON.stringify(state)),'dryer').completed,3);
+ state.wins=[];assert.equal(laundryProgress(state,'dryer').completed,3);
+ assert.equal(laundryProgress(state).completed,1);
+});
+
+test('extra laundry tasks stay outside both cycles and ordinary task lists',()=>{
+ const state=board();assert.equal(addLaundryTask(state,'   ','blank',at),null);
+ const task=addLaundryTask(state,' Wash bedding ','extra',at);assert.equal(task.text,'Wash bedding');
+ assert.equal(state.tasks.length,0);assert.equal(laundryTasks(state).length,1);
+ assert.equal(completeLaundryTask(state,task.id,null,at),null);
+ assert.ok(completeLaundryTask(state,task.id,actor,at));
+ assert.equal(completeLaundryTask(state,task.id,actor,at),null);
+ assert.equal(laundryTasks(state).length,0);assert.equal(rewardCounts(state).wins,1);
+ assert.equal(laundryProgress(state).completed,0);assert.equal(laundryProgress(state,'dryer').completed,0);
+});
+test('separate extra laundry tasks added by two devices both survive sync',()=>{
+ const base=normalize(board()),local=structuredClone(base),remote=structuredClone(base);
+ addLaundryTask(local,'Wash towels','towels',at);addLaundryTask(remote,'Wash bedding','bedding',at);
+ assert.equal(laundryTasks(merge(base,local,remote)).length,2);
 });
