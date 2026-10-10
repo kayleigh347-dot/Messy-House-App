@@ -1,15 +1,16 @@
-import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask} from './laundry.js?v=laundry-20261010-v2';
+import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v1';
+import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep} from './laundry.js?v=laundry-uniform-20261010-v1';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=streamline-20261009-v2';
-import {enableTaskDrag} from './task-drag.js?v=release-20261010-v3';
+import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v1';
 import {roomHues} from './room-colours.js';
-import {calendarStep} from './house-calendar.js?v=release-20261010-v3';
+import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v1';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=release-20261010-v3';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=laundry-uniform-20261010-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
-import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=release-20261010-v3';
+import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v1';
 import {completionRecord} from './task-stats.js';
 import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification,taskNoticeForPerson} from './task-flow.js?v=schedule-20261010-v1';
 
@@ -21,7 +22,7 @@ import {navigate,initNavigation} from './navigation.js';
 
 import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=task-input-20261010-v1";
 
-import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=release-20261010-v3";
+import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=laundry-uniform-20261010-v1";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
@@ -47,9 +48,9 @@ let calendarMonth=new Date();
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random(), iso=()=>new Date().toISOString();
 
 function local(){localStorage.setItem(S,JSON.stringify(st))}
-import {rewardProgress,revealReward,prizes} from "./rewards.js?v=release-20261010-v3";
+import {rewardProgress,revealReward,prizes} from "./rewards.js?v=laundry-uniform-20261010-v1";
 
-import {merge, empty,openHouseState,reconcileSync} from "./sync-state.js?v=schedule-20261010-v1";
+import {merge, empty,openHouseState,reconcileSync} from "./sync-state.js?v=laundry-uniform-20261010-v1";
 
 const M="mc-sync-v2";
 
@@ -72,9 +73,11 @@ const expandedSubtasks=new Set();
 let lastDeleted=null;
 function renderUndoDeleted(){for(const page of document.querySelectorAll('.page,#roomDetail')){let holder=page.querySelector(':scope > .undo-deleted');if(!holder){holder=document.createElement('div');holder.className='undo-deleted';page.append(holder)}holder.replaceChildren();holder.hidden=!lastDeleted;if(!lastDeleted)continue;const label=document.createElement('span'),undo=document.createElement('button');label.textContent=`Deleted “${lastDeleted.items[0]?.text||'task'}”`;undo.textContent='Undo deleted';undo.onclick=()=>{const target=lastDeleted.kind==='side'?st.side:st.tasks;for(const item of lastDeleted.items)if(!target.some(t=>t.id===item.id))target.push(item);lastDeleted=null;changed()};holder.append(label,undo)}}
 function rememberSubtaskExpansion(){for(const details of document.querySelectorAll('.subtasks')){const id=details.closest('.task')?.dataset.taskId;if(!id)continue;if(details.open)expandedSubtasks.add(id);else expandedSubtasks.delete(id)}}
+let laundryReminderController;
 function changed(){st=normalize(st);
 local();
 render();
+laundryReminderController?.tick();
 clearTimeout(timer);
 timer=setTimeout(push,300)}
 async function connect(){
@@ -400,12 +403,23 @@ function renderDoingSearch(){
  if(!matches.length)root.textContent='No matching available tasks.';
 }
 const laundryBusy={rail:false,dryer:false};
+let uniformBusy=false;
 function renderLaundryPanel(){
+ const uniform=uniformProgress(st);$('#uniformCycle').hidden=!uniform;
+ if(uniform){
+  $('#uniformStepNumber').textContent=`Step ${uniform.index+1} of ${uniform.total}`;$('#uniformStepTitle').textContent=uniform.step.text;
+  const button=$('#uniformComplete');button.disabled=uniformBusy;button.setAttribute('aria-label','Complete uniform step: '+uniform.step.text);
+  button.onclick=()=>{if(uniformBusy)return;const before=rewardProgress(st).earned,record=completeUniformStep(st,uniform.step.id,currentActor());
+   if(!record){featureToast('Sign in on this device to complete laundry and keep your points.');return}
+   uniformBusy=true;$('#uniformStatus').textContent=record.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');setTimeout(()=>{uniformBusy=false;renderLaundryPanel()},800);
+  };
+ }
+
  for(const cycle of ['rail','dryer']){
   const prefix=cycle==='dryer'?'dryer':'laundry',progress=laundryProgress(st,cycle),button=$('#'+prefix+'Complete');
   $('#'+prefix+'StepNumber').textContent=`Step ${progress.index+1} of 3`;
   $('#'+prefix+'StepTitle').textContent=progress.text;
-  $('#'+prefix+'Symbol').textContent=(cycle==='dryer'?['🧺','♨️','👕']:['🧺','👕','🧥'])[progress.index];
+  const reminder=laundryReminder(st,cycle);$('#'+prefix+'Reminder').textContent=reminder?`Reminder ${reminder.due?'due now; repeats every 30 minutes': 'at '+new Date(reminder.nextAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}. Stops when this step is done.`:'';
   button.setAttribute('aria-label','Complete: '+progress.text);button.disabled=laundryBusy[cycle];
   button.onclick=()=>{
    if(laundryBusy[cycle])return;
@@ -857,7 +871,7 @@ $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').clic
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-20261010-v2").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-uniform-20261010-v1").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
@@ -865,3 +879,5 @@ initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab
 connect();
 
 function fitDialogs(){document.documentElement.style.setProperty('--dialog-height',`${window.visualViewport?.height||window.innerHeight}px`);document.documentElement.style.setProperty('--dialog-offset',`${window.visualViewport?.offsetTop||0}px`);const field=document.activeElement;if(field?.matches('dialog input,dialog textarea'))requestAnimationFrame(()=>field.scrollIntoView({block:'nearest'}))}fitDialogs();window.visualViewport?.addEventListener('resize',fitDialogs);document.addEventListener('focusin',event=>{if(event.target.matches('dialog input,dialog textarea'))requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest'}))});
+
+laundryReminderController=initLaundryReminders({get:()=>st,actor:currentActor,house:()=>meta.houseId||meta.owner||'local',show:featureToast});

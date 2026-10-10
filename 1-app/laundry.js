@@ -1,7 +1,9 @@
+import {scheduleNext} from './v2-state.js?v=laundry-uniform-20261010-v1';
+import {repeatChildren,childrenOf} from './subtasks.js';
 import {completionRecord} from './task-stats.js';
 
 export const laundrySteps=['Put a load on','Put out washing','Put away clothes on rail'];
-export const dryerSteps=['Put washing on','Put in dryer','Empty dryer'];
+export const dryerSteps=['Put a load on','Put in dryer','Empty dryer'];
 const progressKey=cycle=>cycle==='dryer'?'laundry-dryer-progress':'laundry-progress';
 const validCount=value=>Number.isSafeInteger(value)&&value>=0?value:0;
 export function laundryProgress(state,cycle='rail'){
@@ -25,10 +27,17 @@ export function completeLaundryStep(state,expectedCompleted,actor,at=new Date().
  let saved=state.settings.find(item=>item.id===progressId);
  if(!saved){saved={id:progressId};state.settings.push(saved)}
  saved.completedSteps=sequence;saved.updatedAt=at;
+ if(progress.index===0){saved.reminderStartedAt=at;saved.reminderActorId=person.id}else if(progress.index===1){delete saved.reminderStartedAt;delete saved.reminderActorId}
  return record;
 }
 
-export const laundryTasks=state=>(state.settings||[]).filter(item=>item.laundryTask&&!item.done);
+export const laundryDue=(task,now=Date.now())=>!task.done&&!task.pausedAt&&(!task.nextDue||Date.parse(task.nextDue)<=now);
+export const laundryTasks=(state,now=Date.now())=>(state.settings||[]).filter(item=>item.laundryTask&&laundryDue(item,now));
+export function uniformProgress(state,now=Date.now()){
+ const task=(state.settings||[]).find(item=>item.laundryUniform&&laundryDue(item,now));if(!task)return null;
+ const steps=childrenOf(state.settings,task.id).sort((a,b)=>(a.order||0)-(b.order||0)),step=steps.find(item=>!item.done)||task;
+ return {task,step,total:steps.length||1,index:steps.length?steps.indexOf(step):0};
+}
 export function addLaundryTask(state,text,taskId,at=new Date().toISOString()){
  text=String(text||'').trim();if(!text)return null;
  state.settings||=[];
@@ -40,6 +49,37 @@ export function completeLaundryTask(state,taskId,actor,at=new Date().toISOString
  const person=state.householdPeople?.find(item=>item.id===actor?.id&&item.id!=='local-device');
  const task=laundryTasks(state).find(item=>item.id===taskId);
  if(!person||!task||state.wins?.some(win=>win.id==='win-'+task.id))return null;
- const record={...completionRecord({...task,area:'Laundry'},at,'task',person),points:1};
- state.wins||=[];state.wins.unshift(record);task.done=true;task.updatedAt=at;return record;
+ return finishLaundryItem(state,task,person,at);
+}
+function finishLaundryItem(state,task,person,at){
+ if(task.done)return null;
+ const children=childrenOf(state.settings,task.id);
+ for(const child of children)if(!child.done)finishLaundryItem(state,child,person,at);
+ const parent=state.settings.find(item=>item.id===task.parentId);
+ const record={...completionRecord({...task,area:'Laundry'},at,'task',person),points:children.length?0:1,aggregate:!!children.length,...(parent?{rootTaskId:parent.id,rootText:parent.text,rootRecurrence:parent.recurrence||null}:{})};
+ state.wins||=[];if(!state.wins.some(win=>win.id===record.id))state.wins.unshift(record);
+ task.done=true;task.completedAt=at;task.updatedAt=at;
+ if(!task.parentId)scheduleLaundry(state,task,at);
+ return record;
+}
+function scheduleLaundry(state,task,at){
+ if(!task.recurrence)return;
+ const next=scheduleNext(task,new Date(at));if(!next||state.settings.some(item=>item.id===next.id))return;
+ Object.assign(next,{laundryImported:true,...(task.laundryUniform?{laundryUniform:true}:{laundryTask:true})});
+ state.settings.push(next,...repeatChildren(state.settings,task,next));
+}
+export function settleScheduledLaundry(state){
+ for(const parent of [...(state.settings||[])]){
+  if(!parent.laundryImported||parent.parentId||parent.done)continue;
+  const children=childrenOf(state.settings,parent.id);if(!children.length||!children.every(child=>child.done))continue;
+  const last=children.reduce((a,b)=>String(a.completedAt)>String(b.completedAt)?a:b),at=last.completedAt;
+  if(!at)continue;
+  const credited=state.wins?.find(win=>win.taskId===last.id),person={id:credited?.completedBy,name:credited?.completedByName};
+  finishLaundryItem(state,parent,person,at);
+ }
+}
+export function completeUniformStep(state,stepId,actor,at=new Date().toISOString()){
+ const person=state.householdPeople?.find(item=>item.id===actor?.id&&item.id!=='local-device');
+ const progress=uniformProgress(state,Date.parse(at));if(!person||!progress||progress.step.id!==stepId)return null;
+ const record=finishLaundryItem(state,progress.step,person,at);settleScheduledLaundry(state);return record;
 }
