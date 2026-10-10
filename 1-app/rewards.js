@@ -1,5 +1,5 @@
 export const EVERY=5;
-import {archivedCompletionCount,completionPoints} from './completion-history.js';
+import {archivedCompletionCount,completionPoints} from './completion-history.js?v=schedule-20261010-v1';
 export const prizes=[
  {name:'Mooncat',icon:'🐈‍⬛',colour:'lavender',title:'A tiny guardian of unfinished things',treat:'The dust has filed a formal complaint. Excellent work.'},
  {name:'Pocket Dragon',icon:'🐉',colour:'peach',title:'Collector of small victories',treat:'A tiny dragon, an enormous fan of your competence.'},

@@ -10,8 +10,8 @@
 <link rel="stylesheet" href="stage-one.css">
 <link rel="stylesheet" href="mobile.css">
 <title>Mission Control</title>
-<link rel="stylesheet" href="features.css?v=overdue-20261010-v1">
-<link rel="stylesheet" href="house-calendar.css?v=streamline-20261009-v2">
+<link rel="stylesheet" href="features.css?v=schedule-20261010-v1">
+<link rel="stylesheet" href="house-calendar.css?v=schedule-20261010-v1">
 <link rel="stylesheet" href="cohesion.css?v=streamline-20261009-v2">
 </head>
 <body class="dark-mode">
@@ -63,7 +63,7 @@
 <button data-tab="rewards">Mystery Shelf</button>
 <button data-tab="other" class="hidden-route" aria-hidden="true" tabindex="-1">Other tasks</button>
 <button data-tab="notes" class="hidden-route" aria-hidden="true" tabindex="-1">Notes</button>
-<button data-tab="recurring" class="hidden-route">Recurring tasks</button><button data-tab="imports" class="hidden-route">Upload tasks</button><button data-tab="preferences" class="hidden-route">Preferences</button><button id="settings" hidden>Settings</button>
+<button data-tab="manualSchedule" class="hidden-route">Manual schedule</button><button data-tab="recurring" class="hidden-route">Recurring tasks</button><button data-tab="imports" class="hidden-route">Upload tasks</button><button data-tab="preferences" class="hidden-route">Preferences</button><button id="settings" hidden>Settings</button>
 <button id="moreNav">More</button>
 </nav>
 <section id="house" class="page hide">
@@ -82,6 +82,7 @@
 
 </section>
 </section>
+
 <section class="room-task-panel">
 <button id="homeAdd" class="add-task-main">＋ Add task</button>
 <h2>Overdue tasks</h2>
@@ -171,7 +172,7 @@
 <p id="guardianName">
 </p>
 </div><div id="roomTabs" class="room-tabs folder-tabs" aria-label="Room task categories">
-</div><div id="roomSideTabs" class="folder-tabs" aria-label="Sidequest tabs" hidden></div><div id="roomRecurringStatusTabs" class="folder-tabs" hidden></div><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><span id="roomRecurringViews" class="task-list-toolbar" hidden><button type="button" id="roomRecurringToggle" class="task-layout-toggle">Calendar view</button></span><button id="roomQuickAdd" class="add-task-main">＋ Add task</button></div>
+</div><div id="roomSideTabs" class="folder-tabs" aria-label="Sidequest tabs" hidden></div><div id="roomRecurringStatusTabs" class="folder-tabs" hidden></div>
 <details id="roomSceneDetails" class="room-scene-details"><summary>Room scene <span id="roomSceneState"></span></summary>
 <div id="roomScene">
 
@@ -192,6 +193,7 @@
 
 </div>
 </details>
+<div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><span id="roomRecurringViews" class="task-list-toolbar" hidden><button type="button" id="roomRecurringToggle" class="task-layout-toggle">Calendar view</button></span><button id="roomQuickAdd" class="add-task-main">＋ Add task</button></div>
 <section class="room-task-panel">
 
 
@@ -379,6 +381,7 @@
 <option value="weeks">Every X weeks</option>
 </select>
 </label>
+<label id="editNextDueLabel">Next due date<input name="nextDue" type="date"></label><label class="checkbox-label" id="editImportantOverdueLabel"><input name="importantWhenOverdue" type="checkbox">Important when overdue</label>
 <label id="intervalLabel">Repeat every<input name="interval" type="number" min="1" max="3650" step="1" value="1">
 </label>
 <div id="weekdayChoices">
@@ -510,6 +513,7 @@
 </label>
 <button id="saveCfg">Save & connect</button>
 <button id="cancel" hidden>Close</button>
+<form id="displayNameForm" class="editor" hidden><label>Your household name<input id="displayName" name="displayName" required maxlength="60" autocomplete="nickname"></label><button>Save name</button><p id="displayNameStatus" role="status"></p></form>
 <p id="account">Your board stays on this device until you sign in.</p>
 <label>Email<input id="email" type="email" autocomplete="email">
 </label>
@@ -540,13 +544,14 @@
 </p>
 </section>
 </section>
-<section id="recurring" class="page hide"><h2>Recurring &amp; reusable tasks</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="false">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="true">Recurring</button></div><div id="recurringStatusTabs" class="folder-tabs"><button type="button" data-recurring-status="needs" aria-pressed="true">Needs done now!</button><button type="button" data-recurring-status="ready" aria-pressed="false">Ready to do</button><button type="button" data-recurring-status="later" aria-pressed="false">Not yet</button></div><button class="add-task-main" data-add-task>Add task</button><label>Room<select id="recurringRoom"><option value="">All rooms</option></select></label><details class="optional-section" id="recurringScheduleOptions"><summary>Scheduling</summary><div class="optional-fields schedule-tools"><button id="roomSchedule">Schedule tasks by room</button><button id="spreadTasks">Preview spread-out schedule</button><button id="pauseAll">Pause all for a holiday</button><button id="resumeAll">Resume paused tasks</button></div></details><button id="undoSchedule" disabled hidden>Undo schedule change</button><p id="recurringNotice" role="status"></p><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button></div><div id="recurringList"></div><button class="add-task-main bottom-add" data-add-task>Add task</button></section>
+<section id="manualSchedule" class="page hide" data-schedule-page><div class="settings-heading"><h2>Edit recurring schedule</h2><button id="closeManualSchedule" type="button">Back to recurring tasks</button></div><div id="manualScheduleCalendar"></div><section id="manualScheduleChoices" class="manual-schedule-choices"></section></section>
+<section id="recurring" class="page hide"><h2>Recurring &amp; reusable tasks</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="false">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="true">Recurring</button></div><div id="recurringStatusTabs" class="folder-tabs"><button type="button" data-recurring-status="needs" aria-pressed="true">Needs done now!</button><button type="button" data-recurring-status="ready" aria-pressed="false">Ready to do</button><button type="button" data-recurring-status="later" aria-pressed="false">Not yet</button></div><button class="add-task-main" data-add-task>Add task</button><label>Room<select id="recurringRoom"><option value="">All rooms</option></select></label><details class="optional-section" id="recurringScheduleOptions"><summary>Scheduling</summary><div class="optional-fields schedule-tools"><button id="openManualSchedule">Edit schedule manually</button><button id="roomSchedule">Schedule tasks by room</button><button id="spreadTasks">Preview spread-out schedule</button><button id="pauseAll">Pause all for a holiday</button><button id="resumeAll">Resume paused tasks</button></div></details><button id="undoSchedule" disabled hidden>Undo schedule change</button><p id="recurringNotice" role="status"></p><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button></div><div id="recurringList"></div><button class="add-task-main bottom-add" data-add-task>Add task</button></section>
 <section id="imports" class="page hide"><h2>Upload tasks</h2><a href="task-upload-template.csv" download>Download CSV template</a> · <a href="TASK-UPLOAD-GUIDE.md" download>Download instructions</a><label>Choose CSV file<input id="taskUpload" type="file" accept=".csv,text/csv"></label><p id="importNotice" role="status"></p><div id="importPreview"></div><button id="applyImport" disabled>Add these tasks</button><button id="undoImport" disabled>Undo last import</button></section>
 <button id="simpleSettings" type="button" aria-label="Settings, character preferences and backups" title="Settings" hidden>⚙</button>
 <div id="featureToast" role="status" aria-live="polite" hidden></div><div id="focusStatus" hidden></div>
 <dialog id="featureDialog"><div id="featureDialogBody"></div><button type="button" onclick="this.closest('dialog').close()">Close</button></dialog>
 </main>
-<script type="module" src="app.js?v=overdue-20261010-v2">
+<script type="module" src="app.js?v=schedule-20261010-v1">
 </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-import {normalize,activateDue} from "./v2-state.js?v=purple-subtasks-1";
+import {normalize,activateDue} from "./v2-state.js?v=schedule-20261010-v1";
 export const empty=()=>({tasks:[],side:[],wins:[],rewards:[],shopping:[],appointments:[],errands:[],notes:[],householdPeople:[],notifications:[],current:null});
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 // Only a saved copy of this exact account + house may participate in its merge.

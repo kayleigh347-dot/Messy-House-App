@@ -1,5 +1,5 @@
 // Shared recurring sections and timing badges for room and management lists.
-import {priorityOf} from './v2-state.js';
+import {priorityOf} from './v2-state.js?v=schedule-20261010-v1';
 export function taskOrderGroups(tasks){
  return [['high','Needs done first'],['mid','Other tasks']].map(([id,label])=>({id,label,tasks:tasks.filter(task=>priorityOf(task)===id)})).filter(group=>group.tasks.length);
 }
@@ -29,8 +29,8 @@ export function recurringTiming(task,now=new Date()){
  return {days,status:task.pausedAt||days>0?'later':days<0?'needs':'ready',label:task.pausedAt?'Paused':days>0?`Due in ${days}d`:days<0?`Overdue ${-days}d`:'Due today',description:task.pausedAt?'Paused':days>0?`Needs doing in ${days} days`:days<0?`Overdue by ${-days} days`:'Due today'};
 }
 export function appendRecurringTiming(card,task){
- const timing=recurringTiming(task),badge=document.createElement('span');
- badge.className='recurring-day-badge';badge.textContent=timing.label;badge.title=timing.description;badge.setAttribute('aria-label',timing.description);
+ const timing=recurringTiming(task),badge=document.createElement('button');
+ badge.type='button';badge.className='recurring-day-badge';badge.textContent=timing.label+' ✎';badge.title='Change next due date · '+timing.description;badge.setAttribute('aria-label','Change next due date: '+task.text+'. '+timing.description);badge.onclick=()=>document.dispatchEvent(new CustomEvent('edit-next-due',{detail:{id:task.id}}));
  card.dataset.recurringStatus=timing.status;
  card.querySelector(':scope > .body > .task-footer').prepend(badge);
  return card;

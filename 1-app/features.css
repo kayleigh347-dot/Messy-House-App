@@ -216,3 +216,12 @@ body[data-view="recurring"] .category-bar,body[data-view="library"] .category-ba
 #homeImportantOverdue .task{border:2px solid #dc5863!important;border-left-width:7px!important}
 .dark-mode #homeImportantOverdue.important-overdue{background:#3a202b;color:#ffe5e8;border-color:#f07882}
 .dark-mode #homeImportantOverdue h3{color:#ff9ba2}
+
+.calendar-muted-room{opacity:.35;filter:grayscale(1)}
+.manual-schedule-choices{padding:1rem;margin-top:1rem;border:1px solid #ae8bc7;border-radius:1rem;background:#28083f}
+.manual-schedule-task{padding:.65rem;border-bottom:1px solid #644878;align-items:start}
+.manual-schedule-task input{flex-shrink:0;margin-top:.3rem}
+.manual-schedule-task span{overflow-wrap:anywhere}
+#displayNameForm{margin-bottom:1rem}
+
+body[data-view="manualSchedule"] .category-bar{display:none!important}

@@ -1,7 +1,7 @@
 import {roomHues} from './room-colours.js';
 import {periodStart} from './periods.js';
 import {taskStats} from './task-stats.js';
-import {uniqueWins,completionPeople,displayPersonName,completionGroups,deleteCompletionGroup,completionPoints} from './completion-history.js';
+import {uniqueWins,completionPeople,displayPersonName,completionGroups,deleteCompletionGroup,completionPoints} from './completion-history.js?v=schedule-20261010-v1';
 import {completionTrend} from './completion-trend.js?v=streamline-20261009-v2';
 const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node};
 const number=n=>Number(n.toFixed(1)).toLocaleString();

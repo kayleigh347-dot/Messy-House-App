@@ -1,7 +1,7 @@
-import {activeTask} from './task-flow.js?v=purple-subtasks-1';
+import {activeTask,recurringDueNotification} from './task-flow.js?v=schedule-20261010-v1';
 import {normalizeSubtasks,childrenOf,rootTask,repeatChildren} from './subtasks.js';
 import {migrateRewards} from './rewards.js';
-import {creditLegacyCompletions,archiveOldCompletions,enrichCompletionRecords} from './completion-history.js';
+import {creditLegacyCompletions,archiveOldCompletions,enrichCompletionRecords} from './completion-history.js?v=schedule-20261010-v1';
 export const DAY=86400000;
 export function taskAge(t,now=Date.now()){
  const created=Date.parse(t.created);
@@ -130,7 +130,7 @@ export function scheduleNext(task,now=new Date()){
  return {...freshTask(task,`occ-${seriesId}-${nextDue}`,now.toISOString(),task.order),...(task.importantWhenOverdue?{importantWhenOverdue:true}:{}),seriesId,recurringGroupId:task.recurringGroupId||seriesId,recurrence:structuredClone(task.recurrence),bucket:'now',scheduled:true,allowanceDays:null,nextDue,lastDone:task.lastDone,activeSince:nextDue};
 }
 export function activateDue(st,now=Date.now()){
- let changed=false;for(const t of st.tasks)if(!t.done&&!t.pausedAt&&t.scheduled&&Date.parse(t.nextDue)<=now){t.bucket='now';t.scheduled=false;t.activeSince=t.nextDue;changed=true}return changed;
+ let changed=false;for(const t of st.tasks)if(!t.done&&!t.pausedAt&&t.scheduled&&Date.parse(t.nextDue)<=now){const notice=recurringDueNotification(t,st.householdPeople,new Date(now).toISOString());if(notice){st.notifications||=[];if(!st.notifications.some(n=>n.id===notice.id))st.notifications.push(notice)}t.bucket='now';t.scheduled=false;t.activeSince=t.nextDue;changed=true}return changed;
 }
 export function recurrenceLabel(t){
  const r=t.recurrence;if(!r)return '';

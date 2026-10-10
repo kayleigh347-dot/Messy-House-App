@@ -1,5 +1,5 @@
 import {periodStart} from './periods.js';
-import {uniqueWins,completionPeople,completionPoints} from './completion-history.js';
+import {uniqueWins,completionPeople,completionPoints} from './completion-history.js?v=schedule-20261010-v1';
 
 const dateKey=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 const bucketKey=(date,unit)=>{

@@ -1,5 +1,5 @@
 import {periodStart} from './periods.js';
-import {uniqueWins,hasRecordedPerson,displayPersonName,completionPoints} from './completion-history.js';
+import {uniqueWins,hasRecordedPerson,displayPersonName,completionPoints} from './completion-history.js?v=schedule-20261010-v1';
 const clean=value=>String(value||'').trim();
 
 export function personName(email=''){
@@ -11,7 +11,7 @@ export function ensurePerson(state,person){
  if(!person?.id)return false;
  state.householdPeople ||= [];
  const current=state.householdPeople.find(item=>item.id===person.id);
- const next={id:person.id,name:clean(person.name)||personName(person.email),...(person.email?{email:person.email}:{})};
+ const next={id:person.id,name:clean(current?.displayName||person.displayName||person.name)||personName(person.email),...(person.email?{email:person.email}:{})};
  if(!current){state.householdPeople.push(next);return true}
  let changed=false;
  for(const [key,value] of Object.entries(next))if(value&&current[key]!==value){current[key]=value;changed=true}
@@ -33,4 +33,10 @@ export function householdScoreboard(state,period=0){
 export function unseenActivity(state,{personId='',shoppingSeen=0,notesSeen=0}={}){
  const unseen=(items,seen)=>items.filter(item=>item.createdBy&&item.createdBy!==personId&&Date.parse(item.createdAt)>seen).length;
  return {shopping:unseen(state.shopping||[],shoppingSeen),notes:unseen(state.notes||[],notesSeen)};
+}
+
+export function setDisplayName(state,person,name){
+ const value=clean(name);if(!person?.id||person.id==='local-device'||!value||value.length>60)return false;
+ ensurePerson(state,person);const member=state.householdPeople.find(p=>p.id===person.id);
+ member.displayName=value;member.name=value;return true;
 }

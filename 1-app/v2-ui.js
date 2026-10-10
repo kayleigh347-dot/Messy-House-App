@@ -1,16 +1,17 @@
+import {nextDueDate,setNextDue} from './recurring-schedule.js?v=schedule-20261010-v1';
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
-import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=streamline-20261009-v2';
-import {createSymbolCalendar} from './house-calendar.js?v=streamline-20261009-v2';
+import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=schedule-20261010-v1';
+import {createSymbolCalendar} from './house-calendar.js?v=schedule-20261010-v1';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
 import {saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=overdue-20261010-v1';
-import {activeTask,completedToday} from './task-flow.js?v=purple-subtasks-1';
+import {activeTask,completedToday} from './task-flow.js?v=schedule-20261010-v1';
 import {navigate} from './navigation.js';
 import {messPieces,renderRoomMess} from './room-mess.js';
-import {displayPersonName} from './completion-history.js';
+import {displayPersonName} from './completion-history.js?v=schedule-20261010-v1';
 import {updateCompanion,leaveCompanion} from './room-companion.js?v=mobile-1';
-import {ordered,priorityOrdered,move,freshTask,roomMess,nextOccurrence} from './v2-state.js?v=purple-subtasks-1';
+import {ordered,priorityOrdered,move,freshTask,roomMess} from './v2-state.js?v=schedule-20261010-v1';
 let getState,save,makeTaskCard,collaboration={},selectedRoom=null,roomBucket="now",roomRecurringView='list',roomRecurringMonth=new Date(),roomRecurringSelectedDay=null,roomRecurringStatus='all',roomSideFilter='all';
 let navigationDebugModule,navigationDebugImport;
 function syncNavigationDebug(scene,roomId){
@@ -55,7 +56,7 @@ export function renderV2(st){const templateRoom=document.querySelector('#templat
 }
 
 export function editTask(t){
- const st=getState(),dialog=document.querySelector('#taskEditor'),form=document.querySelector('#editTaskForm');
+ const st=getState(),dialog=document.querySelector('#taskEditor'),form=document.querySelector('#editTaskForm'),originalTask=JSON.stringify(t);
  for(const section of form.querySelectorAll('details.optional-section'))section.open=false;
  form.elements.text.value=t.text;
  const rooms=form.elements.room;rooms.replaceChildren();for(const r of ordered(st.rooms).filter(r=>!r.archived||r.id===t.roomId))rooms.append(new Option(r.name+(r.archived?' (archived)':''),r.id));rooms.value=t.roomId;
@@ -71,12 +72,14 @@ export function editTask(t){
  form.elements.repeat.value=r?(r.kind==='fixed-weekday'?'fixed-weekday':r.kind==='days'&&r.every===1?'daily':r.kind==='weeks'&&r.every===1?'weekly':r.kind):'';
  form.elements.interval.value=r?.every||1;
  for(const c of form.querySelectorAll('[name=weekday]'))c.checked=!!r?.days?.includes(Number(c.value))||(r?.kind==='fixed-weekday'&&Number(c.value)===r.day);
- const scheduleUI=()=>{form.elements.allowance.closest('label').hidden=!!form.elements.repeat.value;document.querySelector('#intervalLabel').hidden=!['days','weeks'].includes(form.elements.repeat.value);form.elements.interval.disabled=template||!['days','weeks'].includes(form.elements.repeat.value);document.querySelector('#weekdayChoices').hidden=!['weekdays','fixed-weekday'].includes(form.elements.repeat.value);form.elements.repeat.setCustomValidity('')};form.elements.repeat.onchange=scheduleUI;for(const c of form.querySelectorAll('[name=weekday]'))c.onchange=()=>form.elements.repeat.setCustomValidity('');scheduleUI();
- form.onsubmit=e=>{e.preventDefault();const current=getState()[template?'templates':st.side.some(x=>x.id===t.id)?'side':'tasks'].find(x=>x.id===t.id);if(!current){dialog.close();alert('This item was removed on another device.');return}t=current;const text=form.elements.text.value.trim();if(!text)return;
+ const originalDue=nextDueDate(t);form.elements.nextDue.value=originalDue;form.elements.importantWhenOverdue.checked=!!t.importantWhenOverdue;
+ const scheduleUI=()=>{document.querySelector('#editNextDueLabel').hidden=!form.elements.repeat.value;document.querySelector('#editImportantOverdueLabel').hidden=!form.elements.repeat.value;form.elements.nextDue.required=!!form.elements.repeat.value;form.elements.dueDate.closest('label').hidden=!!form.elements.repeat.value;form.elements.allowance.closest('label').hidden=!!form.elements.repeat.value;document.querySelector('#intervalLabel').hidden=!['days','weeks'].includes(form.elements.repeat.value);form.elements.interval.disabled=template||!['days','weeks'].includes(form.elements.repeat.value);document.querySelector('#weekdayChoices').hidden=!['weekdays','fixed-weekday'].includes(form.elements.repeat.value);form.elements.repeat.setCustomValidity('')};form.elements.repeat.onchange=scheduleUI;for(const c of form.querySelectorAll('[name=weekday]'))c.onchange=()=>form.elements.repeat.setCustomValidity('');scheduleUI();
+ form.onsubmit=e=>{e.preventDefault();const current=getState()[template?'templates':st.side.some(x=>x.id===t.id)?'side':'tasks'].find(x=>x.id===t.id);if(!current){dialog.close();alert('This item was removed on another device.');return}if(r&&JSON.stringify(current)!==originalTask){alert('This task changed on another device. Close and reopen the editor.');return}t=current;const text=form.elements.text.value.trim();if(!text)return;
  const kind=form.elements.repeat.value,days=[...form.querySelectorAll('[name=weekday]:checked')].map(c=>Number(c.value));
  if(!template&&['weekdays','fixed-weekday'].includes(kind)&&!days.length){form.elements.repeat.setCustomValidity('Choose at least one weekday.');form.elements.repeat.reportValidity();return}
  if(side)t.type=form.elements.questType.value;
- if(!template&&!side){t.recurrence=kind?(kind==='weekdays'?{kind,days}:kind==='fixed-weekday'?{kind,day:days[0]}:{kind:kind==='daily'?'days':kind==='weekly'?'weeks':kind,every:['daily','weekly'].includes(kind)?1:Number(form.elements.interval.value)}):null;if(!t.recurrence)t.scheduled=false;else if(t.scheduled&&JSON.stringify(t.recurrence)!==JSON.stringify(r))t.nextDue=nextOccurrence(t.recurrence,new Date(t.lastDone||Date.now()));}
+ if(!template&&!side){t.recurrence=kind?(kind==='weekdays'?{kind,days}:kind==='fixed-weekday'?{kind,day:days[0]}:{kind:kind==='daily'?'days':kind==='weekly'?'weeks':kind,every:['daily','weekly'].includes(kind)?1:Number(form.elements.interval.value)}):null;if(!t.recurrence)t.scheduled=false;}
+ if(t.recurrence&&!side&&!template){if(form.elements.nextDue.value!==originalDue||!r||!t.nextDue)setNextDue(t,form.elements.nextDue.value);t.importantWhenOverdue=form.elements.importantWhenOverdue.checked;}
  t.text=text;t.messImpact=form.elements.impact.value;t.priority=form.elements.important.checked?'high':'mid';t.roomId=rooms.value;t.allowanceDays=!t.recurrence&&form.elements.allowance.value?Number(form.elements.allowance.value):null;t.dueDate=!t.recurrence&&form.elements.dueDate.value?new Date(form.elements.dueDate.value+'T12:00:00').toISOString():null;t.assignedTo=form.elements.assignee.value||null;t.assignedToName=st.householdPeople.find(person=>person.id===t.assignedTo)?.name||null;if(t.allowanceDays&&!t.activeSince)t.activeSince=t.created||new Date().toISOString();const recipient=!template&&st.householdPeople.find(person=>person.id===recipients.value);if(recipient)collaboration.notifyTasks?.([t],recipient);dialog.close();save()};
  dialog.showModal();
 }

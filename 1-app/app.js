@@ -1,16 +1,16 @@
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
-import {recurringTiming,appendTaskGroups} from './task-ui.js?v=streamline-20261009-v2';
+import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=streamline-20261009-v2';
 import {enableTaskDrag} from './task-drag.js?v=streamline-20261009-v2';
 import {roomHues} from './room-colours.js';
-import {calendarStep} from './house-calendar.js?v=streamline-20261009-v2';
+import {calendarStep} from './house-calendar.js?v=schedule-20261010-v1';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,startFocus,featureToast} from './features.js?v=overdue-20261010-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,startFocus,featureToast} from './features.js?v=schedule-20261010-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
-import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js';
+import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=schedule-20261010-v1';
 import {completionRecord} from './task-stats.js';
-import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification} from './task-flow.js?v=purple-subtasks-1';
+import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification,taskNoticeForPerson} from './task-flow.js?v=schedule-20261010-v1';
 
 import {renderStats} from './stats-ui.js?v=streamline-20261009-v2';
 
@@ -18,13 +18,13 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=overdue-20261010-v2";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=schedule-20261010-v1";
 
-import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=overdue-20261010-v1";
+import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=schedule-20261010-v1";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
-import {ensurePerson,householdScoreboard,personName,unseenActivity} from './household.js?v=calendar-2';
+import {ensurePerson,setDisplayName,householdScoreboard,personName,unseenActivity} from './household.js?v=schedule-20261010-v1';
 
 
 
@@ -38,6 +38,7 @@ function restoreInputDrafts(){let drafts={};try{drafts=JSON.parse(sessionStorage
 document.addEventListener('input',event=>{const field=event.target;if(!(field instanceof HTMLInputElement||field instanceof HTMLTextAreaElement)||field.type==='password'||field.closest('#setup,#houseSharing'))return;let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}const key=inputDraftKey(field);if(field.value)drafts[key]=field.value;else delete drafts[key];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});
 document.addEventListener('submit',event=>{let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}for(const field of event.target.querySelectorAll('input[type=text],textarea'))delete drafts[inputDraftKey(field)];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});window.addEventListener('pageshow',restoreInputDrafts);restoreInputDrafts();
 
+if(!localStorage.getItem('mc-compact-default-20261010')){localStorage.setItem('mc-task-layout','compact');localStorage.setItem('mc-compact-default-20261010','true')}
 const C="mc-config-v1",S="mc-state-v1";
 let cfg=JSON.parse(localStorage.getItem(C)||'{"url":"https://thviqhojcjrmqurhdkql.supabase.co","key":"sb_publishable_ziQesp5o-pHIXINUMMdmTA_3nDFSVZr"}'),st=JSON.parse(localStorage.getItem(S)||'{"tasks":[],"side":[],"wins":[],"current":null}'),db=null,filter="all";
 let calendarMonth=new Date();
@@ -47,7 +48,7 @@ const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random(), iso=()=>new Da
 function local(){localStorage.setItem(S,JSON.stringify(st))}
 import {rewardProgress,revealReward,prizes} from "./rewards.js?v=mobile-1";
 
-import {merge, empty,openHouseState,reconcileSync} from "./sync-state.js?v=mobile-1";
+import {merge, empty,openHouseState,reconcileSync} from "./sync-state.js?v=schedule-20261010-v1";
 
 const M="mc-sync-v2";
 
@@ -56,11 +57,11 @@ let meta=JSON.parse(localStorage.getItem(M)||"{}"), busy=false, timer, authSubsc
 const activityKey=()=>`mc-house-seen-v1:${meta.owner||'local'}:${meta.houseId||'home'}`;
 function activitySeen(){try{return JSON.parse(localStorage.getItem(activityKey())||'{}')}catch{return {}}}
 function markActivitySeen(type){const seen=activitySeen();seen[type]=Date.now();localStorage.setItem(activityKey(),JSON.stringify(seen))}
-const currentActor=()=>meta.actor||{id:'local-device',name:'This device'};
+const currentActor=()=>meta.actor?{...meta.actor,...st.householdPeople?.find(p=>p.id===meta.actor.id)}:{id:'local-device',name:'This device'};
 const entryTime=value=>{const time=Date.parse(value);return Number.isFinite(time)?new Date(time).toLocaleString():''};
 
 let signedIn=false;
-function updateSignInUI(value){signedIn=!!value;document.querySelector('.sync-line').hidden=signedIn;$('#signOut').hidden=!signedIn;$('#signIn').hidden=signedIn;$('#email').closest('label').hidden=signedIn}
+function updateSignInUI(value){signedIn=!!value;$('#displayNameForm').hidden=!signedIn;document.querySelector('.sync-line').hidden=signedIn;$('#signOut').hidden=!signedIn;$('#signIn').hidden=signedIn;$('#email').closest('label').hidden=signedIn}
 const status=text=>$('#sync').textContent=text;
 function settingsTab(name='general'){for(const panel of $$('[data-settings-panel]'))panel.hidden=panel.dataset.settingsPanel!==name;for(const tab of $$('[data-settings-tab]'))tab.setAttribute('aria-pressed',String(tab.dataset.settingsTab===name));if(name==='account'){$('#url').value=cfg.url||'';$('#key').value=cfg.key||'';if(db&&!sharingBusy&&!busy)db.auth.getSession().then(({data})=>{if(data.session)runSharing(refreshHouses)}).catch(()=>{})}}
 for(const tab of $$('[data-settings-tab]'))tab.onclick=()=>settingsTab(tab.dataset.settingsTab);
@@ -114,7 +115,7 @@ return}
 return}
     meta.owner=owner;
     meta.actor={id:session.user.id,email:session.user.email,name:personName(session.user.email)};
-    ensurePerson(st,meta.actor);
+    ensurePerson(st,meta.actor);if(document.activeElement!==$('#displayName'))$('#displayName').value=displayPersonName(currentActor());
 remember();
 local();
 
@@ -388,10 +389,10 @@ function colourTaskLists(){for(const root of document.querySelectorAll('#nowList
 
 function notificationTarget(){const actor=currentActor(),others=st.householdPeople.filter(person=>person.id!==actor.id);return others.find(person=>/^andy\b/i.test(person.name||person.email||''))||others[0]||null}
 function notifyAboutTasks(tasks,target){if(!target)return;for(const task of tasks)st.notifications.push(taskNotification(task,target,currentActor()))}
-function renderTaskNotifications(){const actor=currentActor(),pending=st.notifications.filter(notice=>notice.recipientId===actor.id&&!notice.readBy?.includes(actor.id)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),notice=pending[0],banner=$('#taskNotice');banner.classList.toggle('hide',!notice);if(!notice)return;$('#taskNoticeTitle').textContent=`New task for ${notice.recipientName||'you'}`;$('#taskNoticeText').textContent=`${notice.createdByName||'Someone'} added “${notice.text}” in ${notice.area||'General'}.`;$('#dismissTaskNotice').onclick=()=>{notice.readBy||=[];if(!notice.readBy.includes(actor.id))notice.readBy.push(actor.id);changed()}}
+function renderTaskNotifications(){const actor=currentActor(),pending=st.notifications.filter(notice=>taskNoticeForPerson(notice,actor.id,st.tasks)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))),notice=pending[0],banner=$('#taskNotice');banner.classList.toggle('hide',!notice);if(!notice)return;$('#taskNoticeTitle').textContent=`${notice.kind==='recurring-due'?'Task due':'New task'} for ${displayPersonName(actor)}`;$('#taskNoticeText').textContent=notice.kind==='recurring-due'?`“${notice.text}” is now due in ${notice.area||'General'}.`:`${displayPersonName(st.householdPeople.find(p=>p.id===notice.createdBy)||{name:notice.createdByName||'Someone'})} added “${notice.text}” in ${notice.area||'General'}.`;$('#dismissTaskNotice').onclick=()=>{notice.readBy||=[];if(!notice.readBy.includes(actor.id))notice.readBy.push(actor.id);changed()}}
 function renderAttention(){const root=$('#attentionList');root.replaceChildren();const tasks=priorityOrdered(st.tasks.filter(t=>!t.parentId&&activeTask(t)&&t.priority==='high'));const byRoom=new Map();for(const task of tasks){const room=st.rooms.find(r=>r.id===task.roomId)?.name||task.area||'General';if(!byRoom.has(room))byRoom.set(room,[]);byRoom.get(room).push(task)}for(const [room,items] of byRoom){const group=document.createElement('section'),title=document.createElement('h3');group.className='attention-group';title.textContent=room;group.append(title);group.id='attention-room-'+items[0].roomId;appendTaskGroups(group,items,task=>mk(task,'task'));root.append(group)}if(!tasks.length){const empty=document.createElement('p');empty.textContent='No tasks need attention right now.';root.append(empty)}}
 function renderDoingNow(){const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done).sort((a,b)=>Number(b.priority==='high')-Number(a.priority==='high')),completed=items.filter(t=>t.done);root.replaceChildren();appendTaskGroups(root,active,task=>mk(task,'task','doing'));if(completed.length){const box=document.createElement('section');box.className='completed-list';box.append(document.createElement('h3'));box.firstChild.textContent='Completed today';for(const task of completed)box.append(mk(task,'task','doing'));root.append(box)}if(!items.length){const empty=document.createElement('p');empty.textContent="Nothing selected yet. Tap “I'm on it” on a task, or choose one from Needs done.";root.append(empty)}renderAttention()}
-function render(){applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
+function render(){const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
 renderDoingNow();
 renderTaskNotifications();
@@ -500,6 +501,7 @@ $('#calendarEventForm').onsubmit=e=>{e.preventDefault();const f=e.currentTarget,
 $('#previousCalendarMonth').onclick=()=>{calendarMonth=calendarStep(calendarMonth,-1);renderCalendar()};
 $('#nextCalendarMonth').onclick=()=>{calendarMonth=calendarStep(calendarMonth,1);renderCalendar()};
 
+$('#displayNameForm').onsubmit=e=>{e.preventDefault();if(!signedIn||!setDisplayName(st,currentActor(),$('#displayName').value)){ $('#displayNameStatus').textContent='Enter a name (up to 60 characters) while signed in.';return}meta.actor=currentActor();remember();$('#displayNameStatus').textContent='Your household name is saved.';changed()};
 $('#connectShortcut').onclick=()=>{showPage('preferences');settingsTab('account')};$('#closeSettings').onclick=()=>showPage('house');
 $('#calendarView').value=localStorage.getItem('mc-calendar-view')||'month';$('#calendarRecurring').checked=localStorage.getItem('mc-calendar-recurring')!=='off';$('#calendarSetDay').checked=localStorage.getItem('mc-calendar-set-day')!=='off';
 $('#calendarView').onchange=()=>{localStorage.setItem('mc-calendar-view',$('#calendarView').value);renderCalendar()};$('#calendarRecurring').onchange=()=>{localStorage.setItem('mc-calendar-recurring',$('#calendarRecurring').checked?'on':'off');renderCalendar()};$('#calendarSetDay').onchange=()=>{localStorage.setItem('mc-calendar-set-day',$('#calendarSetDay').checked?'on':'off');renderCalendar()};
@@ -579,7 +581,7 @@ const categoryBar=document.querySelector('.category-bar');if(page==='wins')$('#d
 $$(".page").forEach(x=>x.classList.add('hide'));
 $("#"+page).classList.remove('hide');
 if(page==='preferences')settingsTab('general');
-if(page==='other'){markActivitySeen('shopping');renderHousehold();showOtherView(otherView)}else if(page==='notes'){markActivitySeen('notes');renderHousehold()}else if(page==='calendar'){renderCalendar()}
+if(page==='other'){markActivitySeen('shopping');renderHousehold();showOtherView(otherView)}else if(page==='notes'){markActivitySeen('notes');renderHousehold()}else if(page==='calendar'){renderCalendar()}else if(page==='manualSchedule'){renderFeatures()}
 localStorage.setItem('mc-view-v2',page);
 showRoom(page==='house'&&st.rooms.some(r=>r.id===room)?room:null);
 window.scrollTo({top:0,behavior:'instant'})}
@@ -782,10 +784,10 @@ $("#backupStatus").textContent=`Imported ${board.tasks.length} task records: ${u
 };
 
 st=normalize(st);
-const dueAtLaunch=st.tasks.filter(t=>!t.done&&t.recurrence&&t.scheduled&&Date.parse(t.nextDue)<=Date.now());activateDue(st);for(const task of dueAtLaunch){const actor=currentActor();st.notifications.push(taskNotification(task,{id:actor.id,name:actor.name||'You'},actor))}
+activateDue(st);
 local();
 
-setInterval(()=>{const newlyActive=st.tasks.filter(t=>!t.done&&t.recurrence&&t.scheduled&&Date.parse(t.nextDue)<=Date.now());if(activateDue(st)){const actor=currentActor();for(const task of newlyActive)st.notifications.push(taskNotification(task,{id:actor.id,name:actor.name||'You'},actor));changed()}else render()},60000);
+setInterval(()=>{if(activateDue(st))changed();else render()},60000);
 
 
 $("#moreNav").onclick=()=>$("#moreMenu").showModal();
@@ -797,10 +799,10 @@ for(const tab of document.querySelectorAll('[data-edit-tab]'))tab.onclick=()=>{c
 $('#backupShortcut').onclick=()=>{$('#moreMenu').close();showPage('preferences')};
 $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').click()};
 
-initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
+initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=streamline-20261009-v2").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=schedule-20261010-v1").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;

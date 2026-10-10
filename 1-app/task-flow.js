@@ -66,3 +66,15 @@ export function undoCompletion(state,task,{fromChild=false}={}){
 export function taskNotification(task,target,actor,at=new Date().toISOString(),newId=()=>crypto.randomUUID()){
  return {id:newId(),taskId:task.id,recipientId:target.id,recipientName:target.name||target.email||'Household member',text:task.text,roomId:task.roomId,area:task.area,createdAt:at,createdBy:actor?.id||null,createdByName:actor?.name||actor?.email||'Someone in your house',readBy:[]};
 }
+
+export function recurringDueNotification(task,people=[],at=new Date().toISOString()){
+ if(!task.recurrence||task.parentId||!task.assignedTo||task.done||task.pausedAt)return null;
+ const person=people.find(p=>p.id===task.assignedTo);
+ return {...taskNotification(task,{id:task.assignedTo,name:person?.displayName||person?.name||task.assignedToName},null,at,()=>`due:${task.id}:${task.nextDue}`),kind:'recurring-due'};
+}
+export function taskNoticeForPerson(notice,personId,tasks){
+ if(notice.recipientId!==personId||notice.readBy?.includes(personId))return false;
+ const task=tasks.find(t=>t.id===notice.taskId);
+ const auto=notice.kind==='recurring-due'||(task?.recurrence&&notice.createdBy===notice.recipientId);
+ return !auto||!!task&&!task.done&&!task.pausedAt&&!task.scheduled&&task.assignedTo===personId&&(notice.kind!=='recurring-due'||notice.id===`due:${task.id}:${task.nextDue}`);
+}

@@ -1,6 +1,6 @@
 import {periodStart} from './periods.js';
-import {uniqueWins,completionPeople,hasRecordedPerson,completionPoints,completionGroups} from './completion-history.js';
-import {DAY,dueAt} from './v2-state.js?v=purple-subtasks-1';
+import {uniqueWins,completionPeople,hasRecordedPerson,completionPoints,completionGroups} from './completion-history.js?v=schedule-20261010-v1';
+import {DAY,dueAt} from './v2-state.js?v=schedule-20261010-v1';
 import {taskDeadline} from './task-extras.js';
 const time=value=>{const t=Date.parse(value);return Number.isFinite(t)?t:null};
 const mean=values=>values.length?values.reduce((a,b)=>a+b,0)/values.length:null;

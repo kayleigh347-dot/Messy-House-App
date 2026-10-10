@@ -1,7 +1,7 @@
 // Kayleigh confirmed on 7 October 2026 that existing unrecorded completions were hers.
 export const uniqueWins=state=>[...new Map((state.wins||[]).map(win=>[win.id,win])).values()];
 export const hasRecordedPerson=win=>!!win.completedBy&&win.completedBy!=='local-device';
-export const displayPersonName=person=>{const name=person?.name||person?.email||'Household member';return /^kayleigh\d+$/i.test(name)?'Kayleigh':/^andrewjameslamb14$/i.test(name)?'Andy':name};
+export const displayPersonName=person=>{const name=person?.displayName||person?.name||person?.email||'Household member';return person?.displayName?name:/^kayleigh\d+$/i.test(name)?'Kayleigh':/^andrewjameslamb14$/i.test(name)?'Andy':name};
 export const archivedCompletionCount=state=>(state.completionArchive||[]).reduce((sum,row)=>sum+(Number(row.count)||0),0);
 export function archiveOldCompletions(state,now=Date.now()){
  state.completionArchive||=[];
