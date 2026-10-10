@@ -1,0 +1,9 @@
+Mission Control alarm music — original arrangements, October 2026.
+Instrument samples: FluidR3_GM, by Frank Wen and the Fluid soundfont contributors.
+Source: https://github.com/gleitz/midi-js-soundfonts/tree/gh-pages/FluidR3_GM
+License: Creative Commons Attribution 3.0
+https://creativecommons.org/licenses/by/3.0/
+
+Samples were transposed, mixed, softened with a low-pass filter, peak-limited,
+and rendered into original piano, marimba, cello, nylon guitar and bass/drum loops.
+The deep bass arrangement uses half-time rhythmic phrasing, with no copied songs.
