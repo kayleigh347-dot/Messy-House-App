@@ -484,14 +484,33 @@ function showDoingTab(tab){
  for(const button of document.querySelectorAll('[data-doing-tab]'))button.setAttribute('aria-pressed',String(button.dataset.doingTab===tab));
 }
 $('#doingSearch').oninput=renderDoingSearch;
+// Face windows in the existing character sheets; the original art stays intact.
+const doingRoomFaces={
+ 'room-kitchen':['kitchen',2172,724,140,230,320],
+ 'room-master':['master',2078,757,155,105,290],
+ 'room-penny':['penny',2172,724,210,145,310],
+ 'room-bathroom':['bathroom',2172,724,170,155,300],
+ 'room-living':['living',2172,724,145,260,320],
+ 'room-print':['print',2172,724,90,120,340],
+ 'room-craft':['craft',2149,732,105,210,320],
+ 'room-entrance':['entrance',2172,724,225,105,300],
+ 'room-hall':['hall',2048,768,125,235,260],
+ 'room-cats':['cats',2109,746,100,315,250]
+};
+function doingRoomFace(room){
+ if(!room)return null;
+ const button=document.createElement('button'),art=document.createElement('span'),face=doingRoomFaces[room.id];button.type='button';button.className='doing-room-face';button.setAttribute('aria-label','Open '+room.name+' room');button.title='Open '+room.name;art.className='doing-room-face-art';art.setAttribute('aria-hidden','true');
+ if(face){const [name,width,height,x,y,size]=face;art.style.backgroundImage=`url("assets/sprites/${name}-states.webp")`;art.style.backgroundSize=`${width/size*100}% ${height/size*100}%`;art.style.backgroundPosition=`${x/(width-size)*100}% ${y/(height-size)*100}%`}else art.textContent='⌂';
+ button.append(art);button.onclick=event=>{event.preventDefault();event.stopPropagation();navigate('house',room.id)};return button;
+}
 const collapsedDoingRooms=new Set();
 function renderDoingNow(){
  const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done),completed=items.filter(t=>t.done),groups=new Map();root.replaceChildren();
  const washing=laundryLoads(st).filter(load=>load.index===1),extras=doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask),extraActive=extras.filter(task=>!task.done),extraCompleted=extras.filter(task=>task.done);
  if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · Choose dryer or hanging rail`;actions.className='laundry-load-actions';for(const route of ['dryer','rail']){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?'Put in dryer':'Put on hanging rail';button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
 
- for(const task of active){const room=st.rooms.find(room=>room.id===task.roomId),key=room?.id||task.area||'General';if(!groups.has(key))groups.set(key,{name:room?.name||task.area||'General',tasks:[]});groups.get(key).tasks.push(task)}
- for(const [key,group] of groups){const section=document.createElement('details'),heading=document.createElement('summary'),title=document.createElement('h3'),list=document.createElement('div');section.className='doing-room-group';section.open=!collapsedDoingRooms.has(key);title.textContent=group.name;const count=document.createElement('span');count.className='meta';count.textContent=String(group.tasks.length);heading.append(title,count);section.append(heading,list);for(const task of group.tasks)list.append(mk(task,'task','doing'));section.ontoggle=()=>{if(!section.isConnected)return;if(section.open)collapsedDoingRooms.delete(key);else collapsedDoingRooms.add(key)};root.append(section)}
+ for(const task of active){const room=st.rooms.find(room=>room.id===task.roomId),key=room?.id||task.area||'General';if(!groups.has(key))groups.set(key,{room,name:room?.name||task.area||'General',tasks:[]});groups.get(key).tasks.push(task)}
+ for(const [key,group] of groups){const section=document.createElement('details'),heading=document.createElement('summary'),title=document.createElement('h3'),list=document.createElement('div');section.className='doing-room-group';section.open=!collapsedDoingRooms.has(key);title.textContent=group.name;const count=document.createElement('span');count.className='meta';count.textContent=String(group.tasks.length);const face=doingRoomFace(group.room);if(face)heading.append(face);heading.append(title,count);section.append(heading,list);for(const task of group.tasks)list.append(mk(task,'task','doing'));section.ontoggle=()=>{if(!section.isConnected)return;if(section.open)collapsedDoingRooms.delete(key);else collapsedDoingRooms.add(key)};root.append(section)}
  if(completed.length||extraCompleted.length){const box=document.createElement('section');box.className='completed-list';box.append(document.createElement('h3'));box.firstChild.textContent='Completed today';for(const task of completed)box.append(mk(task,'task','doing'));for(const task of extraCompleted)box.append(laundryExtraCard(task));root.append(box)}
  if(!items.length&&!washing.length&&!extras.length){const empty=document.createElement('p');empty.textContent="Nothing selected yet. Tap “I'm on it” on a task, or choose one from Needs done.";root.append(empty)}renderAttention();renderDoingSearch()
 }
