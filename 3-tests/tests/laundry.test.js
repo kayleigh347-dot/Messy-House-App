@@ -204,3 +204,26 @@ test('Laundry sidequest category moves to dedicated Laundry with children and pr
  const state=normalize({...board(),sideTabs:[{id:'old-laundry-tab',name:'Laundry'},{id:'garden',name:'Garden'}],side:[{id:'sheets',text:'Wash sheets',type:'old-laundry-tab',done:false,doingNow:true},{id:'sheet-step',text:'Gather sheets',parentId:'sheets',done:true,completedAt:at},{id:'plant',text:'Plant seeds',type:'garden',done:false}]});
  assert.deepEqual(state.side.map(task=>task.id),['plant']);assert.equal(state.settings.find(task=>task.id==='sheets').laundryTask,true);assert.equal(state.settings.find(task=>task.id==='sheets').doingNow,true);assert.equal(state.settings.find(task=>task.id==='sheet-step').done,true);assert.deepEqual(state.sideTabs.map(tab=>tab.id),['garden']);assert.deepEqual(normalize(state).settings,state.settings);
 });
+
+test('Saturday uniform stays active until both darks and whites washing and hanging are completed',()=>{
+ const state=normalize({...board(),settings:[{id:'weekly-uniform',text:'Wash uniform',laundryUniform:true,laundryImported:true,nextDue:'2026-10-10T00:00:00Z',recurrence:{kind:'fixed-weekday',day:6},done:false},...['Wash darks','Put out darks','Wash whites','Put out whites'].map((text,index)=>({id:'uniform-colour-'+index,parentId:'weekly-uniform',text,order:index,done:false}))]});
+ assert.equal(uniformProgress(state,Date.parse('2026-10-09T12:00:00Z')),null);
+ assert.equal(uniformProgress(state,Date.parse(at)).step.text,'Wash darks');
+ const sunday='2026-10-11T12:00:00Z';
+ for(let index=0;index<4;index++){
+  assert.equal(uniformProgress(state,Date.parse(sunday)).step.id,'uniform-colour-'+index);
+  assert.ok(completeUniformStep(state,'uniform-colour-'+index,actor,sunday));
+ }
+ assert.equal(uniformProgress(state,Date.parse(sunday)),null);
+ assert.equal(uniformProgress(state,Date.parse('2026-10-16T12:00:00Z')),null);
+ assert.equal(uniformProgress(state,Date.parse('2026-10-17T12:00:00Z')).step.text,'Wash darks');
+ assert.equal(rewardCounts(state).wins,4);
+});
+
+import {uniformHomeProgress} from '../laundry.js';
+test('homepage uniform hides after both colour cycles, keeping any other uniform steps in dedicated Laundry',()=>{
+ const state=normalize({...board(),settings:[{id:'uniform-colours',text:'Wash uniform',laundryUniform:true,laundryImported:true,nextDue:'2026-10-10T00:00:00Z',recurrence:{kind:'fixed-weekday',day:6},done:false},...['Wash darks','Put out darks','Wash whites','Put out whites','Remove dye from tops if possible'].map((text,index)=>({id:'colour-step-'+index,parentId:'uniform-colours',text,order:index,done:false}))]});
+ assert.equal(uniformHomeProgress(state,Date.parse('2026-10-09T12:00:00Z')),null);
+ for(let index=0;index<4;index++){assert.ok(uniformHomeProgress(state,Date.parse(at)));completeUniformStep(state,'colour-step-'+index,actor,at)}
+ assert.equal(uniformHomeProgress(state,Date.parse(at)),null);assert.equal(uniformProgress(state,Date.parse(at)).step.text,'Remove dye from tops if possible');
+});
