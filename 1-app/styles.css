@@ -352,3 +352,12 @@ dialog::backdrop{background:rgba(67,52,42,.58);backdrop-filter:blur(3px)}
 
 body.task-compact-view #laundryLibrary .reference-task:not(.compact-expanded)>.body>:not(.task-heading):not(strong){display:none!important}
 body.task-compact-view #laundryLibrary .reference-task.compact-expanded>.body>.task-options{display:block!important}
+
+.storage-warning{position:sticky;bottom:82px;z-index:70;margin:10px;padding:12px;background:#54243d;border:2px solid #ffd66f;border-radius:12px;display:flex;gap:8px;flex-wrap:wrap}.storage-warning[hidden]{display:none}.storage-warning span{flex-basis:100%}
+.list-search-controls{margin:8px 0}.list-search-fields{display:grid;gap:8px;padding:8px 0;grid-template-columns:repeat(2,minmax(0,1fr))}.list-search-fields input{grid-column:1/-1}.list-search-fields>*{min-width:0}.list-result-count{display:block;font-size:12px;padding:4px 0}.review-timing{display:block}.task-compact-view .review-timing{display:none!important}
+.task[hidden],.laundry-extra-task[hidden],.task-order-heading[hidden],.template-room-heading[hidden]{display:none!important}
+#backupPreviewCounts{overflow-x:auto}#backupPreviewCounts table{border-collapse:collapse;width:100%;font-size:12px}#backupPreviewCounts th,#backupPreviewCounts td{padding:7px 4px;border-bottom:1px solid #8060ad;text-align:left}
+.repeated-task-record{padding:10px;border:1px solid #9874b8;border-radius:12px;margin-bottom:10px}.repeated-task-record dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:13px}.repeated-task-record dd{margin:0;overflow-wrap:anywhere}.repeated-task-record dt{font-weight:bold}
+#preferences input[type=file],#storageRecovery input[type=file]{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+
+.shared-item[hidden],.manual-schedule-task[hidden]{display:none!important}

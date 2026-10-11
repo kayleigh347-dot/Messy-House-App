@@ -1,7 +1,7 @@
 import {descendants} from './subtasks.js';
 // Future occurrences remain on the calendar until their due time.
 export function activeTask(task,now=Date.now()){
- if(task.done||task.pausedAt)return false;
+ if(task.done||task.archived||task.pausedAt)return false;
  const due=Date.parse(task.nextDue||task.dueDate);
  return !(Number.isFinite(due)&&due>+now);
 }

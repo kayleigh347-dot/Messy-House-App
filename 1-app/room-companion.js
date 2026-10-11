@@ -1,3 +1,4 @@
+import {localStorage} from './safe-storage.js';
 import {createMasterAnimator} from './master-animation.js';
 // Small scene interactions; this module never changes task or sync data.
 import {companionLayouts,nearestCompanionSpot} from './companion-layouts.js?v=mobile-1';

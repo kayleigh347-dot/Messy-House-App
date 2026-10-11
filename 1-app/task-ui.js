@@ -1,3 +1,4 @@
+import {sessionStorage} from './safe-storage.js';
 // Shared recurring sections and timing badges for room and management lists.
 import {priorityOf} from './v2-state.js?v=release-20261010-v3';
 export function taskOrderGroups(tasks){

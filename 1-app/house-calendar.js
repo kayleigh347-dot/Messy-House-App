@@ -1,3 +1,4 @@
+import {localStorage,sessionStorage} from './safe-storage.js';
 import {roomHues} from './room-colours.js';
 import {recurrenceLabel} from './v2-state.js?v=release-20261010-v3';
 import {localDateKey as dateKey} from './calendar.js';
@@ -14,7 +15,7 @@ export function upcomingCalendarEntries(state,{showRecurring=true,showSetDay=tru
  const entries=[];
  for(const a of state.appointments||[])entries.push({date:a.date,title:a.text,time:a.startTime,end:a.endTime,type:'appointment',location:a.location});
  for(const e of (state.errands||[]).filter(e=>!e.done&&e.dueDate&&e.showOnCalendar!==false))entries.push({date:e.dueDate.slice(0,10),title:e.text,type:'errand',id:e.id});
- for(const task of (state.tasks||[]).filter(t=>!t.parentId&&!t.done&&!t.pausedAt)){
+ for(const task of (state.tasks||[]).filter(t=>!t.parentId&&!t.done&&!t.archived&&!t.pausedAt)){
   if(task.recurrence&&!showRecurring||!task.recurrence&&!showSetDay)continue;
   const due=task.recurrence?Date.parse(task.nextDue||task.activeSince||task.created):task.dueDate?Date.parse(task.dueDate):taskDeadline({...task,scheduled:false});
   if(!Number.isFinite(due))continue;
@@ -41,7 +42,7 @@ export function moveCalendarRoom(state,{ids,roomId,from,to},now=Date.now()){
 }
 export function undoCalendarRoomMove(state,undo){
  let count=0;
- for(const item of undo){const task=state.tasks.find(t=>t.id===item.id&&!t.done&&!t.pausedAt);if(!task||JSON.stringify(moveSnapshot(task))!==JSON.stringify(item.after))continue;
+ for(const item of undo){const task=state.tasks.find(t=>t.id===item.id&&!t.done&&!t.archived&&!t.pausedAt);if(!task||JSON.stringify(moveSnapshot(task))!==JSON.stringify(item.after))continue;
   for(const key of moveFields)delete task[key];Object.assign(task,item.before);count++;
  }
  return count;

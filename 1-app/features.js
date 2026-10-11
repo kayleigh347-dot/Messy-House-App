@@ -1,7 +1,8 @@
+import {localStorage,sessionStorage} from './safe-storage.js';
 import {scheduleFields,scheduleSnapshot,recurringScheduleTasks,nextDueDate,setNextDue,schedulePlan,unchangedScheduleTasks} from './recurring-schedule.js?v=schedule-20261010-v1';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {createSymbolCalendar,scheduledCalendarState,roomSymbol,moveCalendarRoom,undoCalendarRoomMove} from './house-calendar.js?v=release-20261010-v3';
-import {initTimer,tickTimer,startFocus} from './focus-timer.js?v=automate-stay-20261010-v1';
+import {initTimer,tickTimer,startFocus} from './focus-timer.js?v=review-20261011-v3';
 export {startFocus};
 import {placeNewTasksFirst,freshTask,nextOccurrence,recurrenceLabel,roomMess,DAY,priorityOrdered} from './v2-state.js?v=new-tasks-first-20261010-v1';
 import {taskDeadline} from './task-extras.js?v=new-tasks-first-20261010-v1';
@@ -12,7 +13,7 @@ let roomMoveUndo=[];
 export function calendarDragOptions(onMoved){return {onMoveRoom:move=>{roomMoveUndo=moveCalendarRoom(api.get(),move);onMoved?.(move);api.save();featureToast(`Moved ${roomMoveUndo.length} tasks to ${new Date(move.to+'T12:00:00').toLocaleDateString()}. Repeat rules stay the same.`)},...(roomMoveUndo.length?{onUndoRoomMove:()=>{const count=undoCalendarRoomMove(api.get(),roomMoveUndo);roomMoveUndo=[];api.save();featureToast(`Restored ${count} tasks. Tasks changed since the move were kept.`)}}:{})}}
 let api,importDraft=[],importUndo=[],scheduleUndo=[],toastTimeout,recurringStatus='needs',manualAnchor=new Date(),manualDay=null,manualRoom='',manualSelected=new Set(),manualMessage='';
 export function featureToast(text){const n=$('#featureToast');n.textContent=text;n.hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>n.hidden=true,5500)}
-export function applyPreferences(state,actor){const pref=state.settings?.find(x=>x.id==='preferences-'+actor.id)||JSON.parse(localStorage.getItem('mc-preferences-'+actor.id)||'{}');document.body.classList.toggle('simple-view',!!pref.simple);document.body.classList.add('dark-mode');document.querySelector('meta[name=theme-color]').content='#1A0430';document.body.dataset.snark=pref.snark||'gentle';$('#simpleSettings').hidden=!pref.simple;$('#simpleView').checked=!!pref.simple;$('#snarkLevel').value=pref.snark||'gentle'}
+export function applyPreferences(state,actor){const pref=state.settings?.find(x=>x.id==='preferences-'+actor.id)||localStorage.readJSON('mc-preferences-'+actor.id,{},value=>!!value&&typeof value==='object'&&!Array.isArray(value));document.body.classList.toggle('simple-view',!!pref.simple);document.body.classList.add('dark-mode');document.querySelector('meta[name=theme-color]').content='#1A0430';document.body.dataset.snark=pref.snark||'gentle';$('#simpleSettings').hidden=!pref.simple;$('#simpleView').checked=!!pref.simple;$('#snarkLevel').value=pref.snark||'gentle'}
 function savePreferences(){const state=api.get(),id='preferences-'+api.actor().id,pref={id,dark:true,simple:$('#simpleView').checked,snark:$('#snarkLevel').value};state.settings=state.settings.filter(x=>x.id!==id);state.settings.push(pref);localStorage.setItem('mc-'+id,JSON.stringify(pref));api.save()}
 export function initFeatures(handlers){api=handlers;$('#simpleSettings').onclick=()=>document.querySelector('nav [data-tab="preferences"]').click();$('#simpleView').onchange=savePreferences;$('#snarkLevel').onchange=savePreferences;
  for(const b of document.querySelectorAll('[data-recurring-add]'))b.onclick=()=>editRecurring(null,!document.querySelector('#roomDetail').classList.contains('hide')?sessionStorage.getItem('mc-open-room'):$('#recurringRoom').value||$('#categoryFilter').value||null);
@@ -21,7 +22,7 @@ export function initFeatures(handlers){api=handlers;$('#simpleSettings').onclick
  for(const tab of document.querySelectorAll('[data-recurring-status]'))tab.onclick=()=>{recurringStatus=tab.dataset.recurringStatus;renderRecurring()};
  $('#openManualSchedule').onclick=()=>{manualRoom=$('#recurringRoom').value;manualSelected.clear();manualDay=null;manualMessage='';api.openPage('manualSchedule')};$('#closeManualSchedule').onclick=()=>api.openPage('recurring');
  $('#recurringRoom').onchange=renderRecurring;$('#roomSchedule').onclick=editRoomSchedule;
- $('#spreadTasks').onclick=previewSpread;$('#undoSchedule').onclick=undoSchedule;$('#pauseAll').onclick=()=>pauseTasks(api.get().tasks.filter(t=>!t.done&&t.recurrence&&!t.pausedAt));$('#resumeAll').onclick=()=>resumeTasks(api.get().tasks.filter(t=>!t.done&&t.pausedAt));
+ $('#spreadTasks').onclick=previewSpread;$('#undoSchedule').onclick=undoSchedule;$('#pauseAll').onclick=()=>pauseTasks(api.get().tasks.filter(t=>!t.done&&!t.archived&&t.recurrence&&!t.pausedAt));$('#resumeAll').onclick=()=>resumeTasks(api.get().tasks.filter(t=>!t.done&&!t.archived&&t.pausedAt));
  $('#taskUpload').onchange=readUpload;$('#applyImport').onclick=applyImport;$('#undoImport').onclick=undoImport;
  initTimer({actor:api.actor,dialog:showDialog,toast:featureToast});
 }
@@ -33,7 +34,7 @@ function renderRecurring(){
  for(const room of state.rooms.filter(r=>!r.archived))select.append(new Option(roomSymbol(room.id)+' '+room.name,room.id));
  select.value=selected;const filter=select.value;root.replaceChildren();
  const series=new Map();
- for(const t of state.tasks.filter(t=>!t.parentId&&!t.done&&t.recurrence&&(!filter||t.roomId===filter))){
+ for(const t of state.tasks.filter(t=>!t.parentId&&!t.done&&!t.archived&&t.recurrence&&(!filter||t.roomId===filter))){
   const key=t.roomId+'|'+(t.recurringGroupId||t.seriesId||t.id);
   if(!series.has(key)||Date.parse(t.nextDue||0)<Date.parse(series.get(key).nextDue||0))series.set(key,t);
  }
@@ -46,6 +47,7 @@ function renderRecurring(){
  }
  for(const [key,name] of recurringSections){const rows=groups.get(key),tab=document.querySelector(`#recurringStatusTabs [data-recurring-status="${key}"]`);setTabLabel(tab,name,rows.length);tab.setAttribute('aria-pressed',String(recurringStatus===key));if(key!==recurringStatus)continue;if(rows.length){const byId=new Map(rows.map(row=>[row.dataset.taskId,row]));appendTaskGroups(root,priorityOrdered([...series.values()].filter(task=>byId.has(task.id))),task=>byId.get(task.id))}else root.append(el('p','No tasks here.'))}
 
+ document.dispatchEvent(new Event('mc-lists-rendered'));
 }
 function editNextDue(id){
  const task=recurringScheduleTasks(api.get()).find(t=>t.id===id);if(!task)return;
@@ -80,8 +82,8 @@ function renderManualSchedule(){
  const form=el('form');form.className='editor';const confirm=el('button'),notice=el('p',manualMessage);confirm.type='submit';notice.setAttribute('role','status');
  const update=()=>{confirm.textContent=`Move ${manualSelected.size} ${manualSelected.size===1?'task':'tasks'} to this day`;confirm.disabled=!manualSelected.size};
  if(!tasks.length)form.append(el('p','No recurring tasks for this room.'));
- for(const t of tasks){const label=el('label'),c=el('input');label.className='checkbox-label manual-schedule-task';c.type='checkbox';c.checked=manualSelected.has(t.id);c.onchange=()=>{c.checked?manualSelected.add(t.id):manualSelected.delete(t.id);update()};const due=nextDueDate(t);label.append(c,el('span',`${t.text} · ${state.rooms.find(r=>r.id===t.roomId)?.name||t.area} · ${due?'Due '+new Date(due+'T12:00:00').toLocaleDateString():'No date'}${t.pausedAt?' · Paused':''}`));form.append(label)}
- update();form.append(confirm,notice);choices.append(form);
+ for(const t of tasks){const label=el('label'),c=el('input');label.dataset.taskId=t.id;label.dataset.collection='tasks';label.className='checkbox-label manual-schedule-task';c.type='checkbox';c.checked=manualSelected.has(t.id);c.onchange=()=>{c.checked?manualSelected.add(t.id):manualSelected.delete(t.id);update()};const due=nextDueDate(t);label.append(c,el('span',`${t.text} · ${state.rooms.find(r=>r.id===t.roomId)?.name||t.area} · ${due?'Due '+new Date(due+'T12:00:00').toLocaleDateString():'No date'}${t.pausedAt?' · Paused':''}`));form.append(label)}
+ update();form.append(confirm,notice);choices.append(form);document.dispatchEvent(new Event('mc-lists-rendered'));
  form.onsubmit=e=>{e.preventDefault();const selected=tasks.filter(t=>manualSelected.has(t.id));if(!selected.length)return;const plan=schedulePlan(selected),day=manualDay,body=showDialog('Confirm schedule change');body.append(el('h3',`Move ${plan.length} ${plan.length===1?'task':'tasks'} to ${new Date(day+'T12:00:00').toLocaleDateString()}`));const list=el('ul');for(const t of selected)list.append(el('li',t.text+' · '+t.area));body.append(list,el('p','Repeat rules stay the same. Paused tasks stay paused.'));body.append(button('Confirm move',()=>{const current=unchangedScheduleTasks(api.get(),plan);manualMessage=scheduleResult(current.length,plan.length);manualSelected.clear();changeSchedules(current,t=>setNextDue(t,day));$('#featureDialog').close();renderManualSchedule()}),button('Cancel',()=>$('#featureDialog').close()))};
 }
 function editRecurring(tasks=null,roomId=null,inline=false){const body=inline?$('#quickRecurringBody'):showDialog(tasks?'Edit recurring task':'Add recurring task'),dialog=inline?$('#quickTask'):$('#featureDialog'),f=el('form');if(inline)body.replaceChildren();f.className='editor';f.innerHTML=`<label>Task<input name="text" required maxlength="180"></label>
@@ -119,7 +121,7 @@ function changeSchedules(tasks,update){scheduleUndo=tasks.map(t=>({id:t.id,befor
 function pauseTasks(tasks){changeSchedules(tasks,t=>{t.pausedAt=new Date().toISOString()});featureToast(`${tasks.length} recurring tasks paused.`)}
 function resumeTasks(tasks){changeSchedules(tasks,t=>{const shift=Math.max(0,Date.now()-Date.parse(t.pausedAt));if(!t.nextDue)t.nextDue=t.activeSince||t.created;for(const key of ['nextDue','activeSince'])if(Number.isFinite(Date.parse(t[key])))t[key]=new Date(Date.parse(t[key])+shift).toISOString();delete t.pausedAt;if(t.nextDue){t.scheduled=Date.parse(t.nextDue)>Date.now();t.bucket='now'}});featureToast('Recurring tasks resumed. Their dates moved by the pause duration.')}
 function undoSchedule(){let count=0;for(const item of scheduleUndo){const t=api.get().tasks.find(t=>t.id===item.id&&!t.done);if(t&&JSON.stringify(fields(t))===JSON.stringify(item.after)){for(const key of scheduleFields)delete t[key];Object.assign(t,item.before);count++}}scheduleUndo=[];$('#undoSchedule').disabled=true;$('#undoSchedule').hidden=true;api.save();featureToast(`Restored ${count} schedules. Tasks changed since then were kept.`)}
-function previewSpread(){const body=showDialog('Spread recurring tasks'),intro=el('p','Daily tasks stay as they are. Other tasks are spread across their repeat interval. This includes overdue tasks; review the proposed dates before applying. Completed history stays unchanged.');body.append(intro);const tasks=api.get().tasks.filter(t=>!t.done&&t.recurrence&&!t.pausedAt),load=new Map(),proposals=[];const today=new Date();today.setHours(0,0,0,0);
+function previewSpread(){const body=showDialog('Spread recurring tasks'),intro=el('p','Daily tasks stay as they are. Other tasks are spread across their repeat interval. This includes overdue tasks; review the proposed dates before applying. Completed history stays unchanged.');body.append(intro);const tasks=api.get().tasks.filter(t=>!t.done&&!t.archived&&t.recurrence&&!t.pausedAt),load=new Map(),proposals=[];const today=new Date();today.setHours(0,0,0,0);
  for(const t of tasks){const r=t.recurrence;if(r.kind==='days'&&r.every===1)continue;const interval=r.kind==='weekdays'?7:r.every*(r.kind==='weeks'?7:1);let best=null,bestLoad=Infinity;for(let i=0;i<interval;i++){const d=new Date(today);d.setDate(d.getDate()+i);if(r.kind==='weekdays'&&!r.days.includes(d.getDay()))continue;const key=dateKey(d),n=load.get(key)||0;if(n<bestLoad){best=d;bestLoad=n;if(n===0)break}}if(best){load.set(dateKey(best),bestLoad+1);proposals.push({id:t.id,date:best.toISOString(),before:fields(t)})}}
  if(!proposals.length){body.append(el('p','There are no longer-interval active recurring tasks to spread.'));return}body.append(spreadPreviewCalendar(proposals,tasks));const apply=open=>{const valid=proposals.filter(p=>{const t=api.get().tasks.find(t=>t.id===p.id&&!t.done);return t&&JSON.stringify(fields(t))===JSON.stringify(p.before)});changeSchedules(valid.map(p=>api.get().tasks.find(t=>t.id===p.id)),t=>{const p=valid.find(p=>p.id===t.id);t.nextDue=p.date;t.activeSince=p.date;t.scheduled=Date.parse(p.date)>Date.now();t.bucket='now'});$('#featureDialog').close();if(open)api.openCalendar(new Date(valid[0]?.date||Date.now()));featureToast(`Spread ${valid.length} schedules. Undo is available on Recurring tasks.`)};body.append(button('Apply these dates',()=>apply(false)),button('Apply and open calendar',()=>apply(true)))}
 function spreadPreviewCalendar(proposals,tasks){

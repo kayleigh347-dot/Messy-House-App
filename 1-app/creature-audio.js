@@ -1,3 +1,4 @@
+import {localStorage} from './safe-storage.js';
 // Short, local synth voices. Rendering and remote updates never start audio.
 export const voices={
  SPOTLESS:{notes:[620,830,1040],duration:.12,wave:'sine'},

@@ -1,3 +1,4 @@
+import {canonicalRoomName,roomNames} from './room-names.js';
 import {migrateKitchenLaundry,restoreUniformBackupSteps} from './laundry-migration.js?v=laundry-uniform-20261010-v2';
 import {settleScheduledLaundry} from './laundry.js?v=laundry-uniform-20261010-v2';
 import {activeTask,recurringDueNotification} from './task-flow.js?v=schedule-20261010-v1';
@@ -62,7 +63,8 @@ export const roomId=name=>'area-'+encodeURIComponent(name.trim().toLowerCase());
 export function normalize(input){
  const state=structuredClone(input);
  for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs'])state[key]||=[];
- state.rooms ||= INITIAL_ROOMS.map(([id,name,guardian],order)=>({id:'room-'+id,name,guardian,order,archived:false}));
+ state.rooms ||= INITIAL_ROOMS.map(([id,name,guardian],order)=>({id:'room-'+id,name:roomNames['room-'+id]||name,guardian,order,archived:false}));
+ for(const room of state.rooms)room.name=canonicalRoomName(room);
  for(const key of ['tasks','side','wins','templates','homeless'])state[key].forEach((t,index)=>{
   const name=typeof t.area==='string'&&t.area.trim()?t.area.trim():'General';
   let room=state.rooms.find(r=>r.id===t.roomId)||state.rooms.find(r=>r.name.toLowerCase()===name.toLowerCase());
@@ -144,7 +146,7 @@ export function scheduleNext(task,now=new Date()){
  return {...freshTask(task,`occ-${seriesId}-${nextDue}`,now.toISOString(),task.order),...(task.importantWhenOverdue?{importantWhenOverdue:true}:{}),seriesId,recurringGroupId:task.recurringGroupId||seriesId,recurrence:structuredClone(task.recurrence),bucket:'now',scheduled:true,allowanceDays:null,nextDue,lastDone:task.lastDone,activeSince:nextDue};
 }
 export function activateDue(st,now=Date.now()){
- let changed=false;for(const t of st.tasks)if(!t.done&&!t.pausedAt&&t.scheduled&&Date.parse(t.nextDue)<=now){const notice=recurringDueNotification(t,st.householdPeople,new Date(now).toISOString());if(notice){st.notifications||=[];if(!st.notifications.some(n=>n.id===notice.id))st.notifications.push(notice)}t.bucket='now';t.scheduled=false;t.activeSince=t.nextDue;changed=true}return changed;
+ let changed=false;for(const t of st.tasks)if(!t.done&&!t.archived&&!t.pausedAt&&t.scheduled&&Date.parse(t.nextDue)<=now){const notice=recurringDueNotification(t,st.householdPeople,new Date(now).toISOString());if(notice){st.notifications||=[];if(!st.notifications.some(n=>n.id===notice.id))st.notifications.push(notice)}t.bucket='now';t.scheduled=false;t.activeSince=t.nextDue;changed=true}return changed;
 }
 export function recurrenceLabel(t){
  const r=t.recurrence;if(!r)return '';

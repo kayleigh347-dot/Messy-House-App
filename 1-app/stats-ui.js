@@ -1,3 +1,4 @@
+import {sessionStorage} from './safe-storage.js';
 import {roomHues} from './room-colours.js';
 import {periodStart} from './periods.js';
 import {taskStats} from './task-stats.js';

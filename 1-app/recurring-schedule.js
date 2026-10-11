@@ -2,7 +2,7 @@ import {localDateKey} from './calendar.js';
 export const scheduleFields=['nextDue','activeSince','bucket','scheduled','pausedAt','recurrence','allowanceDays'];
 export const scheduleSnapshot=task=>Object.fromEntries(scheduleFields.filter(key=>key in task).map(key=>[key,structuredClone(task[key])]));
 export function recurringScheduleTasks(state,roomId=''){
- return state.tasks.filter(t=>!t.parentId&&!t.done&&t.recurrence&&(!roomId||t.roomId===roomId));
+ return state.tasks.filter(t=>!t.parentId&&!t.done&&!t.archived&&t.recurrence&&(!roomId||t.roomId===roomId));
 }
 export function nextDueDate(task){const due=task?.nextDue||task?.activeSince||task?.created;return Number.isFinite(Date.parse(due))?localDateKey(new Date(due)):''}
 export function setNextDue(task,date,now=Date.now()){

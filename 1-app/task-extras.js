@@ -1,6 +1,6 @@
 import {placeNewTasksFirst,dueAt,freshTask,ordered} from './v2-state.js?v=new-tasks-first-20261010-v1';
 import {descendants} from './subtasks.js';
-export function activeSavedTasks(state,template){return state.tasks.filter(task=>!task.done&&!task.parentId&&task.roomId===template.roomId&&(task.sourceTemplateId===template.id||task.text.trim().toLocaleLowerCase()===template.text.trim().toLocaleLowerCase()))}
+export function activeSavedTasks(state,template){return state.tasks.filter(task=>!task.done&&!task.archived&&!task.parentId&&task.roomId===template.roomId&&(task.sourceTemplateId===template.id||task.text.trim().toLocaleLowerCase()===template.text.trim().toLocaleLowerCase()))}
 export function removeSavedTasks(state,template){const roots=activeSavedTasks(state,template),ids=new Set(roots.flatMap(root=>[root,...descendants(state.tasks,root.id)]).map(task=>task.id));state.tasks=state.tasks.filter(task=>!ids.has(task.id));return roots.length}
 export function addSavedTasks(state,ids,newId=()=>crypto.randomUUID(),now=new Date().toISOString()){
  const selected=new Set(ids),roots=ordered(state.templates).filter(t=>selected.has(t.id)&&!t.parentTemplateId&&state.rooms.some(r=>r.id===t.roomId&&!r.archived)),start=Math.max(-1,...state.tasks.map(t=>t.order??0))+1;let count=0;const added=[];
@@ -38,7 +38,7 @@ export function reusableSuggestionEligible(item,now=Date.now(),completedAt=item?
 export function nextTaskId(tasks,current){const at=tasks.findIndex(t=>t.id===current);return tasks.length?tasks[(at+1)%tasks.length].id:null}
 
 export function taskDeadline(task){
- if(task.done||task.pausedAt||task.scheduled)return null;
+ if(task.done||task.archived||task.pausedAt||task.scheduled)return null;
  if(task.recurrence){const date=Date.parse(task.nextDue||task.activeSince||task.created);return Number.isFinite(date)?date:null;}
  const allowance=dueAt(task);if(allowance!==null)return allowance;
  const recurring=task.recurrence?Date.parse(task.nextDue):NaN;

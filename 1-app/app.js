@@ -1,5 +1,8 @@
+import {initReviewUI,applyListFilters} from './review-ui.js';
+import {localStorage,sessionStorage,criticalStorageProblem,downloadJSON} from './safe-storage.js';
+import {validateBackup,backupPreview} from './backup-tools.js';
 import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v2';
-import {laundryProgress,completeLaundryStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=laundry-library-20261011-v2';
+import {laundryProgress,completeLaundryStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=review-20261011-v3';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -8,7 +11,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=automate-stay-20261010-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=review-20261011-v3';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -20,7 +23,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=laundry-library-20261011-v2";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=review-20261011-v3";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=new-tasks-first-20261010-v1";
 
@@ -42,19 +45,21 @@ document.addEventListener('submit',event=>{let drafts={};try{drafts=JSON.parse(s
 
 if(!localStorage.getItem('mc-compact-default-20261010-v2')){localStorage.setItem('mc-task-layout','compact');localStorage.setItem('mc-compact-default-20261010-v2','true')}
 const C="mc-config-v1",S="mc-state-v1";
-let cfg=JSON.parse(localStorage.getItem(C)||'{"url":"https://thviqhojcjrmqurhdkql.supabase.co","key":"sb_publishable_ziQesp5o-pHIXINUMMdmTA_3nDFSVZr"}'),st=JSON.parse(localStorage.getItem(S)||'{"tasks":[],"side":[],"wins":[],"current":null}'),db=null,filter="all";
+const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
+const defaultConfig={url:'https://thviqhojcjrmqurhdkql.supabase.co',key:'sb_publishable_ziQesp5o-pHIXINUMMdmTA_3nDFSVZr'};
+let cfg=localStorage.readJSON(C,defaultConfig,value=>object(value)&&['url','key'].every(key=>value[key]===undefined||typeof value[key]==='string')),st=localStorage.readJSON(S,{tasks:[],side:[],wins:[],current:null},value=>{try{validateBackup(value);return true}catch{return false}}),db=null,filter="all";
 let calendarMonth=new Date();
 
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random(), iso=()=>new Date().toISOString();
 
-function local(){localStorage.setItem(S,JSON.stringify(st))}
+function local(){return localStorage.setItem(S,JSON.stringify(st))}
 import {rewardProgress,revealReward,prizes} from "./rewards.js?v=laundry-uniform-20261010-v2";
 
 import {merge, empty,openHouseState,reconcileSync} from "./sync-state.js?v=laundry-uniform-20261010-v2";
 
 const M="mc-sync-v2";
 
-let meta=JSON.parse(localStorage.getItem(M)||"{}"), busy=false, timer, authSubscription;
+let meta=localStorage.readJSON(M,{},value=>{if(!object(value)||value.actor&&(!object(value.actor)||typeof value.actor.id!=='string'))return false;try{if(value.base)validateBackup(value.base);return true}catch{return false}}), busy=false, timer, authSubscription;
 
 const activityKey=()=>`mc-house-seen-v1:${meta.owner||'local'}:${meta.houseId||'home'}`;
 function activitySeen(){try{return JSON.parse(localStorage.getItem(activityKey())||'{}')}catch{return {}}}
@@ -64,7 +69,7 @@ const entryTime=value=>{const time=Date.parse(value);return Number.isFinite(time
 
 let signedIn=false;
 function updateSignInUI(value){signedIn=!!value;$('#displayNameForm').hidden=!signedIn;document.querySelector('.sync-line').hidden=signedIn;$('#signOut').hidden=!signedIn;$('#signIn').hidden=signedIn;$('#email').closest('label').hidden=signedIn}
-const status=text=>$('#sync').textContent=text;
+const status=text=>$('#sync').textContent=criticalStorageProblem()?'Not saved · recovery needed':text;
 function settingsTab(name='general'){for(const panel of $$('[data-settings-panel]'))panel.hidden=panel.dataset.settingsPanel!==name;for(const tab of $$('[data-settings-tab]'))tab.setAttribute('aria-pressed',String(tab.dataset.settingsTab===name));if(name==='account'){$('#url').value=cfg.url||'';$('#key').value=cfg.key||'';if(db&&!sharingBusy&&!busy)db.auth.getSession().then(({data})=>{if(data.session)runSharing(refreshHouses)}).catch(()=>{})}}
 for(const tab of $$('[data-settings-tab]'))tab.onclick=()=>settingsTab(tab.dataset.settingsTab);
 
@@ -84,6 +89,7 @@ async function connect(){
   authSubscription?.unsubscribe();
  db=null;
 
+  if(criticalStorageProblem()){status('Recovery needed · sync paused');return}
   if(!cfg.url||!cfg.key){status("Local · saved on this device");
 return}
   try{
@@ -99,7 +105,7 @@ return}
 $("#msg").textContent=e.message}
 }
 async function push(forSharing=false){
-  if(!db||busy||(sharingBusy&&!forSharing))return;
+  if(criticalStorageProblem()||!db||busy||(sharingBusy&&!forSharing))return;
 
   busy=true;
 
@@ -122,6 +128,7 @@ return}
     ensurePerson(st,meta.actor);if(document.activeElement!==$('#displayName'))$('#displayName').value=displayPersonName(currentActor());
 remember();
 local();
+if(criticalStorageProblem())return;
 
     $("#account").textContent="Signed in as "+session.user.email;
 
@@ -134,6 +141,7 @@ attempt++){
       const {data:remote,error}=await client.from("mission_boards").select("payload,revision").eq("user_id",houseId).maybeSingle();
 
       if(error)throw error;
+      if(criticalStorageProblem())return;
       if(houseId!==session.user.id&&!remote)throw new Error('Shared house unavailable. Your local copy is kept; ask the owner to check your access.');
 
       const combined=merge(base,snapshot,remote?.payload||empty());
@@ -221,7 +229,7 @@ changed()}
 function win(t,kind,at=iso(),actor=currentActor(),details={}){const record={...completionRecord(t,at,kind,actor),...details};st.wins.unshift(record);return record;
 }
 function finish(t,kind,actor=currentActor(),silent=false){t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return false;
- actor=st.householdPeople.find(p=>p.id===actor?.id&&p.id!=='local-device');if(!actor){if(!silent)featureToast('Sign in on this device to complete tasks and keep your points.');return false}
+ actor=st.householdPeople.find(p=>p.id===actor?.id&&p.id!=='local-device');if(!actor){if(!silent){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete tasks and keep your points.');}return false}
 const items=kind==='side'?st.side:st.tasks,childIds=descendants(items,t.id).reverse().map(child=>child.id);for(const childId of childIds){const childItems=kind==='side'?st.side:st.tasks,child=childItems.find(item=>item.id===childId);if(child&&!child.done)finish(child,kind,actor,true)}t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return true;
 const roomId=t.roomId,fromMood=roomId&&roomMess(st,roomId).state;
 // Capture any overdue growth before removing this task's contribution.
@@ -266,7 +274,7 @@ function subtaskPanel(t,kind,context,body){const items=kind==='side'?st.side:st.
 }
 function roomColour(task){return `hsl(${roomHues(st.rooms).get(task.roomId)??200} 55% 70%)`}
 function mk(t,kind="task",context="source"){let a=document.createElement("article");
-a.className="task task-card";a.dataset.taskId=t.id;
+a.className="task task-card";a.dataset.taskId=t.id;a.dataset.collection=kind==='side'?'side':'tasks';
 let colourHash=0;for(const c of t.id)colourHash=(colourHash*31+c.charCodeAt(0))>>>0;
 a.style.setProperty('--task-hue',[325,270,155,205,45,180,295][colourHash%7]);
 a.dataset.priority=kind==='task'?priorityOf(t):'mid';
@@ -370,7 +378,7 @@ tools.append(bottom);
  const doing=document.createElement('button');doing.className='do-now';doing.textContent=t.doingNow?'Not on it':"I'm on it";doing.setAttribute('aria-pressed',String(!!t.doingNow));doing.setAttribute('aria-label',(t.doingNow?'Remove from Doing Now: ':'Add to Doing Now: ')+t.text);doing.onclick=()=>{t.doingNow?removeFromDoingNow(t):addToDoingNow(t,st.tasks);changed()};if(!t.parentId)tools.append(doing)
 
 }
-const focus=document.createElement('button');focus.type='button';focus.className='time-task';focus.innerHTML='<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path fill="#63b6b1" d="M12 2h8v4h-8zM22 6l3-3 3 3-3 3z"/><circle cx="16" cy="19" r="12" fill="#f5b4cd" stroke="#694671" stroke-width="2"/><path d="M16 10v9l5 3" fill="none" stroke="#51375b" stroke-width="2.5" stroke-linecap="round"/></svg>';focus.setAttribute('aria-label','Start stopwatch for '+t.text);focus.title='Start stopwatch';focus.onclick=()=>startFocus(t);
+const focus=document.createElement('button');focus.type='button';focus.className='time-task';focus.innerHTML='<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path fill="#63b6b1" d="M12 2h8v4h-8zM22 6l3-3 3 3-3 3z"/><circle cx="16" cy="19" r="12" fill="#f5b4cd" stroke="#694671" stroke-width="2"/><path d="M16 10v9l5 3" fill="none" stroke="#51375b" stroke-width="2.5" stroke-linecap="round"/></svg>';focus.setAttribute('aria-label','Set timer for '+t.text);focus.title='Set timer';focus.onclick=()=>startFocus(t);
 let del=document.createElement("button");
 del.textContent="Delete";
 del.setAttribute("aria-label","Delete: "+t.text);
@@ -410,7 +418,7 @@ function renderLaundryPanel(){
   $('#uniformStepNumber').textContent=`Step ${uniform.index+1} of ${uniform.total}`;$('#uniformStepTitle').textContent=uniform.step.text;
   const button=$('#uniformComplete');button.textContent=laundryCompletionPhrase(uniform.step.text);button.disabled=uniformBusy;button.setAttribute('aria-label','Complete uniform step: '+uniform.step.text);
   button.onclick=()=>{if(uniformBusy)return;const before=rewardProgress(st).earned,record=completeUniformStep(st,uniform.step.id,currentActor());
-   if(!record){featureToast('Sign in on this device to complete laundry and keep your points.');return}
+   if(!record){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete laundry and keep your points.');return}
    uniformBusy=true;$('#uniformStatus').textContent=record.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');setTimeout(()=>{uniformBusy=false;renderLaundryPanel()},800);
   };
  }
@@ -424,7 +432,7 @@ function renderLaundryPanel(){
   button.onclick=()=>{
    if(laundryBusy[cycle])return;
    const before=rewardProgress(st).earned,record=completeLaundryStep(st,progress.completed,currentActor(),new Date().toISOString(),cycle);
-   if(!record){featureToast('Sign in on this device to complete laundry and keep your points.');return}
+   if(!record){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete laundry and keep your points.');return}
    laundryBusy[cycle]=true;$('#'+prefix+'Status').textContent=`${record.text} complete. +1 point. Next: ${laundryProgress(st,cycle).text}.`;
    changed();
    if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');
@@ -436,9 +444,9 @@ function renderLaundryTasks(){
  const list=$('#laundryTasks');list.replaceChildren();const completed=document.createElement('div');completed.className='laundry-completed';
  for(const task of laundryTaskList(st)){
   const row=document.createElement('div'),text=document.createElement('span'),done=document.createElement('button'),remove=document.createElement('button');
-  row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent=task.done?'Undo':laundryCompletionPhrase(task.text);remove.textContent='Delete';
+  row.dataset.taskId=task.id;row.dataset.collection='settings';row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent=task.done?'Undo':laundryCompletionPhrase(task.text);remove.textContent='Delete';
   done.setAttribute('aria-label',(task.done?'Undo laundry task: ':'Complete laundry task: ')+task.text);remove.setAttribute('aria-label','Delete laundry task: '+task.text);
-  done.onclick=()=>{if(task.done){undoLaundryTask(st,task.id);changed();return}const before=rewardProgress(st).earned;if(!completeLaundryTask(st,task.id,currentActor())){featureToast('Sign in on this device to complete laundry and keep your points.');return}$('#laundryTasksStatus').textContent=task.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!')};
+  done.onclick=()=>{if(task.done){undoLaundryTask(st,task.id);changed();return}const before=rewardProgress(st).earned;if(!completeLaundryTask(st,task.id,currentActor())){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete laundry and keep your points.');return}$('#laundryTasksStatus').textContent=task.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!')};
   remove.onclick=()=>{if(isLaundryCycleItem(st,task)&&!window.confirm('This task is part of a laundry cycle. Deleting it may change that cycle. Continue?'))return;deleteLaundryItem(st,task);changed()};
   row.append(text,done,remove);(task.done?completed:list).append(row);
  }
@@ -454,6 +462,7 @@ function showDoingTab(tab){
  const laundry=tab==='laundry',attention=tab==='attention';
  $('#doingList').hidden=laundry||attention;$('#attentionList').hidden=laundry||!attention;$('#laundryPanel').hidden=!laundry;
  for(const node of document.querySelectorAll('#doing > .task-list-toolbar,#doing > .doing-search,#doingSearchResults,#doingAdd,#doing > .undo-deleted'))node.hidden=laundry;
+ for(const node of document.querySelectorAll('#doing [data-list-for]'))node.hidden=document.getElementById(node.dataset.listFor).hidden;
  if(!laundry)renderDoingSearch();
  for(const button of document.querySelectorAll('[data-doing-tab]'))button.setAttribute('aria-pressed',String(button.dataset.doingTab===tab));
 }
@@ -475,12 +484,12 @@ let d=uniqueWins(st).filter(inCategory).length+(st.completionArchive||[]).filter
 $("#doneN").textContent=d+" done";
 $("#openN").textContent=r+" remaining";
 $("#bar").value=(d+r)?Math.round(d/(d+r)*100):0;
-const shownTasks=st.tasks.filter(t=>!t.parentId&&activeTask(t)&&inCategory(t));
-$('#allTaskSummary').textContent=`${shownTasks.length} active tasks${categoryFilter?' in this room':''} · Future tasks are on the calendar.`;
+const shownTasks=st.tasks.filter(t=>!t.parentId&&!t.done&&!t.archived&&inCategory(t));
+$('#allTaskSummary').textContent=`${shownTasks.length} unfinished tasks${categoryFilter?' in this room':''}`;
 list("#nowList",shownTasks,"task",st.tasks.filter(t=>completedToday(t,st.wins)&&inCategory(t)));
 renderSidequestTabs($('#sideTabs'),st,filter,value=>{filter=value;render()},changed,()=>st);
 list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&sidequestMatches(t,filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&sidequestMatches(t,filter)));
-renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderCalendar();colourTaskLists();renderUndoDeleted();showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
+renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderCalendar();colourTaskLists();renderUndoDeleted();applyListFilters();showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
 
 function renderHousehold(){
  $('#scoreboardHeading').textContent='Household members · '+$('#statsPeriod').selectedOptions[0].textContent;
@@ -496,7 +505,7 @@ function renderHousehold(){
 
  const shopping=$("#shoppingList");shopping.replaceChildren();
  const shoppingItems=[...st.shopping].sort((a,b)=>Number(a.done)-Number(b.done)||String(b.createdAt).localeCompare(String(a.createdAt)));
- for(const item of shoppingItems){const row=document.createElement('article'),toggle=document.createElement('button'),body=document.createElement('div'),text=document.createElement('strong'),by=document.createElement('span'),remove=document.createElement('button');row.className='shared-item'+(item.done?' is-done':'');toggle.type='button';toggle.textContent=item.done?'↶':'✓';toggle.setAttribute('aria-label',(item.done?'Put back on list: ':'Mark bought: ')+item.text);toggle.onclick=()=>{item.done=!item.done;item.updatedAt=iso();item.completedBy=item.done?currentActor().id:null;changed()};body.className='shared-item-body';text.className='shared-item-text';text.textContent=item.text;by.className='meta';by.textContent=`Added by ${item.createdByName||'a household member'}${entryTime(item.createdAt)?' · '+entryTime(item.createdAt):''}`;remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove: '+item.text);remove.onclick=()=>{st.shopping=st.shopping.filter(x=>x.id!==item.id);changed()};body.append(text,by);row.append(toggle,body,remove);shopping.append(row)}
+ for(const item of shoppingItems){const row=document.createElement('article'),toggle=document.createElement('button'),body=document.createElement('div'),text=document.createElement('strong'),by=document.createElement('span'),remove=document.createElement('button');row.dataset.taskId=item.id;row.dataset.collection='shopping';row.className='shared-item'+(item.done?' is-done':'');toggle.type='button';toggle.textContent=item.done?'↶':'✓';toggle.setAttribute('aria-label',(item.done?'Put back on list: ':'Mark bought: ')+item.text);toggle.onclick=()=>{item.done=!item.done;item.updatedAt=iso();item.completedBy=item.done?currentActor().id:null;changed()};body.className='shared-item-body';text.className='shared-item-text';text.textContent=item.text;by.className='meta';by.textContent=`Added by ${item.createdByName||'a household member'}${entryTime(item.createdAt)?' · '+entryTime(item.createdAt):''}`;remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove: '+item.text);remove.onclick=()=>{st.shopping=st.shopping.filter(x=>x.id!==item.id);changed()};body.append(text,by);row.append(toggle,body,remove);shopping.append(row)}
  if(!shoppingItems.length){const empty=document.createElement('p');empty.textContent='The shopping list is empty.';shopping.append(empty)}
 
  const memberName=item=>st.householdPeople.find(person=>person.id===item.assignedTo)?.name||item.assignedToName||'Anyone';
@@ -508,7 +517,7 @@ function renderHousehold(){
 
  const errands=$("#errandList");errands.replaceChildren();
  for(const item of [...st.errands].sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999')))){
-  const row=document.createElement('article'),toggle=document.createElement('button'),body=document.createElement('div'),title=document.createElement('strong'),meta=document.createElement('span'),due=document.createElement('input'),remove=document.createElement('button');row.className='shared-item'+(item.done?' is-done':'');toggle.type='button';toggle.textContent=item.done?'↶':'✓';toggle.setAttribute('aria-label',(item.done?'Reopen: ':'Complete: ')+item.text);toggle.onclick=()=>{item.done=!item.done;changed()};body.className='shared-item-body';title.className='shared-item-text';title.textContent=item.text;meta.className='meta';meta.textContent=`Assigned to ${memberName(item)}${item.dueDate?' · Due by '+new Date(`${item.dueDate}T12:00:00`).toLocaleDateString():''}`;due.type='date';due.value=item.dueDate||'';due.setAttribute('aria-label','Due by date for '+item.text);due.onchange=()=>{item.dueDate=due.value||null;changed()};remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete errand: '+item.text);remove.onclick=()=>{st.errands=st.errands.filter(value=>value.id!==item.id);changed()};const calendarLabel=document.createElement('label'),calendarCheck=document.createElement('input');calendarLabel.className='checkbox-label';calendarCheck.type='checkbox';calendarCheck.checked=item.showOnCalendar!==false;calendarCheck.onchange=()=>{item.showOnCalendar=calendarCheck.checked;changed()};calendarLabel.append(calendarCheck,document.createTextNode('Show on calendar'));body.append(title,meta,due,calendarLabel);appendItemImage(body,item,()=>st.errands.find(value=>value.id===item.id),changed);row.append(toggle,body,remove);errands.append(row)
+  const row=document.createElement('article'),toggle=document.createElement('button'),body=document.createElement('div'),title=document.createElement('strong'),meta=document.createElement('span'),due=document.createElement('input'),remove=document.createElement('button');row.dataset.taskId=item.id;row.dataset.collection='errands';row.className='shared-item'+(item.done?' is-done':'');toggle.type='button';toggle.textContent=item.done?'↶':'✓';toggle.setAttribute('aria-label',(item.done?'Reopen: ':'Complete: ')+item.text);toggle.onclick=()=>{item.done=!item.done;changed()};body.className='shared-item-body';title.className='shared-item-text';title.textContent=item.text;meta.className='meta';meta.textContent=`Assigned to ${memberName(item)}${item.dueDate?' · Due by '+new Date(`${item.dueDate}T12:00:00`).toLocaleDateString():''}`;due.type='date';due.value=item.dueDate||'';due.setAttribute('aria-label','Due by date for '+item.text);due.onchange=()=>{item.dueDate=due.value||null;changed()};remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete errand: '+item.text);remove.onclick=()=>{st.errands=st.errands.filter(value=>value.id!==item.id);changed()};const calendarLabel=document.createElement('label'),calendarCheck=document.createElement('input');calendarLabel.className='checkbox-label';calendarCheck.type='checkbox';calendarCheck.checked=item.showOnCalendar!==false;calendarCheck.onchange=()=>{item.showOnCalendar=calendarCheck.checked;changed()};calendarLabel.append(calendarCheck,document.createTextNode('Show on calendar'));body.append(title,meta,due,calendarLabel);appendItemImage(body,item,()=>st.errands.find(value=>value.id===item.id),changed);row.append(toggle,body,remove);errands.append(row)
  }
  if(!st.errands.length){const empty=document.createElement('p');empty.textContent='No errands yet.';errands.append(empty)}
 
@@ -766,7 +775,7 @@ async function switchHouse(houseId){
  const {data:remote,error}=await db.from('mission_boards').select('payload,revision').eq('user_id',houseId).maybeSingle();
  if(error)throw error;
  if(!remote&&houseId!==session.user.id)throw new Error('House unavailable. Ask its owner to check your invitation.');
- const cached=JSON.parse(localStorage.getItem(cacheKey(houseId))||'null');
+ const cached=localStorage.readJSON(cacheKey(houseId),null,value=>value===null||object(value));
  const next=openHouseState(remote?.payload||empty(),cached,owner,houseId);
  const nextMeta={owner,houseId,base:remote?.payload||empty(),actor:meta.actor};
  ensurePerson(next,meta.actor);
@@ -818,40 +827,48 @@ setTimeout(()=>URL.revokeObjectURL(url),1000);
 
 };
 
-$("#import").onchange=async e=>{
-  try{
-    const file=e.target.files[0];
-if(!file)return;
-
-    if(file.size>5000000)throw new Error("That backup is too large.");
-
-    const board=JSON.parse(await file.text());
-
-    for(const key of ["tasks","side","wins"]){
-      if(!Array.isArray(board[key])||board[key].some(t=>!t||typeof t.id!=="string"||typeof t.text!=="string"))throw new Error("Choose a Mission Control backup file.");
-
-      if(new Set(board[key].map(t=>t.id)).size!==board[key].length)throw new Error("Backup contains duplicate entries.");
-
-    }
-    if(board.rewards!==undefined&&(!Array.isArray(board.rewards)||board.rewards.some(r=>!r||typeof r.id!=="string"||!Number.isInteger(r.prizeIndex)||!prizes[r.prizeIndex])))throw new Error("Backup contains invalid rewards.");
-
-    if(board.wins.some(t=>typeof t.at!=="string"))throw new Error("Backup contains invalid Wins.");
-
-    validateV2(board);
-
-    st=merge(empty(),board,st);
-const removedDuplicates=applyBackupCleanup(st,board.duplicateCleanup);
-const removedTests=applyBackupTestCleanup(st,board.duplicateCleanup);
-activateDue(st);
-categoryFilter="";$('#recurringRoom').value="";
-changed();
-const unfinished=board.tasks.filter(t=>!t.done).length;
-$("#backupStatus").textContent=`Imported ${board.tasks.length} task records: ${unfinished} unfinished and ${board.tasks.length-unfinished} completed, plus ${board.side.length} Side Quests and ${(board.templates||[]).length} reusable templates. View tasks in More → Active tasks and templates in More → Recurring & reusable tasks. ${removedDuplicates?`Removed ${removedDuplicates} duplicate unfinished tasks from this cleaned backup. `:''}${removedTests?`Removed ${removedTests} labelled test records. `:''}Matching IDs use this backup; other existing items are kept.`;
-
-  }catch(error){$("#backupStatus").textContent=error.message}
-  e.target.value="";
-
+$("#import").onchange=e=>readBackupFile(e);
+let importDraft=null,preImportRecovery=localStorage.readJSON('mc-pre-import-v1',null,value=>value===null||object(value));
+const collectionLabels={tasks:'Tasks',side:'Sidequests',wins:'Completion history',completionArchive:'Archived history',rewards:'Rewards',rooms:'Rooms',templates:'Reusable templates',homeless:'Homeless items',shopping:'Shopping',appointments:'Appointments',errands:'Errands',notes:'Notes',householdPeople:'People',notifications:'Notifications',settings:'Settings & laundry',sideTabs:'Sidequest tabs'};
+function previewBackup(board,recover=false){
+ validateBackup(board);importDraft={board:structuredClone(board),recover,before:JSON.stringify(st)};
+ $('#backupPreviewTitle').textContent=recover?'Preview board recovery':'Preview backup import';
+ $('#backupMergeExplanation').textContent=recover?'Recovery replaces this local board with the selected backup. The original saved data and current board are kept in a recovery copy. Household sync stays paused until you reconnect.':'Import merges this backup into your board. Backup records replace matching IDs; existing records with different IDs remain. A pre-import recovery copy is saved first. No changes are made until you confirm.';
+ if(board.duplicateCleanup){const preview=merge(empty(),structuredClone(board),structuredClone(st)),removed=applyBackupCleanup(preview,board.duplicateCleanup)+applyBackupTestCleanup(preview,board.duplicateCleanup);if(removed)$('#backupMergeExplanation').textContent+=` This backup also requests removal of ${removed} records using its explicit cleanup IDs.`}
+ const counts=$('#backupPreviewCounts');counts.replaceChildren();const table=document.createElement('table'),head=document.createElement('tr');
+ for(const name of ['Records','In backup','Matching IDs','Existing kept']){const cell=document.createElement('th');cell.textContent=name;head.append(cell)}table.append(head);
+ for(const row of backupPreview(st,board)){const tr=document.createElement('tr');for(const value of [collectionLabels[row.key],row.incoming,row.matching,recover?0:row.retained]){const td=document.createElement('td');td.textContent=value;tr.append(td)}table.append(tr)}counts.append(table);
+ $('#backupPreviewStatus').textContent='';$('#confirmBackupImport').textContent=recover?'Recover this local board':'Import and merge';$('#backupPreviewDialog').showModal();
+}
+async function readBackupFile(event,recover=false){try{const file=event.target.files?.[0];if(!file)return;if(file.size>5000000)throw Error('Use a backup smaller than 5 MB.');previewBackup(JSON.parse(await file.text()),recover)}catch(error){$('#backupStatus').textContent=error.message;$('#storageRecoveryText').textContent=error.message}finally{event.target.value=''}}
+$('#recoveryImport').onchange=async e=>{$('#storageRecovery').close();await readBackupFile(e,true)};
+$('#confirmBackupImport').onclick=()=>{
+ if(!importDraft)return;if(busy||sharingBusy){$('#backupPreviewStatus').textContent='Wait for the current sync to finish, then confirm your import.';return}
+ if(importDraft.before!==JSON.stringify(st)){const {board,recover}=importDraft;$('#backupPreviewDialog').close();previewBackup(board,recover);$('#backupPreviewStatus').textContent='Your board changed while the preview was open. Review the refreshed counts before confirming.';return}
+ const {board,recover}=importDraft;
+ try{
+  const next=recover?normalize(structuredClone(board)):merge(empty(),structuredClone(board),structuredClone(st));
+  const removedDuplicates=applyBackupCleanup(next,board.duplicateCleanup),removedTests=applyBackupTestCleanup(next,board.duplicateCleanup);activateDue(next);
+  preImportRecovery={state:structuredClone(st),originals:localStorage.originals(),savedAt:iso()};
+  const recoverySaved=localStorage.setItem('mc-pre-import-v1',JSON.stringify(preImportRecovery));
+  if(!recoverySaved||Object.keys(preImportRecovery.originals).length)downloadJSON(preImportRecovery,'mission-control-pre-import-recovery.json');
+  if(recover){localStorage.allowRecovery();authSubscription?.unsubscribe();db=null;meta={};remember();localStorage.setItem(C,JSON.stringify(cfg));updateSignInUI(false);$('#account').textContent='Recovered locally. Use Save & connect when you are ready to sync.'}
+  st=next;categoryFilter='';$('#recurringRoom').value='';$('#backupPreviewDialog').close();importDraft=null;changed();refreshImportRecovery();
+  $('#backupStatus').textContent=(recover?'Recovered locally. Reconnect in Account & sync when ready.':'Backup merged. Matching IDs used the backup; other existing records were retained.')+` Recovery copy available below.${removedDuplicates||removedTests?' The backup’s explicit cleanup IDs were applied.':''}`;
+ }catch(error){$('#backupPreviewStatus').textContent=error.message}
 };
+function refreshImportRecovery(){for(const id of ['recoverPreviousImport','downloadPreviousImport'])$('#'+id).hidden=!preImportRecovery?.state}
+$('#downloadPreviousImport').onclick=()=>downloadJSON(preImportRecovery,'mission-control-pre-import-recovery.json');
+$('#recoverPreviousImport').onclick=()=>previewBackup(preImportRecovery.state,true);refreshImportRecovery();
+function storageStatus(){
+ const issues=[...localStorage.issues(),...sessionStorage.issues()];if(criticalStorageProblem())status('Recovery needed');$('#storageWarning').hidden=!issues.length;
+ $('#storageWarningText').textContent=issues.some(issue=>issue.type==='invalid')?'Saved data could not be read. Its original contents are preserved; sync is paused.':'Keep this app open and export your board before leaving. Storage is unavailable or full.';
+ $('#storageRecoveryText').textContent=$('#storageWarningText').textContent;
+}
+window.addEventListener('mc-storage-status',storageStatus);$('#openStorageRecovery').onclick=()=>{storageStatus();$('#storageRecovery').showModal()};
+$('#downloadOriginalData').onclick=()=>downloadJSON({originals:localStorage.originals(),board:st,savedAt:iso()},'mission-control-storage-recovery.json');
+$('#exportUnsaved').onclick=()=>downloadJSON(st,'mission-control-unsaved-board.json');
+$('#retryStorage').onclick=()=>{localStorage.retry();sessionStorage.retry();local();storageStatus();if(!criticalStorageProblem())$('#storageRecovery').close()};
 
 st=normalize(st);
 activateDue(st);
@@ -869,15 +886,16 @@ for(const tab of document.querySelectorAll('[data-edit-tab]'))tab.onclick=()=>{c
 $('#backupShortcut').onclick=()=>{$('#moreMenu').close();showPage('preferences')};
 $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').click()};
 
+initReviewUI({get:()=>st,save:changed});
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=automate-stay-20261010-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=review-20261011-v3").catch(console.error);
 updateSignInUI(false);render();
 renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
-connect();
+storageStatus();if(criticalStorageProblem())$('#storageRecovery').showModal();else connect();
 
 function fitDialogs(){document.documentElement.style.setProperty('--dialog-height',`${window.visualViewport?.height||window.innerHeight}px`);document.documentElement.style.setProperty('--dialog-offset',`${window.visualViewport?.offsetTop||0}px`);const field=document.activeElement;if(field?.matches('dialog input,dialog textarea'))requestAnimationFrame(()=>field.scrollIntoView({block:'nearest'}))}fitDialogs();window.visualViewport?.addEventListener('resize',fitDialogs);document.addEventListener('focusin',event=>{if(event.target.matches('dialog input,dialog textarea'))requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest'}))});
 
