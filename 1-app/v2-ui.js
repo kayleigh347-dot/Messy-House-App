@@ -5,7 +5,7 @@ import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appe
 import {createSymbolCalendar} from './house-calendar.js?v=release-20261010-v3';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
-import {saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=new-tasks-first-20261010-v1';
+import {createReusable,saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=new-tasks-first-20261010-v1';
 import {activeTask,completedToday} from './task-flow.js?v=schedule-20261010-v1';
 import {navigate} from './navigation.js';
 import {messPieces,renderRoomMess} from './room-mess.js';
@@ -37,7 +37,15 @@ export function initV2(get,changed,taskCard,shared={}){getState=get;save=changed
  document.querySelector('#roomQuickAdd').onclick=()=>roomBucket==='homeless'?editHomeless():quickAdd(selectedRoom,{bucket:roomBucket,type:roomSideFilter==='all'?'organisation':roomSideFilter});
  document.querySelector('#roomBottomAdd').onclick=()=>roomBucket==='homeless'?editHomeless():quickAdd(selectedRoom,{bucket:roomBucket,type:roomSideFilter==='all'?'organisation':roomSideFilter});
  document.querySelectorAll('[data-open-reusable]').forEach(button=>{button.onclick=()=>{document.querySelector('#reusableDialog').showModal();document.querySelector('#reusableDialog').focus()}});
- installInlineTemplates('task','area');const reusableForm=document.querySelector('#addReusable');reusableForm.onsubmit=e=>{e.preventDefault();const st=getState(),room=st.rooms.find(r=>r.id===reusableForm.elements.room.value&&!r.archived),text=reusableForm.elements.text.value.trim();if(!room||!text)return;const template={id:crypto.randomUUID(),text,roomId:room.id,area:room.name,order:st.templates.length,messImpact:'normal'};if(st.templates.some(t=>!t.parentTemplateId&&t.roomId===room.id&&t.text.trim().toLocaleLowerCase()===text.toLocaleLowerCase()))return;st.templates.push(template);if(reusableForm.elements.doingNow.checked){addSavedTasks(st,[template.id]);for(const task of activeSavedTasks(st,template)){task.doingNow=true;task.doingNowOrder=Math.min(0,...st.tasks.filter(x=>x.id!==task.id&&x.doingNow).map(x=>x.doingNowOrder??0))-1}}reusableForm.reset();document.querySelector('#reusableDialog').close();save()};
+ installInlineTemplates('task','area');const reusableForm=document.querySelector('#addReusable');
+ reusableForm.elements.allRooms.onchange=()=>{reusableForm.elements.room.disabled=reusableForm.elements.allRooms.checked;reusableForm.elements.room.required=!reusableForm.elements.allRooms.checked};
+ reusableForm.oninput=()=>document.querySelector('#reusableStatus').textContent='';
+ reusableForm.onsubmit=e=>{e.preventDefault();const st=getState(),fields=reusableForm.elements;
+  const created=createReusable(st,{text:fields.text.value,roomId:fields.room.value,allRooms:fields.allRooms.checked,subtasks:fields.subtasks.value,doingNow:fields.doingNow.checked});
+  if(!created.length){document.querySelector('#reusableStatus').textContent='No template added. Check the task name and rooms; matching templates already saved are kept.';return}
+  savedTasksNotice=`Saved ${created.length===1?'reusable task':`templates for ${created.length} rooms`}.`;reusableForm.reset();fields.room.disabled=false;fields.room.required=true;document.querySelector('#reusableStatus').textContent='';document.querySelector('#reusableDialog').close();save();
+ };
+
  document.querySelector('#quickTaskForm').elements.bucket.onchange=quickFields;
  document.querySelector('#addRoom').onsubmit=e=>{e.preventDefault();const input=document.querySelector('#roomName'),name=input.value.trim(),st=getState();if(!name)return;if(st.rooms.some(r=>r.name.toLowerCase()===name.toLowerCase())){input.setCustomValidity('That room already exists. Restore it if archived.');input.reportValidity();input.oninput=()=>input.setCustomValidity('');return}st.rooms.push({id:crypto.randomUUID(),name,order:Math.max(-1,...st.rooms.map(r=>r.order))+1,archived:false});input.value='';save()};
 }

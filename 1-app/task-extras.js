@@ -9,6 +9,19 @@ export function addSavedTasks(state,ids,newId=()=>crypto.randomUUID(),now=new Da
  }
  placeNewTasksFirst(state.tasks,added);return count;
 }
+export function createReusable(state,{text,roomId,allRooms=false,subtasks='',doingNow=false},newId=()=>crypto.randomUUID()){
+ text=text.trim();if(!text)return [];
+ const rooms=state.rooms.filter(room=>!room.archived&&(allRooms||room.id===roomId)),groupId=allRooms?newId():null,created=[];
+ const children=subtasks.split(/\r?\n/).map(text=>text.trim()).filter(Boolean);
+ for(const room of rooms){
+  if(roomTemplates(state,room.id).some(template=>template.text.trim().toLocaleLowerCase()===text.toLocaleLowerCase()))continue;
+  const template={id:newId(),groupId,text,roomId:room.id,area:room.name,order:state.templates.length,messImpact:'normal'};
+  state.templates.push(template);created.push(template);
+  for(const childText of children)state.templates.push({id:newId(),groupId,text:childText,roomId:room.id,area:room.name,parentTemplateId:template.id,order:state.templates.length,messImpact:'normal'});
+ }
+ if(doingNow){addSavedTasks(state,created.map(template=>template.id),newId);for(const template of created)for(const task of activeSavedTasks(state,template)){task.doingNow=true;task.doingNowOrder=Math.min(0,...state.tasks.filter(item=>item.id!==task.id&&item.doingNow).map(item=>item.doingNowOrder??0))-1}}
+ return created;
+}
 export function saveReusable(state,task,allRooms=false,newId=()=>crypto.randomUUID()){
  const groupId=allRooms?newId():null,rooms=allRooms?state.rooms.filter(r=>!r.archived):state.rooms.filter(r=>r.id===task.roomId),source=[task,...(task.parentId?[]:descendants(allItems(state,task),task.id))];
  for(const room of rooms){const ids=new Map();for(const item of source){const template={id:newId(),groupId,sourceId:item.id,text:item.text,roomId:room.id,area:room.name,notes:item.notes||'',allowanceDays:item.allowanceDays||null,messImpact:item.messImpact||'normal',priority:item.priority||'mid',order:state.templates.length};if(item.parentId)template.parentTemplateId=ids.get(item.parentId)||ids.get(task.id);ids.set(item.id,template.id);state.templates.push(template)}}
