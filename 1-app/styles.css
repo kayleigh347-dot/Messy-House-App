@@ -361,3 +361,5 @@ body.task-compact-view #laundryLibrary .reference-task.compact-expanded>.body>.t
 #preferences input[type=file],#storageRecovery input[type=file]{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
 
 .shared-item[hidden],.manual-schedule-task[hidden]{display:none!important}
+
+.planning-filters{display:flex;gap:8px;flex-wrap:wrap}.planning-filters select{min-width:0;flex:1}.existing-subtask-choices{display:grid;gap:8px;max-height:45vh;overflow-y:auto}.existing-subtask-choices label{padding:8px;border:1px solid #8060ad;border-radius:8px}#taskPlanningBody>input{width:100%;min-width:0;box-sizing:border-box}#taskPlanningBody>button{margin:6px 4px 6px 0}

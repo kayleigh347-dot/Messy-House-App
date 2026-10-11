@@ -69,7 +69,7 @@ export function editTask(t){
  const st=getState();if(isLaundryCycleItem(st,t)&&!window.confirm('This task is part of a laundry cycle. Editing it may change that cycle. Continue?'))return;
  const dialog=document.querySelector('#taskEditor'),form=document.querySelector('#editTaskForm'),originalTask=JSON.stringify(t);
  for(const section of form.querySelectorAll('details.optional-section'))section.open=false;
- form.elements.text.value=t.text;
+ form.elements.text.value=t.text;form.elements.estimatedMinutes.value=t.estimatedMinutes||'';form.elements.effort.value=t.effort||'';
  const rooms=form.elements.room;rooms.replaceChildren();for(const r of ordered(st.rooms).filter(r=>!r.archived||r.id===t.roomId||isLaundryItem(t)&&r.id==='room-laundry'))rooms.append(new Option(r.name+(r.archived?' (archived)':''),r.id));rooms.value=t.roomId||(isLaundryItem(t)?'room-laundry':'');
  form.elements.allowance.value=t.allowanceDays||'';form.elements.dueDate.value=t.dueDate?new Date(t.dueDate).toISOString().slice(0,10):'';form.elements.impact.value=t.messImpact||'normal';
  form.elements.important.checked=t.priority==='high';
@@ -91,7 +91,7 @@ export function editTask(t){
  if(side)t.type=form.elements.questType.value;
  if(!template&&!side){t.recurrence=kind?(kind==='weekdays'?{kind,days}:kind==='fixed-weekday'?{kind,day:days[0]}:{kind:kind==='daily'?'days':kind==='weekly'?'weeks':kind,every:['daily','weekly'].includes(kind)?1:Number(form.elements.interval.value)}):null;if(!t.recurrence)t.scheduled=false;}
  if(t.recurrence&&!side&&!template){if(form.elements.nextDue.value!==originalDue||!r||!t.nextDue)setNextDue(t,form.elements.nextDue.value);t.importantWhenOverdue=form.elements.importantWhenOverdue.checked;}
- t.text=text;t.messImpact=form.elements.impact.value;t.priority=form.elements.important.checked?'high':'mid';t.roomId=rooms.value;t.allowanceDays=!t.recurrence&&form.elements.allowance.value?Number(form.elements.allowance.value):null;t.dueDate=!t.recurrence&&form.elements.dueDate.value?new Date(form.elements.dueDate.value+'T12:00:00').toISOString():null;t.assignedTo=form.elements.assignee.value||null;t.assignedToName=st.householdPeople.find(person=>person.id===t.assignedTo)?.name||null;if(t.allowanceDays&&!t.activeSince)t.activeSince=t.created||new Date().toISOString();const recipient=!template&&st.householdPeople.find(person=>person.id===recipients.value);if(recipient)collaboration.notifyTasks?.([t],recipient);dialog.close();save()};
+ t.estimatedMinutes=form.elements.estimatedMinutes.value?Number(form.elements.estimatedMinutes.value):null;t.effort=form.elements.effort.value||null;t.text=text;t.messImpact=form.elements.impact.value;t.priority=form.elements.important.checked?'high':'mid';t.roomId=rooms.value;t.allowanceDays=!t.recurrence&&form.elements.allowance.value?Number(form.elements.allowance.value):null;t.dueDate=!t.recurrence&&form.elements.dueDate.value?new Date(form.elements.dueDate.value+'T12:00:00').toISOString():null;t.assignedTo=form.elements.assignee.value||null;t.assignedToName=st.householdPeople.find(person=>person.id===t.assignedTo)?.name||null;if(t.allowanceDays&&!t.activeSince)t.activeSince=t.created||new Date().toISOString();const recipient=!template&&st.householdPeople.find(person=>person.id===recipients.value);if(recipient)collaboration.notifyTasks?.([t],recipient);dialog.close();save()};
  dialog.showModal();
 }
 

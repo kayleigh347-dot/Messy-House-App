@@ -144,3 +144,5 @@ header h1{color:#302a21}.house-label{box-sizing:border-box}.house-hotspot{align-
 
 /* Living sprite: continuous, overlapping limbs with a stable cap and face. */
 .living-walk-rig{position:absolute;inset:0;pointer-events:none}.living-walk-rig[hidden]{display:none}.living-rig-part{position:absolute;display:block;background-repeat:no-repeat;transform-origin:50% 8%;will-change:transform}
+/* Keep bedroom loading gaps in the app's dark theme. */
+#roomScene[data-room=room-master].supplied-room-art,#roomScene[data-room=room-penny].supplied-room-art{background-color:#1A0430}
