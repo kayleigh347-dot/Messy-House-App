@@ -264,3 +264,8 @@ body.task-compact-view main .subtask-list>.subtask-card .task-footer>.task-quick
 #laundryTaskForm{display:block;padding:0;background:none;border:0}#laundryTaskForm>label{display:block}#laundryTaskForm .laundry-add-row{width:100%}#laundryTaskInput{width:auto;max-width:none}
 
 .laundry-reminder,.laundry-status{margin:6px 0;font-size:13px}.laundry-reminder:empty,.laundry-status:empty{display:none}
+
+.laundry-load-actions{display:flex;gap:8px;flex-wrap:wrap}.laundry-cycle>.laundry-load-actions{margin:8px 0}.laundry-panel [data-laundry-loads]>.folder-tabs{margin-bottom:10px}
+
+.doing-room-group{margin:10px 0;border:1px solid #9874b8;border-radius:12px;padding:8px}.doing-room-group>summary{cursor:pointer;padding:5px 3px}.doing-room-group>summary h3{display:inline;font-size:18px;margin:0 10px 0 0}.doing-room-group>summary .meta{float:right}.doing-room-group>div{padding-top:6px}
+body[data-view=laundry] :is(.hero,.progress,.category-bar){display:none}#homeLaundry>button{margin-bottom:10px}.doing-laundry>.laundry-cycle{margin-bottom:8px}

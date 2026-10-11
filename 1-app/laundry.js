@@ -134,3 +134,44 @@ export function laundryCompletionPhrase(text){
  };
  return phrases[String(text||'').trim().toLowerCase().replace(/[.!]+$/,'')]||'All done!';
 }
+
+// Two reusable load slots replace the separate rail/dryer entry points.
+const loadKey=slot=>'laundry-load-'+slot;
+export function laundryLoads(state){
+ state.settings||=[];
+ if(!state.settings.some(row=>row.id===loadKey(1))){
+  const active=['rail','dryer'].map(route=>({route,progress:laundryProgress(state,route)})).filter(item=>item.progress.index>0);
+  for(let slot=1;slot<=Math.max(1,active.length);slot++){
+   const previous=active[slot-1],saved=state.settings.find(row=>row.id===progressKey(previous?.route));
+   state.settings.push({id:loadKey(slot),completedSteps:previous?.progress.index||0,route:previous?.route||null,
+    reminderStartedAt:saved?.reminderStartedAt||state.wins?.find(win=>win.laundry&&(win.laundryCycle||'rail')===previous?.route&&win.laundrySequence===previous?.progress.completed)?.at,
+    reminderActorId:saved?.reminderActorId||state.wins?.find(win=>win.laundry&&(win.laundryCycle||'rail')===previous?.route&&win.laundrySequence===previous?.progress.completed)?.completedBy});
+  }
+ }
+ return [1,2].filter(slot=>state.settings.some(row=>row.id===loadKey(slot))).map(slot=>laundryLoadProgress(state,slot));
+}
+export function laundryLoadProgress(state,slot){
+ const saved=state.settings?.find(row=>row.id===loadKey(slot));if(!saved)return null;
+ const latest=(state.wins||[]).filter(win=>win.laundryLoad===slot).sort((a,b)=>b.laundrySequence-a.laundrySequence)[0];
+ const completed=Math.max(validCount(saved.completedSteps),validCount(latest?.laundrySequence)),index=completed%3;
+ const route=latest&&latest.laundrySequence>=validCount(saved.completedSteps)?latest.laundryRoute:saved.route;
+ return {...saved,slot,completed,index,route,text:index===0?'Put a load on':index===1?'Choose dryer or hanging rail':route==='dryer'?'Empty dryer':'Put away clothes on rail'};
+}
+export function startSecondLaundryLoad(state,at=new Date().toISOString()){
+ const loads=laundryLoads(state);if(loads.length!==1||loads[0].index!==2)return false;
+ state.settings.push({id:loadKey(2),completedSteps:0,route:null,updatedAt:at});return true;
+}
+export function completeLaundryLoadStep(state,slot,expectedCompleted,actor,at=new Date().toISOString(),route=null){
+ const person=state.householdPeople?.find(item=>item.id===actor?.id&&item.id!=='local-device'),progress=laundryLoadProgress(state,slot);
+ if(!person||!progress||progress.completed!==expectedCompleted||progress.index===1&&!['rail','dryer'].includes(route))return null;
+ const sequence=progress.completed+1,taskId=`laundry-load-${slot}-${sequence}`;
+ if(state.wins?.some(win=>win.id==='win-'+taskId))return null;
+ const selected=progress.index===1?route:progress.route;
+ const text=progress.index===1?(selected==='dryer'?'Put in dryer':'Put out washing'):progress.text;
+ const room=state.rooms?.find(room=>!room.archived&&/laundry/i.test(room.name))||state.rooms?.find(room=>!room.archived&&/kitchen/i.test(room.name));
+ const record={...completionRecord({id:taskId,text,roomId:room?.id,area:room?.name||'Laundry',seriesId:`laundry-load-step-${progress.index}`},at,'task',person),laundry:true,laundryLoad:slot,laundrySequence:sequence,laundryRoute:progress.index===2?null:selected,points:1};
+ state.wins||=[];state.wins.unshift(record);
+ const saved=state.settings.find(row=>row.id===loadKey(slot));saved.completedSteps=sequence;saved.route=record.laundryRoute;saved.updatedAt=at;
+ if(progress.index===0){saved.reminderStartedAt=at;saved.reminderActorId=person.id}else{delete saved.reminderStartedAt;delete saved.reminderActorId}
+ return record;
+}

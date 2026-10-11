@@ -2,8 +2,8 @@ import {initTaskPlanning,openExistingSubtasks,openSnooze,offerDraggedParent} fro
 import {initReviewUI,applyListFilters} from './review-ui.js';
 import {localStorage,sessionStorage,criticalStorageProblem,downloadJSON} from './safe-storage.js';
 import {validateBackup,backupPreview} from './backup-tools.js';
-import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v2';
-import {laundryProgress,completeLaundryStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=review-20261011-v3';
+import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-loads-20261011-v1';
+import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=laundry-loads-20261011-v1';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -411,8 +411,16 @@ function renderDoingSearch(){
  for(const task of matches){const row=document.createElement('div'),text=document.createElement('span'),add=document.createElement('button');row.className='doing-search-result';text.textContent=task.text+' · '+(task.area||'General');add.type='button';add.textContent="I'm on it";add.setAttribute('aria-label','Add to Doing Now: '+task.text);add.onclick=()=>{addToDoingNow(task,st.tasks);changed()};row.append(text,add);root.append(row)}
  if(!matches.length)root.textContent='No matching available tasks.';
 }
-const laundryBusy={rail:false,dryer:false};
+const laundryBusy={};
+let selectedLaundryLoad=1;
 let uniformBusy=false;
+function finishLaundryLoad(progress,route){
+   if(laundryBusy[progress.slot])return;
+   const before=rewardProgress(st).earned,record=completeLaundryLoadStep(st,progress.slot,progress.completed,currentActor(),new Date().toISOString(),route);
+   if(!record){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete laundry and keep your points.');return}
+   laundryBusy[progress.slot]=true;changed();featureToast(record.text+' complete. +1 point.');if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');setTimeout(()=>{laundryBusy[progress.slot]=false;renderDoingNow();renderLaundryPanel()},800);
+}
+
 function renderLaundryPanel(){
  const uniform=uniformProgress(st);$('#uniformCycle').hidden=!uniform;
  if(uniform){
@@ -424,32 +432,32 @@ function renderLaundryPanel(){
   };
  }
 
- for(const cycle of ['rail','dryer']){
-  const prefix=cycle==='dryer'?'dryer':'laundry',progress=laundryProgress(st,cycle),button=$('#'+prefix+'Complete');
-  $('#'+prefix+'StepNumber').textContent=`Step ${progress.index+1} of 3`;
-  $('#'+prefix+'StepTitle').textContent=progress.text;
-  const reminder=laundryReminder(st,cycle);$('#'+prefix+'Reminder').textContent=reminder?`Reminder ${reminder.due?'due now; repeats every 30 minutes': 'at '+new Date(reminder.nextAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}. Stops when this step is done.`:'';
-  button.textContent=laundryCompletionPhrase(progress.text);button.setAttribute('aria-label','Complete: '+progress.text);button.disabled=laundryBusy[cycle];
-  button.onclick=()=>{
-   if(laundryBusy[cycle])return;
-   const before=rewardProgress(st).earned,record=completeLaundryStep(st,progress.completed,currentActor(),new Date().toISOString(),cycle);
-   if(!record){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete laundry and keep your points.');return}
-   laundryBusy[cycle]=true;$('#'+prefix+'Status').textContent=`${record.text} complete. +1 point. Next: ${laundryProgress(st,cycle).text}.`;
-   changed();
-   if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');
-   setTimeout(()=>{laundryBusy[cycle]=false;renderLaundryPanel()},800);
-  };
+ const loads=laundryLoads(st);if(!loads.some(load=>load.slot===selectedLaundryLoad))selectedLaundryLoad=1;
+ for(const root of document.querySelectorAll('[data-laundry-loads]')){
+  root.replaceChildren();
+  if(loads.length===2){const tabs=document.createElement('div');tabs.className='folder-tabs';tabs.setAttribute('aria-label','Laundry loads');for(const load of loads){const tab=document.createElement('button');tab.type='button';tab.textContent='Load '+load.slot;tab.setAttribute('aria-pressed',String(load.slot===selectedLaundryLoad));tab.onclick=()=>{selectedLaundryLoad=load.slot;renderLaundryPanel()};tabs.append(tab)}root.append(tabs)}
+  const progress=loads.find(load=>load.slot===selectedLaundryLoad),card=document.createElement('section'),number=document.createElement('p'),title=document.createElement('h4');card.className='laundry-cycle';number.className='laundry-step-number';number.textContent=`Load ${progress.slot} · Step ${progress.index+1} of 3`;title.textContent=progress.text;card.append(number,title);
+  const actions=document.createElement('div');actions.className='laundry-load-actions';
+  for(const route of progress.index===1?['dryer','rail']:[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?'Put in dryer':route==='rail'?'Put on hanging rail':laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
+  const reminder=laundryReminder(st,progress.slot);if(reminder){const text=document.createElement('p');text.className='laundry-reminder';text.textContent=reminder.due?'Washing reminder due · repeats every 30 minutes':'Washing reminder at '+new Date(reminder.nextAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});card.append(text)}
+  if(loads.length===1&&progress.index===2){const start=document.createElement('button');start.type='button';start.textContent='＋ Start second load';start.onclick=()=>{if(startSecondLaundryLoad(st)){selectedLaundryLoad=2;changed()}};card.append(start)}
+  root.append(card);
  }
 }
-function renderLaundryTasks(){
- const list=$('#laundryTasks');list.replaceChildren();const completed=document.createElement('div');completed.className='laundry-completed';
- for(const task of laundryTaskList(st)){
+
+function laundryExtraCard(task){
   const row=document.createElement('div'),text=document.createElement('span'),done=document.createElement('button'),remove=document.createElement('button');
   row.dataset.taskId=task.id;row.dataset.collection='settings';row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent=task.done?'Undo':laundryCompletionPhrase(task.text);remove.textContent='Delete';
   done.setAttribute('aria-label',(task.done?'Undo laundry task: ':'Complete laundry task: ')+task.text);remove.setAttribute('aria-label','Delete laundry task: '+task.text);
   done.onclick=()=>{if(task.done){undoLaundryTask(st,task.id);changed();return}const before=rewardProgress(st).earned;if(!completeLaundryTask(st,task.id,currentActor())){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete laundry and keep your points.');return}$('#laundryTasksStatus').textContent=task.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!')};
   remove.onclick=()=>{if(isLaundryCycleItem(st,task)&&!window.confirm('This task is part of a laundry cycle. Deleting it may change that cycle. Continue?'))return;deleteLaundryItem(st,task);changed()};
-  row.append(text,done,remove);(task.done?completed:list).append(row);
+  const onIt=document.createElement('button');onIt.type='button';onIt.className='do-now';onIt.textContent=task.doingNow?'Not on it':"I'm on it";onIt.setAttribute('aria-pressed',String(!!task.doingNow));onIt.setAttribute('aria-label',(task.doingNow?'Remove from Doing Now: ':'Add to Doing Now: ')+task.text);onIt.onclick=()=>{if(task.doingNow)removeFromDoingNow(task);else addToDoingNow(task,st.settings);task.updatedAt=iso();changed()};
+  row.append(text);if(!task.done)row.append(onIt);row.append(done,remove);return row;
+}
+function renderLaundryTasks(){
+ const list=$('#laundryTasks');list.replaceChildren();const completed=document.createElement('div');completed.className='laundry-completed';
+ for(const task of laundryTaskList(st)){
+  (task.done?completed:list).append(laundryExtraCard(task));
  }
  if(completed.children.length)list.append(completed);
  $('#laundryTasksEmpty').hidden=!!list.children.length;
@@ -461,14 +469,25 @@ $('#laundryTaskForm').onsubmit=event=>{
 
 function showDoingTab(tab){
  const laundry=tab==='laundry',attention=tab==='attention';
- $('#doingList').hidden=laundry||attention;$('#attentionList').hidden=laundry||!attention;$('#laundryPanel').hidden=!laundry;
+ $('#doingList').hidden=laundry||attention;$('#attentionList').hidden=laundry||!attention;
  for(const node of document.querySelectorAll('#doing > .task-list-toolbar,#doing > .doing-search,#doingSearchResults,#doingAdd,#doing > .undo-deleted,#chooseSmallTask'))node.hidden=laundry;
  for(const node of document.querySelectorAll('#doing [data-list-for]'))node.hidden=document.getElementById(node.dataset.listFor).hidden;
  if(!laundry)renderDoingSearch();
  for(const button of document.querySelectorAll('[data-doing-tab]'))button.setAttribute('aria-pressed',String(button.dataset.doingTab===tab));
 }
 $('#doingSearch').oninput=renderDoingSearch;
-function renderDoingNow(){const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done),completed=items.filter(t=>t.done);root.replaceChildren();for(const task of active)root.append(mk(task,'task','doing'));if(completed.length){const box=document.createElement('section');box.className='completed-list';box.append(document.createElement('h3'));box.firstChild.textContent='Completed today';for(const task of completed)box.append(mk(task,'task','doing'));root.append(box)}if(!items.length){const empty=document.createElement('p');empty.textContent="Nothing selected yet. Tap “I'm on it” on a task, or choose one from Needs done.";root.append(empty)}renderAttention();renderDoingSearch()}
+const collapsedDoingRooms=new Set();
+function renderDoingNow(){
+ const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done),completed=items.filter(t=>t.done),groups=new Map();root.replaceChildren();
+ const washing=laundryLoads(st).filter(load=>load.index===1),extras=doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask),extraActive=extras.filter(task=>!task.done),extraCompleted=extras.filter(task=>task.done);
+ if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · Choose dryer or hanging rail`;actions.className='laundry-load-actions';for(const route of ['dryer','rail']){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?'Put in dryer':'Put on hanging rail';button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
+
+ for(const task of active){const room=st.rooms.find(room=>room.id===task.roomId),key=room?.id||task.area||'General';if(!groups.has(key))groups.set(key,{name:room?.name||task.area||'General',tasks:[]});groups.get(key).tasks.push(task)}
+ for(const [key,group] of groups){const section=document.createElement('details'),heading=document.createElement('summary'),title=document.createElement('h3'),list=document.createElement('div');section.className='doing-room-group';section.open=!collapsedDoingRooms.has(key);title.textContent=group.name;const count=document.createElement('span');count.className='meta';count.textContent=String(group.tasks.length);heading.append(title,count);section.append(heading,list);for(const task of group.tasks)list.append(mk(task,'task','doing'));section.ontoggle=()=>{if(!section.isConnected)return;if(section.open)collapsedDoingRooms.delete(key);else collapsedDoingRooms.add(key)};root.append(section)}
+ if(completed.length||extraCompleted.length){const box=document.createElement('section');box.className='completed-list';box.append(document.createElement('h3'));box.firstChild.textContent='Completed today';for(const task of completed)box.append(mk(task,'task','doing'));for(const task of extraCompleted)box.append(laundryExtraCard(task));root.append(box)}
+ if(!items.length&&!washing.length&&!extras.length){const empty=document.createElement('p');empty.textContent="Nothing selected yet. Tap “I'm on it” on a task, or choose one from Needs done.";root.append(empty)}renderAttention();renderDoingSearch()
+}
+
 function render(){const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
 renderDoingNow();
@@ -479,7 +498,7 @@ personOptions();
 renderRewards();
 let active=priorityOrdered(st.tasks).filter(t=>activeTask(t)&&inCategory(t)),cur=active.find(t=>t.id===shownCurrent)||active[0];
 
-for(const [tab,count] of [["doing",doingNowTasks(st.tasks,st.wins).filter(t=>!t.done).length],["now",active.length],["side",st.side.filter(t=>!t.done&&inCategory(t)).length],["wins",uniqueWins(st).filter(inCategory).length]]){const b=document.querySelector('nav button[data-tab="'+tab+'"]');
+for(const [tab,count] of [["doing",doingNowTasks(st.tasks,st.wins).filter(t=>!t.done).length+laundryLoads(st).filter(load=>load.index===1).length+doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask&&!task.done).length],["now",active.length],["side",st.side.filter(t=>!t.done&&inCategory(t)).length],["wins",uniqueWins(st).filter(inCategory).length]]){const b=document.querySelector('nav button[data-tab="'+tab+'"]');
 b.textContent=({doing:"Doing Now",now:"Tasks",side:"Side quests",wins:"Task Data"})[tab]}
 let d=uniqueWins(st).filter(inCategory).length+(st.completionArchive||[]).filter(row=>!categoryFilter||row.roomId===categoryFilter).reduce((sum,row)=>sum+(row.count||0),0),r=active.length;
 $("#doneN").textContent=d+" done";
@@ -553,7 +572,8 @@ clearTimeout(celebrationTimer);
 celebrationTimer=setTimeout(()=>$("#celebration").classList.add("hide"),5000)}
 function showPage(name){document.querySelector('nav button[data-tab="'+name+'"]').click()}
 document.querySelector('#doingAdd')?.addEventListener('click',()=>quickAdd(null,{doingNow:true}));for(const b of document.querySelectorAll('[data-add-task]'))b.onclick=()=>quickAdd(null,{bucket:b.closest('#side')?'side':b.closest('#recurring')?'recurring':'now',doingNow:!!b.closest('#doing'),type:filter==='all'?'organisation':filter});for(const b of document.querySelectorAll('[data-task-layout]'))b.onclick=()=>{const compact=!document.body.classList.contains('task-compact-view');localStorage.setItem('mc-task-layout',compact?'compact':'detail');render()};
-for(const tab of document.querySelectorAll('[data-doing-tab]'))tab.onclick=()=>showDoingTab(tab.dataset.doingTab);
+for(const tab of document.querySelectorAll('[data-doing-tab]'))tab.onclick=()=>tab.dataset.doingTab==='laundry'?showPage('laundry'):showDoingTab(tab.dataset.doingTab);
+$('#openHomeLaundry').onclick=()=>showPage('laundry');
 let otherView='shopping';
 function showOtherView(name){otherView=name;for(const button of $$('[data-other]'))button.setAttribute('aria-pressed',String(button.dataset.other===name));for(const panel of $$('.other-panel'))panel.classList.toggle('hide',panel.id!==`other${name[0].toUpperCase()+name.slice(1)}`)}
 for(const button of $$('[data-other]'))button.onclick=()=>showOtherView(button.dataset.other);showOtherView(otherView);

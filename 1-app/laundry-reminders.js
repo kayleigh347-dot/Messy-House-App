@@ -1,13 +1,13 @@
 import {localStorage} from './safe-storage.js';
-import {laundryProgress} from './laundry.js?v=laundry-uniform-20261010-v2';
+import {laundryProgress,laundryLoadProgress} from './laundry.js?v=laundry-loads-20261011-v1';
 const TWO_HOURS=2*60*60*1000,HALF_HOUR=30*60*1000;
 export function laundryReminder(state,cycle,now=Date.now()){
- const progress=laundryProgress(state,cycle);if(progress.index!==1)return null;
- const saved=state.settings?.find(item=>item.id===(cycle==='dryer'?'laundry-dryer-progress':'laundry-progress'));
- const win=state.wins?.find(item=>item.laundry&&(item.laundryCycle||'rail')===cycle&&item.laundrySequence===progress.completed);
+ const load=typeof cycle==='number',progress=load?laundryLoadProgress(state,cycle):laundryProgress(state,cycle);if(!progress)return null;if(progress.index!==1)return null;
+ const saved=state.settings?.find(item=>item.id===(load?'laundry-load-'+cycle:cycle==='dryer'?'laundry-dryer-progress':'laundry-progress'));
+ const win=state.wins?.find(item=>item.laundry&&(load?item.laundryLoad===cycle:(item.laundryCycle||'rail')===cycle)&&item.laundrySequence===progress.completed);
  const startedAt=Date.parse(saved?.reminderStartedAt||win?.at);if(!Number.isFinite(startedAt))return null;
  const firstAt=startedAt+TWO_HOURS,due=now>=firstAt,slot=due?Math.floor((now-firstAt)/HALF_HOUR):-1;
- return {cycle,startedAt,firstAt,slot,due,nextAt:due?firstAt+(slot+1)*HALF_HOUR:firstAt,actorId:saved?.reminderActorId||win?.completedBy,text:cycle==='dryer'?'Put washing in the dryer':'Put out washing'};
+ return {cycle,startedAt,firstAt,slot,due,nextAt:due?firstAt+(slot+1)*HALF_HOUR:firstAt,actorId:saved?.reminderActorId||win?.completedBy,text:load?'Put washing in the dryer or on the hanging rail':cycle==='dryer'?'Put washing in the dryer':'Put out washing'};
 }
 export function initLaundryReminders({get,actor,house,show}){
  const audio=new Audio('assets/audio/calm.wav');audio.preload='auto';audio.volume=.5;
@@ -15,7 +15,7 @@ export function initLaundryReminders({get,actor,house,show}){
  document.addEventListener('pointerdown',unlock,true);
  const tick=()=>{
   const state=get();let active=false;
-  for(const cycle of ['rail','dryer']){
+  for(const cycle of state.settings?.some(row=>row.id==='laundry-load-1')?[1,2]:['rail','dryer']){
    const reminder=laundryReminder(state,cycle);if(!reminder||reminder.actorId!==actor().id||!reminder.due)continue;active=true;
    const key=`mc-laundry-reminder:${house()}:${cycle}:${reminder.startedAt}`;
    if(Number(localStorage.getItem(key)??-1)>=reminder.slot)continue;
