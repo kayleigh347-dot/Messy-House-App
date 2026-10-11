@@ -146,3 +146,61 @@ test('undo recurring laundry removes only its unused next occurrence and restore
  undoLaundryTask(state,'machine');assert.equal(state.settings.filter(t=>t.text==='Clean inside washing machine').length,1);
  assert.equal(state.settings.find(t=>t.id==='machine').done,false);assert.equal(rewardCounts(state).wins,0);
 });
+
+import {laundryLoads,laundryLoadProgress,startSecondLaundryLoad,completeLaundryLoadStep} from '../laundry.js';
+test('one washing start branches into either drying route and resets after the final step',()=>{
+ for(const route of ['rail','dryer']){
+  const state=board();assert.equal(laundryLoads(state)[0].text,'Put a load on');
+  assert.equal(startSecondLaundryLoad(state),false);
+  assert.ok(completeLaundryLoadStep(state,1,0,actor,at));
+  assert.equal(completeLaundryLoadStep(state,1,1,actor,at),null);
+  assert.ok(completeLaundryLoadStep(state,1,1,actor,at,route));
+  assert.equal(laundryLoadProgress(state,1).text,route==='dryer'?'Empty dryer':'Put away clothes on rail');
+  assert.ok(completeLaundryLoadStep(state,1,2,actor,at));assert.equal(laundryLoadProgress(state,1).text,'Put a load on');assert.equal(rewardCounts(state).wins,3);
+ }
+});
+test('second load starts while first dries and has independent saved progress and reminders',()=>{
+ const state=board();laundryLoads(state);completeLaundryLoadStep(state,1,0,actor,at);completeLaundryLoadStep(state,1,1,actor,at,'dryer');
+ assert.ok(startSecondLaundryLoad(state,at));assert.equal(startSecondLaundryLoad(state,at),false);
+ completeLaundryLoadStep(state,2,0,actor,at);assert.equal(laundryLoadProgress(state,1).index,2);
+ assert.ok(laundryReminder(state,2,Date.parse(at)+7200000).due);assert.equal(laundryReminder(state,1),null);
+ completeLaundryLoadStep(state,1,2,actor,at);assert.equal(laundryLoadProgress(state,2).index,1);
+ completeLaundryLoadStep(state,2,1,actor,at,'rail');assert.equal(laundryReminder(state,2),null);
+ const reopened=normalize(JSON.parse(JSON.stringify(state)));reopened.wins=[];
+ assert.equal(laundryLoadProgress(reopened,1).index,0);assert.equal(laundryLoadProgress(reopened,2).text,'Put away clothes on rail');assert.equal(rewardCounts(state).wins,5);
+});
+test('existing active rail and dryer cycles migrate into two load tabs without extra points',()=>{
+ const state=board();completeLaundryStep(state,0,actor,at);completeLaundryStep(state,1,actor,at);completeLaundryStep(state,0,actor,at,'dryer');
+ const loads=laundryLoads(state);assert.equal(loads.length,2);assert.equal(loads[0].text,'Put away clothes on rail');assert.equal(loads[1].index,1);assert.ok(laundryReminder(state,2,Date.parse(at)+7200000).due);
+ const count=state.settings.length;laundryLoads(state);assert.equal(state.settings.length,count);assert.equal(rewardCounts(state).wins,3);
+});
+test('same load step completed on two devices earns one point and recovers from stale settings',()=>{
+ const base=normalize(board());laundryLoads(base);const local=structuredClone(base),remote=structuredClone(base);
+ completeLaundryLoadStep(local,1,0,actor,at);completeLaundryLoadStep(remote,1,0,actor,at);
+ const state=merge(base,local,remote);assert.equal(rewardCounts(state).wins,1);assert.equal(laundryLoadProgress(state,1).index,1);
+ completeLaundryLoadStep(state,1,1,actor,at,'dryer');state.settings.find(row=>row.id==='laundry-load-1').completedSteps=1;
+ assert.equal(laundryLoadProgress(state,1).text,'Empty dryer');assert.equal(completeLaundryLoadStep(state,1,1,actor,at,'rail'),null);
+});
+test('washing is the only load stage eligible for Doing Now and completing its choice advances the same saved load',()=>{
+ const state=board();laundryLoads(state);
+ const inDoing=()=>laundryLoads(state).filter(load=>load.index===1);
+ assert.equal(inDoing().length,0);completeLaundryLoadStep(state,1,0,actor,at);
+ assert.equal(inDoing()[0].slot,1);completeLaundryLoadStep(state,inDoing()[0].slot,inDoing()[0].completed,actor,at,'dryer');
+ assert.equal(inDoing().length,0);assert.equal(laundryLoadProgress(state,1).text,'Empty dryer');assert.equal(state.tasks.length,0);
+});
+
+import {addToDoingNow,removeFromDoingNow,doingNowTasks} from '../task-flow.js';
+test('extra laundry can join and leave Doing Now, and complete and undo from the same saved task',()=>{
+ const state=board(),task=addLaundryTask(state,'Wash towels','on-it',at);
+ assert.ok(addToDoingNow(task,state.settings));assert.equal(doingNowTasks(state.settings)[0].id,task.id);
+ assert.ok(removeFromDoingNow(task));assert.equal(doingNowTasks(state.settings).length,0);
+ addToDoingNow(task,state.settings);completeLaundryTask(state,task.id,actor,new Date().toISOString());
+ assert.equal(doingNowTasks(state.settings,state.wins)[0].done,true);assert.equal(rewardCounts(state).wins,1);
+ undoLaundryTask(state,task.id);assert.equal(doingNowTasks(state.settings)[0].done,false);assert.equal(rewardCounts(state).wins,0);
+ assert.equal(state.tasks.length,0);
+});
+
+test('Laundry sidequest category moves to dedicated Laundry with children and progress intact',()=>{
+ const state=normalize({...board(),sideTabs:[{id:'old-laundry-tab',name:'Laundry'},{id:'garden',name:'Garden'}],side:[{id:'sheets',text:'Wash sheets',type:'old-laundry-tab',done:false,doingNow:true},{id:'sheet-step',text:'Gather sheets',parentId:'sheets',done:true,completedAt:at},{id:'plant',text:'Plant seeds',type:'garden',done:false}]});
+ assert.deepEqual(state.side.map(task=>task.id),['plant']);assert.equal(state.settings.find(task=>task.id==='sheets').laundryTask,true);assert.equal(state.settings.find(task=>task.id==='sheets').doingNow,true);assert.equal(state.settings.find(task=>task.id==='sheet-step').done,true);assert.deepEqual(state.sideTabs.map(tab=>tab.id),['garden']);assert.deepEqual(normalize(state).settings,state.settings);
+});
