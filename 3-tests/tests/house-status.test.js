@@ -8,7 +8,7 @@ test('house hotspots show the live room mess state without replacing painted roo
  const ui=readFileSync(new URL('v2-ui.js',root),'utf8');
  const css=readFileSync(new URL('stage-one.css',root),'utf8');
  assert.doesNotMatch(ui,/houseStatusIcons|✨|🌿|🧺|🚨/);
- assert.match(ui,/status=el\('span',m\.percent\+'%'\)/);
+ assert.match(ui,/status=el\('span','Mess level '\+Math\.round\(m\.percent\)\+'%'\)/);
  assert.match(ui,/status\.className='house-status'/);
  assert.match(ui,/status\.setAttribute\('aria-hidden','true'\)/);
  assert.match(ui,/b\.dataset\.state=m\.state/);

@@ -12,7 +12,7 @@ function setup(fetchReply=async()=>({type:'opaque',status:0,ok:false})){
  vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function addPhoneTimer(')),context);
  context.addPhoneTimer({}, {children:[{}],insertBefore(){},elements:{minutes:{value:'5',reportValidity:()=>true}}});
  fields.get('[data-secret]').value=' dummy-secret ';fields.get('[data-account]').value=' nobody@example.invalid ';fields.get('[data-device]').value=' My phone ';
- return {fields,saved,created,request:()=>request,submitted:()=>submitted,status:()=>fields.get('[data-phone-status]').textContent};
+ return {fields,saved,created,context,request:()=>request,submitted:()=>submitted,status:()=>fields.get('[data-phone-status]').textContent};
 }
 test('Android request uses Automate exact content type and seconds without claiming delivery',async()=>{
  const app=setup();await app.fields.get('[data-phone-start]').onclick();const {url,options}=app.request();
@@ -37,4 +37,8 @@ test('Invalid settings prevent requests and network failures restore the button'
 
 test('One-minute test sends 60 seconds while staying in the app',async()=>{
  const app=setup();await app.created.find(n=>n.textContent==='Test 1-minute timer').onclick();assert.equal(app.request().options.body.get('payload'),'60');assert.equal(app.submitted(),undefined);assert.match(app.status(),/Check your phone Clock/);
+});
+
+test('iPhone routes the saved shortcut name and chosen duration in seconds',async()=>{
+ const app=setup();app.context.window.location={href:''};app.fields.get('[data-phone]').value='iphone';app.saved.set('mc-phone-timer-shortcut','House Timer & test');await app.fields.get('[data-phone-start]').onclick();assert.equal(app.context.window.location.href,'shortcuts://run-shortcut?name=House%20Timer%20%26%20test&input=text&text=300');assert.equal(app.request(),undefined);assert.match(app.status(),/Check that your Clock timer started/);
 });

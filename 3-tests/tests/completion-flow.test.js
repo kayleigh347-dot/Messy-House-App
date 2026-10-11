@@ -21,10 +21,10 @@ test('actual completion handler records lateness, schedules once and collects a 
 test('unsigned completion stays open and prompts sign-in without choosing another person',()=>{
  const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
  const snippet=source.slice(source.indexOf('function finish('),source.indexOf('$("#unlockOpen").onclick='));
- const task={id:'t',text:'Clean',done:false},st={tasks:[task],side:[],householdPeople:[],wins:[]};let requested=0;
- const finish=new Function('st','currentActor','featureToast',snippet+';return finish')(st,()=>({id:'local-device',name:'This device'}),()=>requested++);
+ const task={id:'t',text:'Clean',done:false},st={tasks:[task],side:[],householdPeople:[],wins:[]};let requested=0,opened,tab;
+ const finish=new Function('st','currentActor','featureToast','showPage','settingsTab',snippet+';return finish')(st,()=>({id:'local-device',name:'This device'}),()=>requested++,page=>opened=page,value=>tab=value);
  assert.equal(finish(task,'task'),false);
- assert.equal(requested,1);assert.equal(task.done,false);assert.equal(st.wins.length,0);
+ assert.equal(opened,'preferences');assert.equal(tab,'account');assert.equal(requested,1);assert.equal(task.done,false);assert.equal(st.wins.length,0);
 });
 
 test('recording another member completion credits that member without the device user reward banner',()=>{
