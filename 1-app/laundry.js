@@ -66,6 +66,11 @@ export function uniformProgress(state,now=Date.now()){
  const steps=childrenOf(state.settings,task.id).sort((a,b)=>(a.order||0)-(b.order||0)),step=steps.find(item=>!item.done)||task;
  return {task,step,total:steps.length||1,index:steps.length?steps.indexOf(step):0};
 }
+export function uniformHomeProgress(state,now=Date.now()){
+ const progress=uniformProgress(state,now);if(!progress)return null;
+ const colours=childrenOf(state.settings,progress.task.id).filter(step=>/\b(darks|whites)\b/i.test(step.text||''));
+ return colours.length&&colours.every(step=>step.done)?null:progress;
+}
 export function addLaundryTask(state,text,taskId,at=new Date().toISOString()){
  text=String(text||'').trim();if(!text)return null;
  state.settings||=[];
