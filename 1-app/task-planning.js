@@ -25,7 +25,7 @@ export function snoozeTask(items,id,date,now=Date.now()){
 export function createNamedParent(items,draggedId,targetId,text,id,now=new Date().toISOString()){
  const dragged=items.find(t=>t.id===draggedId),target=items.find(t=>t.id===targetId),name=text.trim();
  if(!name||name.length>180||!id||items.some(t=>t.id===id)||!dragged||!target||dragged===target||dragged.done||target.done||dragged.archived||target.archived||childrenOf(items,targetId).length||descendants(items,draggedId).some(t=>t.id===targetId))return false;
- const parent={...target,id,text:name,created:now,updatedAt:now};
+ const parent={...target,id,text:name,messImpact:'none',created:now,updatedAt:now};
  for(const key of ['sourceTemplateId','estimatedMinutes','effort','notes','completionUndo','completedAt','lastDone'])delete parent[key];
  items.push(parent);nestTask(items,targetId,id);nestTask(items,draggedId,id);return parent;
 }
