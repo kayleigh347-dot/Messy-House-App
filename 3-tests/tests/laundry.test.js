@@ -123,3 +123,26 @@ test('selected backup fills missing uniform step once while preserving completed
  assert.equal(children.find(item=>item.id==='gather').done,true);
  const count=state.settings.length;assert.equal(normalize(state).settings.length,count);
 });
+
+import {laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask} from '../laundry.js';
+test('completed extras stay below unfinished tasks and Undo restores their point accounting',()=>{
+ const state=board();const first=addLaundryTask(state,'Pair socks','socks',at),second=addLaundryTask(state,'Fold towels','towels',at);
+ completeLaundryTask(state,first.id,actor,at);
+ assert.deepEqual(laundryTaskList(state).map(t=>t.id),[second.id,first.id]);assert.equal(rewardCounts(state).wins,1);
+ assert.equal(completeLaundryTask(state,first.id,actor,at),null);
+ assert.ok(undoLaundryTask(state,first.id));assert.equal(rewardCounts(state).wins,0);assert.equal(first.done,false);
+ assert.ok(completeLaundryTask(state,first.id,actor,at));assert.equal(rewardCounts(state).wins,1);
+});
+test('cycle warnings follow nested steps and template sources without labelling unrelated laundry',()=>{
+ const state=board();state.settings=[{id:'cycle',text:'Wash uniform.',laundryUniform:true},{id:'step',parentId:'cycle',text:'Wash darks'},{id:'nested',parentId:'step',text:'Step 1'},{id:'extra',text:'Pair socks',laundryTask:true}];
+ state.templates=[{id:'saved',sourceId:'step',text:'Wash darks'}];
+ for(const id of ['cycle','step','nested'])assert.equal(isLaundryCycleItem(state,state.settings.find(t=>t.id===id)),true);
+ assert.equal(isLaundryCycleItem(state,state.templates[0]),true);assert.equal(isLaundryCycleItem(state,state.settings[3]),false);
+ deleteLaundryItem(state,state.settings[0]);assert.deepEqual(state.settings.map(t=>t.id),['extra']);
+});
+test('undo recurring laundry removes only its unused next occurrence and restores the completed family',()=>{
+ const state=normalize(uniformBoard());state.settings.find(t=>t.id==='machine').recurrence={kind:'weeks',every:4};
+ completeLaundryTask(state,'machine',actor,at);assert.equal(state.settings.filter(t=>t.text==='Clean inside washing machine').length,2);
+ undoLaundryTask(state,'machine');assert.equal(state.settings.filter(t=>t.text==='Clean inside washing machine').length,1);
+ assert.equal(state.settings.find(t=>t.id==='machine').done,false);assert.equal(rewardCounts(state).wins,0);
+});
