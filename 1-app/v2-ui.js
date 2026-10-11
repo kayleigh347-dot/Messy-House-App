@@ -1,3 +1,4 @@
+import {isLaundryItem,isLaundryCycleItem,deleteLaundryItem} from './laundry.js?v=laundry-library-20261011-v2';
 import {nextDueDate,setNextDue} from './recurring-schedule.js?v=schedule-20261010-v1';
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -64,15 +65,16 @@ export function renderV2(st){const templateRoom=document.querySelector('#templat
 }
 
 export function editTask(t){
- const st=getState(),dialog=document.querySelector('#taskEditor'),form=document.querySelector('#editTaskForm'),originalTask=JSON.stringify(t);
+ const st=getState();if(isLaundryCycleItem(st,t)&&!window.confirm('This task is part of a laundry cycle. Editing it may change that cycle. Continue?'))return;
+ const dialog=document.querySelector('#taskEditor'),form=document.querySelector('#editTaskForm'),originalTask=JSON.stringify(t);
  for(const section of form.querySelectorAll('details.optional-section'))section.open=false;
  form.elements.text.value=t.text;
- const rooms=form.elements.room;rooms.replaceChildren();for(const r of ordered(st.rooms).filter(r=>!r.archived||r.id===t.roomId))rooms.append(new Option(r.name+(r.archived?' (archived)':''),r.id));rooms.value=t.roomId;
+ const rooms=form.elements.room;rooms.replaceChildren();for(const r of ordered(st.rooms).filter(r=>!r.archived||r.id===t.roomId||isLaundryItem(t)&&r.id==='room-laundry'))rooms.append(new Option(r.name+(r.archived?' (archived)':''),r.id));rooms.value=t.roomId||(isLaundryItem(t)?'room-laundry':'');
  form.elements.allowance.value=t.allowanceDays||'';form.elements.dueDate.value=t.dueDate?new Date(t.dueDate).toISOString().slice(0,10):'';form.elements.impact.value=t.messImpact||'normal';
  form.elements.important.checked=t.priority==='high';
  fillAssignees(form.elements.assignee,st,t.assignedTo||'');
  const recipients=form.elements.notifyRecipient;recipients.replaceChildren(new Option('No notification',''));for(const person of st.householdPeople.filter(p=>p.id!=='local-device'))recipients.append(new Option(`Notify ${displayPersonName(person)}`,person.id));recipients.value='';
- const template=st.templates.some(x=>x.id===t.id),side=st.side.some(x=>x.id===t.id),r=t.recurrence;
+ const laundry=st.settings.some(x=>x.id===t.id),template=st.templates.some(x=>x.id===t.id),side=st.side.some(x=>x.id===t.id),r=t.recurrence;
  const imagePanel=document.querySelector('#editTaskImage');imagePanel.replaceChildren();imagePanel.hidden=!side;document.querySelector('#editQuestTab').hidden=!side;fillQuestTabs(form.elements.questType,st,t.type);if(side)appendItemImage(imagePanel,t,()=>getState().side.find(x=>x.id===t.id),save);
  document.querySelector('#editRepeatOptions').hidden=template||side;document.querySelector('#editRepeatOptions').open=!!r;
  recipients.closest('label').hidden=template;
@@ -82,7 +84,7 @@ export function editTask(t){
  for(const c of form.querySelectorAll('[name=weekday]'))c.checked=!!r?.days?.includes(Number(c.value))||(r?.kind==='fixed-weekday'&&Number(c.value)===r.day);
  const originalDue=nextDueDate(t);form.elements.nextDue.value=originalDue;form.elements.importantWhenOverdue.checked=!!t.importantWhenOverdue;
  const scheduleUI=()=>{document.querySelector('#editNextDueLabel').hidden=!form.elements.repeat.value;document.querySelector('#editImportantOverdueLabel').hidden=!form.elements.repeat.value;form.elements.nextDue.required=!!form.elements.repeat.value;form.elements.dueDate.closest('label').hidden=!!form.elements.repeat.value;form.elements.allowance.closest('label').hidden=!!form.elements.repeat.value;document.querySelector('#intervalLabel').hidden=!['days','weeks'].includes(form.elements.repeat.value);form.elements.interval.disabled=template||!['days','weeks'].includes(form.elements.repeat.value);document.querySelector('#weekdayChoices').hidden=!['weekdays','fixed-weekday'].includes(form.elements.repeat.value);form.elements.repeat.setCustomValidity('')};form.elements.repeat.onchange=scheduleUI;for(const c of form.querySelectorAll('[name=weekday]'))c.onchange=()=>form.elements.repeat.setCustomValidity('');scheduleUI();
- form.onsubmit=e=>{e.preventDefault();const current=getState()[template?'templates':st.side.some(x=>x.id===t.id)?'side':'tasks'].find(x=>x.id===t.id);if(!current){dialog.close();alert('This item was removed on another device.');return}if(r&&JSON.stringify(current)!==originalTask){alert('This task changed on another device. Close and reopen the editor.');return}t=current;const text=form.elements.text.value.trim();if(!text)return;
+ form.onsubmit=e=>{e.preventDefault();const current=getState()[template?'templates':laundry?'settings':st.side.some(x=>x.id===t.id)?'side':'tasks'].find(x=>x.id===t.id);if(!current){dialog.close();alert('This item was removed on another device.');return}if(r&&JSON.stringify(current)!==originalTask){alert('This task changed on another device. Close and reopen the editor.');return}t=current;const text=form.elements.text.value.trim();if(!text)return;
  const kind=form.elements.repeat.value,days=[...form.querySelectorAll('[name=weekday]:checked')].map(c=>Number(c.value));
  if(!template&&['weekdays','fixed-weekday'].includes(kind)&&!days.length){form.elements.repeat.setCustomValidity('Choose at least one weekday.');form.elements.repeat.reportValidity();return}
  if(side)t.type=form.elements.questType.value;
@@ -94,13 +96,14 @@ export function editTask(t){
 
 function renderLibrary(st){
  const list=document.querySelector('#templateList'),completed=document.querySelector('#completedLibrary'),roomFilter=document.querySelector('#templateRoomFilter'),addRoom=document.querySelector('#addReusable').elements.room;list.replaceChildren();completed.replaceChildren();const selected=roomFilter.value;roomFilter.replaceChildren(new Option('All rooms',''));addRoom.replaceChildren();for(const room of st.rooms.filter(r=>!r.archived)){roomFilter.append(new Option(room.name,room.id));addRoom.append(new Option(room.name,room.id))}roomFilter.value=selected;const available=st.templates.filter(t=>!t.parentTemplateId&&st.rooms.some(r=>r.id===t.roomId&&!r.archived));
+ const laundryList=document.querySelector('#laundryTemplateList');laundryList.replaceChildren();renderLaundrySchedule(st);
  const savedAdd=button('Add saved tasks',()=>quickAdd(roomFilter.value||null,{mode:'saved'}));savedAdd.className='add-task-main';list.append(savedAdd);
  const notice=el('p',savedTasksNotice);notice.setAttribute('role','status');list.append(notice);
  if(!st.templates.length)list.append(el('p','No saved tasks.'));
- let previousRoom=null;for(const t of ordered(st.templates.filter(t=>!t.parentTemplateId&&(!roomFilter.value||t.roomId===roomFilter.value)))){const room=st.rooms.find(r=>r.id===t.roomId);if(!roomFilter.value&&room?.id!==previousRoom){const heading=el('h3',room?.name||t.area||'Other');heading.className='template-room-heading';heading.style.setProperty('--room-hue',room?.hue||((st.rooms.findIndex(r=>r.id===room?.id)*43+160)%360));list.append(heading);previousRoom=room?.id}
+ let previousRoom=null;for(const t of ordered(st.templates.filter(t=>!t.parentTemplateId&&(isLaundryItem(t)||!roomFilter.value||t.roomId===roomFilter.value)))){const target=isLaundryItem(t)?laundryList:list;const room=st.rooms.find(r=>r.id===t.roomId);if(!roomFilter.value&&room?.id!==previousRoom){const heading=el('h3',room?.name||t.area||'Other');heading.className='template-room-heading';heading.style.setProperty('--room-hue',room?.hue||((st.rooms.findIndex(r=>r.id===room?.id)*43+160)%360));target.append(heading);previousRoom=room?.id}
   const row=el('article');row.className='task task-card reference-task';const body=el('div'),heading=el('div'),meta=el('span',t.area);body.className='body';heading.className='task-heading';meta.className='meta';heading.append(el('strong',t.text));body.append(heading,meta);const tools=el('div');tools.className='tools';
   row.style.setProperty('--task-hue',room?.hue||((st.rooms.findIndex(r=>r.id===room?.id)*43+160)%360));
-  const present=activeSavedTasks(st,t).length>0;const add=button(present?'Remove':'Add task',()=>{const state=getState();if(activeSavedTasks(state,t).length){removeSavedTasks(state,t);savedTasksNotice=`Removed ${t.text} from Tasks.`}else{addSavedTasks(state,[t.id]);savedTasksNotice=`Added ${t.text} to Tasks.`}save()});add.className='task-create';const footer=el('div'),options=el('details');footer.className='task-footer';options.className='task-options';tools.append(button('Edit',()=>editTask(t)),button('Delete',()=>{confirmDelete(()=>{deleteReusable(getState(),t);save()},t.groupId?()=>{deleteReusable(getState(),t,true);save()}:null)}));options.append(el('summary','Edit & options'),tools);footer.append(add);const children=st.templates.filter(child=>child.parentTemplateId===t.id);if(children.length){const details=el('details');details.className='saved-subtasks';details.append(el('summary',`Subtasks (${children.length})`));const addChildren=(id,target)=>{for(const child of st.templates.filter(x=>x.parentTemplateId===id)){const line=el('div');line.append(el('strong',child.text),button('Edit',()=>editTask(child)),button('Delete',()=>{deleteReusable(getState(),child);save()}));target.append(line);addChildren(child.id,line)}};addChildren(t.id,details);body.append(details)}body.append(options,footer);row.append(body);list.append(row);
+  const present=activeSavedTasks(st,t).length>0;const add=button(present?'Remove':'Add task',()=>{const state=getState();if(activeSavedTasks(state,t).length){removeSavedTasks(state,t);savedTasksNotice=`Removed ${t.text} from Tasks.`}else{addSavedTasks(state,[t.id]);savedTasksNotice=`Added ${t.text} to Tasks.`}save()});add.className='task-create';const footer=el('div'),options=el('details');footer.className='task-footer';options.className='task-options';tools.append(button('Edit',()=>editTask(t)),button('Delete',()=>{confirmDelete(()=>{deleteReusable(getState(),t);save()},t.groupId?()=>{deleteReusable(getState(),t,true);save()}:null,isLaundryCycleItem(st,t))}));options.append(el('summary','Edit & options'),tools);footer.append(add);const children=st.templates.filter(child=>child.parentTemplateId===t.id);if(children.length){const details=el('details');details.className='saved-subtasks';details.append(el('summary',`Subtasks (${children.length})`));const addChildren=(id,target)=>{for(const child of st.templates.filter(x=>x.parentTemplateId===id)){const line=el('div');line.append(el('strong',child.text),button('Edit',()=>editTask(child)),button('Delete',()=>{confirmDelete(()=>{deleteReusable(getState(),child);save()},null,isLaundryCycleItem(st,child))}));target.append(line);addChildren(child.id,line)}};addChildren(t.id,details);body.append(details)}body.append(options,footer);row.append(body);if(isLaundryItem(t))bindLaundryCard(row);target.append(row);
  }
  const candidates=[...st.tasks.filter(t=>t.done&&!t.recurrence),...st.wins.filter(w=>!st.tasks.some(t=>'win-'+t.id===w.id)&&!w.recurrence)].filter(item=>{
   const completion=item.completedAt||item.at||st.wins.find(w=>w.taskId===item.id||w.id==='win-'+item.id)?.at;
@@ -115,6 +118,31 @@ function renderLibrary(st){
   }));row.append(body,tools);completed.append(row);
  }
  if(!candidates.length)completed.append(el('p','No recent completed jobs to save.'));colourTaskPositions(list);colourTaskPositions(completed);
+}
+
+function bindLaundryCard(row){
+ const title=row.querySelector('strong');title.tabIndex=0;title.setAttribute('role','button');title.setAttribute('aria-expanded','false');
+ const toggle=()=>{const expanded=row.classList.toggle('compact-expanded');title.setAttribute('aria-expanded',String(expanded));const subtasks=row.querySelector(':scope > .body > .saved-subtasks');if(subtasks)subtasks.open=expanded};
+ title.onclick=toggle;title.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}};
+}
+
+function renderLaundrySchedule(st){
+ const list=document.querySelector('#laundryScheduleList');list.replaceChildren();
+ const roots=(st.settings||[]).filter(t=>!t.parentId&&isLaundryItem(t)&&!t.done);
+ const renderItem=(t,target)=>{
+  const row=el('article');row.className='task task-card reference-task';const body=el('div');body.className='body';body.append(el('strong',t.text));
+  const options=el('details');options.className='task-options';options.append(el('summary','Edit & options'));
+  options.append(button('Edit',()=>editTask(t)),button('Delete',()=>{
+   const warning=isLaundryCycleItem(getState(),t)?'This task is part of a laundry cycle. Deleting it may change that cycle. ':'';
+   if(!window.confirm(warning+`Delete “${t.text}” and its subtasks? Completion history will stay.`))return;
+   deleteLaundryItem(getState(),t);save();
+  }));body.append(options);
+  const children=st.settings.filter(child=>child.parentId===t.id);
+  if(children.length){const details=el('details');details.className='saved-subtasks';details.append(el('summary',`Subtasks (${children.length})`));for(const child of children)renderItem(child,details);body.append(details)}
+  row.append(body);if(isLaundryItem(t))bindLaundryCard(row);target.append(row);
+ };
+ for(const t of roots)renderItem(t,list);
+ if(!roots.length)list.append(el('p','No saved laundry schedules.'));
 }
 
 const guardianSprites={
@@ -245,4 +273,4 @@ function renameRoom(id){
  input.value=getState().rooms.find(r=>r.id===id).name;input.setCustomValidity('');input.oninput=()=>input.setCustomValidity('');
  form.onsubmit=e=>{e.preventDefault();const st=getState(),r=st.rooms.find(r=>r.id===id),name=input.value.trim();if(!r||!name)return;if(st.rooms.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase())){input.setCustomValidity('That name is already used by another room.');input.reportValidity();return}r.name=name;dialog.close();save()};dialog.showModal();
 }
-function confirmDelete(action,allAction=null){const dialog=document.querySelector('#confirmAction');const all=document.querySelector('#confirmAll');all.hidden=!allAction;all.onclick=()=>{dialog.close();allAction?.()};document.querySelector('#confirmYes').textContent=allAction?'Delete from this room':'Delete template';document.querySelector('#confirmMessage').textContent='Delete this reusable template? Existing tasks and history will stay.';document.querySelector('#confirmYes').onclick=()=>{dialog.close();action()};dialog.showModal()}
+function confirmDelete(action,allAction=null,laundryCycle=false){const dialog=document.querySelector('#confirmAction');const all=document.querySelector('#confirmAll');all.hidden=!allAction;all.onclick=()=>{dialog.close();allAction?.()};document.querySelector('#confirmYes').textContent=allAction?'Delete from this room':'Delete template';document.querySelector('#confirmMessage').textContent=(laundryCycle?'This task is part of a laundry cycle. Deleting it may change that cycle. ':'')+'Delete this reusable template? Existing tasks and history will stay.';document.querySelector('#confirmYes').onclick=()=>{dialog.close();action()};dialog.showModal()}

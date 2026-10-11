@@ -1,5 +1,5 @@
 import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-uniform-20261010-v2';
-import {laundryProgress,completeLaundryStep,laundryTasks,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=phone-timer-free-20261010-v1';
+import {laundryProgress,completeLaundryStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=laundry-library-20261011-v2';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -20,7 +20,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=new-tasks-first-20261010-v1";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=laundry-library-20261011-v2";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=new-tasks-first-20261010-v1";
 
@@ -433,15 +433,16 @@ function renderLaundryPanel(){
  }
 }
 function renderLaundryTasks(){
- const list=$('#laundryTasks');list.replaceChildren();
- for(const task of laundryTasks(st)){
+ const list=$('#laundryTasks');list.replaceChildren();const completed=document.createElement('div');completed.className='laundry-completed';
+ for(const task of laundryTaskList(st)){
   const row=document.createElement('div'),text=document.createElement('span'),done=document.createElement('button'),remove=document.createElement('button');
-  row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent=laundryCompletionPhrase(task.text);remove.textContent='Delete';
-  done.setAttribute('aria-label','Complete laundry task: '+task.text);remove.setAttribute('aria-label','Delete laundry task: '+task.text);
-  done.onclick=()=>{const before=rewardProgress(st).earned;if(!completeLaundryTask(st,task.id,currentActor())){featureToast('Sign in on this device to complete laundry and keep your points.');return}$('#laundryTasksStatus').textContent=task.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!')};
-  remove.onclick=()=>{st.settings=st.settings.filter(item=>item.id!==task.id);changed()};
-  row.append(text,done,remove);list.append(row);
+  row.className='laundry-extra-task';text.textContent=task.text;done.type=remove.type='button';done.textContent=task.done?'Undo':laundryCompletionPhrase(task.text);remove.textContent='Delete';
+  done.setAttribute('aria-label',(task.done?'Undo laundry task: ':'Complete laundry task: ')+task.text);remove.setAttribute('aria-label','Delete laundry task: '+task.text);
+  done.onclick=()=>{if(task.done){undoLaundryTask(st,task.id);changed();return}const before=rewardProgress(st).earned;if(!completeLaundryTask(st,task.id,currentActor())){featureToast('Sign in on this device to complete laundry and keep your points.');return}$('#laundryTasksStatus').textContent=task.text+' complete. +1 point.';changed();if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!')};
+  remove.onclick=()=>{if(isLaundryCycleItem(st,task)&&!window.confirm('This task is part of a laundry cycle. Deleting it may change that cycle. Continue?'))return;deleteLaundryItem(st,task);changed()};
+  row.append(text,done,remove);(task.done?completed:list).append(row);
  }
+ if(completed.children.length)list.append(completed);
  $('#laundryTasksEmpty').hidden=!!list.children.length;
 }
 $('#laundryTaskForm').onsubmit=event=>{

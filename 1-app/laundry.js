@@ -33,6 +33,34 @@ export function completeLaundryStep(state,expectedCompleted,actor,at=new Date().
 
 export const laundryDue=(task,now=Date.now())=>!task.done&&!task.pausedAt&&(!task.nextDue||Date.parse(task.nextDue)<=now);
 export const laundryTasks=(state,now=Date.now())=>(state.settings||[]).filter(item=>item.laundryTask&&laundryDue(item,now));
+// Completed extras remain visible below the due tasks; completion still uses laundryTasks.
+export const laundryTaskList=(state,now=Date.now())=>[...laundryTasks(state,now).filter(t=>!t.parentId),...(state.settings||[]).filter(t=>t.laundryTask&&!t.parentId&&t.done).sort((a,b)=>String(a.completedAt).localeCompare(String(b.completedAt)))];
+export const isLaundryItem=t=>!!(t.laundryImported||t.laundryTask||t.laundryUniform||t.laundryCycle||t.roomId==='room-laundry'||t.area==='Laundry');
+export function isLaundryCycleItem(state,task){
+ const items=[...(state.settings||[]),...(state.templates||[]),...(state.tasks||[])],seen=new Set();
+ let current=task;
+ while(current&&!seen.has(current.id)){
+  seen.add(current.id);
+  if(current.laundryUniform||current.laundryCycle||isLaundryItem(current)&&/^(laundry|wash uniform[.!]?|put a load on|put out washing|put away clothes on rail|put in dryer|empty dryer)$/i.test(current.text||''))return true;
+  current=items.find(t=>t.id===(current.parentId||current.parentTemplateId||current.sourceId));
+ }
+ return false;
+}
+export function deleteLaundryItem(state,task){
+ const ids=new Set([task.id]);let changed=true;
+ while(changed){changed=false;for(const item of state.settings||[])if(ids.has(item.parentId)&&!ids.has(item.id)){ids.add(item.id);changed=true}}
+ state.settings=(state.settings||[]).filter(item=>!ids.has(item.id));
+}
+export function undoLaundryTask(state,taskId,at=new Date().toISOString()){
+ const task=(state.settings||[]).find(t=>t.id===taskId&&t.laundryTask&&t.done);if(!task)return false;
+ const completedAt=task.completedAt,ids=new Set([task.id]);let more=true;
+ while(more){more=false;for(const item of state.settings)if(ids.has(item.parentId)&&!ids.has(item.id)){ids.add(item.id);more=true}}
+ const reopened=state.settings.filter(t=>ids.has(t.id)&&t.completedAt===completedAt),reopenedIds=new Set(reopened.map(t=>t.id));
+ if(task.recurrence){const next=scheduleNext(task,new Date(completedAt));const occurrence=next&&state.settings.find(t=>t.id===next.id);if(occurrence&&!occurrence.done)deleteLaundryItem(state,occurrence)}
+ state.wins=(state.wins||[]).filter(w=>!reopenedIds.has(w.taskId));
+ for(const item of reopened){item.done=false;delete item.completedAt;item.updatedAt=at}
+ return true;
+}
 export function uniformProgress(state,now=Date.now()){
  const task=(state.settings||[]).find(item=>item.laundryUniform&&laundryDue(item,now));if(!task)return null;
  const steps=childrenOf(state.settings,task.id).sort((a,b)=>(a.order||0)-(b.order||0)),step=steps.find(item=>!item.done)||task;

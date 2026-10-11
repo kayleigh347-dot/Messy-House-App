@@ -345,3 +345,10 @@ dialog::backdrop{background:rgba(67,52,42,.58);backdrop-filter:blur(3px)}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
+
+.laundry-completed{margin-top:.7rem;padding:.5rem;border:2px solid var(--purple,#8060ad);border-radius:12px}.laundry-completed .laundry-extra-task span{text-decoration:none}
+
+.laundry-completed .laundry-extra-task{flex-wrap:nowrap}.laundry-completed .laundry-extra-task span{flex:1;flex-basis:auto}
+
+body.task-compact-view #laundryLibrary .reference-task:not(.compact-expanded)>.body>:not(.task-heading):not(strong){display:none!important}
+body.task-compact-view #laundryLibrary .reference-task.compact-expanded>.body>.task-options{display:block!important}
