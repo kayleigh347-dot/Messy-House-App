@@ -31,14 +31,16 @@ export function rewardProgress(state){
  while(left>=cost){left-=cost;level++;cost=EVERY+level*5}
  const goals=[];
  for(let i=1;i<=base+level;i++)goals.push({id:'reward-'+i,label:i<=base?'Earlier task milestone':`Overall progress · level ${i-base}`});
- const challenges=[];
+ const challenges=[{id:'overall',label:'Overall progress',count:left,target:cost,remaining:cost-left}];
+ for(const room of state.rooms||[])if(!room.archived&&!counts.room.has(room.id))counts.room.set(room.id,0);
+ for(const item of [...(state.tasks||[]),...(state.templates||[]),...(state.side||[]),...(state.settings||[]).filter(item=>item.laundryTask||item.laundryUniform)]){const key=taskRewardKey(item.text);if(key&&!counts.task.has(key))counts.task.set(key,0)}
  for(const [kind,values] of [['room',counts.room],['task',counts.task]])for(const [key,count] of values){
   const label=kind==='room'?(state.rooms||[]).find(r=>r.id===key)?.name||'Room':key;
   for(const target of milestoneTargets)if(count>=target)goals.push({id:`milestone:${kind}:${encodeURIComponent(key)}:${target}`,label:kind==='room'?`${target} ${label} tasks completed`:`${label} completed ${target} times`});
-  const next=milestoneTargets.find(n=>n>count);if(next)challenges.push({label:kind==='room'?`${label} tasks`:`${label}`,count,target:next,remaining:next-count});
+  const next=milestoneTargets.find(n=>n>count);if(next)challenges.push({id:kind+':'+key,kind,label:kind==='room'?`${label} tasks`:`${label}`,count,target:next,remaining:next-count});
  }
  const claimed=new Set((state.rewards||[]).map(r=>r.id));
- return {wins:counts.wins,earned:goals.length,available:goals.filter(g=>!claimed.has(g.id)).map(g=>g.id),goals,remaining:cost-left,challenges:challenges.sort((a,b)=>a.remaining-b.remaining).slice(0,6)};
+ return {wins:counts.wins,earned:goals.length,available:goals.filter(g=>!claimed.has(g.id)).map(g=>g.id),goals,remaining:cost-left,challenges:challenges.sort((a,b)=>a.remaining-b.remaining)};
 }
 function makeReward(state,goal){
  const used=new Set((state.rewards||[]).map(r=>r.prizeIndex)),unused=prizes.map((_,i)=>i).filter(i=>!used.has(i)),index=Math.max(0,...(state.rewards||[]).map(r=>r.index||0))+1;
@@ -52,3 +54,10 @@ export function migrateRewards(state){
  for(const goal of progress.goals)if(progress.available.includes(goal.id))state.rewards.push(makeReward(state,goal));
 }
 export function revealReward(state){const progress=rewardProgress(state),goal=progress.goals.find(g=>g.id===progress.available[0]);return goal?makeReward(state,goal):null}
+
+export function rewardUnlockReason(state,reward){
+ if(reward.achievement)return reward.achievement;
+ const current=rewardProgress(state).goals.find(goal=>goal.id===reward.id);if(current)return current.label;
+ if(reward.id?.startsWith('milestone:')){const [,kind,key,target]=reward.id.split(':');const label=kind==='room'?state.rooms?.find(room=>room.id===decodeURIComponent(key))?.name||'Room':decodeURIComponent(key);return kind==='room'?`${target} ${label} tasks completed`:`${label} completed ${target} times`;}
+ return 'Earlier task milestone';
+}

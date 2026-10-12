@@ -52,7 +52,8 @@ export function deleteLaundryItem(state,task){
  state.settings=(state.settings||[]).filter(item=>!ids.has(item.id));
 }
 export function undoLaundryTask(state,taskId,at=new Date().toISOString()){
- const task=(state.settings||[]).find(t=>t.id===taskId&&t.laundryTask&&t.done);if(!task)return false;
+ const task=(state.settings||[]).find(t=>t.id===taskId&&t.done&&(t.laundryTask||t.laundryUniform||t.parentId&&isLaundryItem(state.settings.find(parent=>parent.id===t.parentId)||t)));if(!task)return false;
+ const parent=state.settings.find(item=>item.id===task.parentId);if(parent?.done){if(!undoLaundryTask(state,parent.id,at))return false;if(!task.done)return true;}
  const completedAt=task.completedAt,ids=new Set([task.id]);let more=true;
  while(more){more=false;for(const item of state.settings)if(ids.has(item.parentId)&&!ids.has(item.id)){ids.add(item.id);more=true}}
  const reopened=state.settings.filter(t=>ids.has(t.id)&&t.completedAt===completedAt),reopenedIds=new Set(reopened.map(t=>t.id));
@@ -80,9 +81,9 @@ export function addLaundryTask(state,text,taskId,at=new Date().toISOString()){
 }
 export function completeLaundryTask(state,taskId,actor,at=new Date().toISOString()){
  const person=state.householdPeople?.find(item=>item.id===actor?.id&&item.id!=='local-device');
- const task=laundryTasks(state).find(item=>item.id===taskId);
+ const task=(state.settings||[]).find(item=>item.id===taskId&&laundryDue(item)&&(item.laundryTask||item.parentId&&isLaundryItem(state.settings.find(parent=>parent.id===item.parentId)||item)));
  if(!person||!task||state.wins?.some(win=>win.id==='win-'+task.id))return null;
- return finishLaundryItem(state,task,person,at);
+ const record=finishLaundryItem(state,task,person,at);settleScheduledLaundry(state);return record;
 }
 function finishLaundryItem(state,task,person,at){
  if(task.done)return null;
@@ -92,6 +93,7 @@ function finishLaundryItem(state,task,person,at){
  const record={...completionRecord({...task,area:'Laundry'},at,'task',person),points:children.length?0:1,aggregate:!!children.length,...(parent?{rootTaskId:parent.id,rootText:parent.text,rootRecurrence:parent.recurrence||null}:{})};
  state.wins||=[];if(!state.wins.some(win=>win.id===record.id))state.wins.unshift(record);
  task.done=true;task.completedAt=at;task.updatedAt=at;
+ if(parent){const next=childrenOf(state.settings,parent.id).find(item=>!item.done);if(next?.autoDoingNow)next.doingNow=true;}
  if(!task.parentId)scheduleLaundry(state,task,at);
  return record;
 }
@@ -158,25 +160,51 @@ export function laundryLoads(state){
 export function laundryLoadProgress(state,slot){
  const saved=state.settings?.find(row=>row.id===loadKey(slot));if(!saved)return null;
  const latest=(state.wins||[]).filter(win=>win.laundryLoad===slot).sort((a,b)=>b.laundrySequence-a.laundrySequence)[0];
- const completed=Math.max(validCount(saved.completedSteps),validCount(latest?.laundrySequence)),index=completed%3;
+ const completed=Math.max(validCount(saved.completedSteps),validCount(latest?.laundrySequence)),steps=laundryLoadSteps(state);
+ const currentId=latest&&latest.laundrySequence>validCount(saved.completedSteps)?latest.laundryNextStepId:saved.currentStepId;
+ const found=steps.findIndex(step=>step.id===currentId),index=found>=0?found:completed%steps.length;
  const route=latest&&latest.laundrySequence>=validCount(saved.completedSteps)?latest.laundryRoute:saved.route;
- return {...saved,slot,completed,index,route,text:index===0?'Put a load on':index===1?'Choose dryer or hanging rail':route==='dryer'?'Empty dryer':'Put away clothes on rail'};
+ const step=steps[index];return {...saved,slot,completed,index,route,step,total:steps.length,needsTransfer:step.kind==='route',doingNow:step.kind==='route'&&!state.settings?.some(row=>row.id==='laundry-load-cycle-definition')||!!saved.doingNow,text:step.kind==='finish'?(route==='dryer'?step.dryerText:step.text):step.text};
 }
 export function startSecondLaundryLoad(state,at=new Date().toISOString()){
- const loads=laundryLoads(state);if(loads.length!==1||loads[0].index!==2)return false;
+ const loads=laundryLoads(state);if(loads.length!==1||loads[0].step.kind!=='finish')return false;
  state.settings.push({id:loadKey(2),completedSteps:0,route:null,updatedAt:at});return true;
 }
 export function completeLaundryLoadStep(state,slot,expectedCompleted,actor,at=new Date().toISOString(),route=null){
  const person=state.householdPeople?.find(item=>item.id===actor?.id&&item.id!=='local-device'),progress=laundryLoadProgress(state,slot);
- if(!person||!progress||progress.completed!==expectedCompleted||progress.index===1&&!['rail','dryer'].includes(route))return null;
+ if(!person||!progress||progress.completed!==expectedCompleted||progress.needsTransfer&&!['rail','dryer'].includes(route))return null;
  const sequence=progress.completed+1,taskId=`laundry-load-${slot}-${sequence}`;
  if(state.wins?.some(win=>win.id==='win-'+taskId))return null;
- const selected=progress.index===1?route:progress.route;
- const text=progress.index===1?(selected==='dryer'?'Put in dryer':'Put out washing'):progress.text;
+ const selected=progress.needsTransfer?route:progress.route,steps=laundryLoadSteps(state),nextIndex=(progress.index+1)%steps.length,nextStep=steps[nextIndex];
+ const text=progress.needsTransfer?(selected==='dryer'?progress.step.dryerText:progress.step.text):progress.text;
  const room=state.rooms?.find(room=>!room.archived&&/laundry/i.test(room.name))||state.rooms?.find(room=>!room.archived&&/kitchen/i.test(room.name));
- const record={...completionRecord({id:taskId,text,roomId:room?.id,area:room?.name||'Laundry',seriesId:`laundry-load-step-${progress.index}`},at,'task',person),laundry:true,laundryLoad:slot,laundrySequence:sequence,laundryRoute:progress.index===2?null:selected,points:1};
+ const record={...completionRecord({id:taskId,text,roomId:room?.id,area:room?.name||'Laundry',seriesId:`laundry-load-step-${progress.index}`},at,'task',person),laundry:true,laundryLoad:slot,laundrySequence:sequence,laundryRoute:nextIndex===0?null:selected,laundryNextStepId:nextStep.id,points:1};
  state.wins||=[];state.wins.unshift(record);
- const saved=state.settings.find(row=>row.id===loadKey(slot));saved.completedSteps=sequence;saved.route=record.laundryRoute;saved.updatedAt=at;
- if(progress.index===0){saved.reminderStartedAt=at;saved.reminderActorId=person.id}else{delete saved.reminderStartedAt;delete saved.reminderActorId}
+ const saved=state.settings.find(row=>row.id===loadKey(slot));saved.completedSteps=sequence;saved.currentStepId=nextStep.id;saved.doingNow=!!nextStep.autoDoingNow;saved.route=record.laundryRoute;saved.updatedAt=at;
+ if(progress.step.kind==='wash'){saved.reminderStartedAt=at;saved.reminderActorId=person.id}else if(progress.needsTransfer||nextIndex===0){delete saved.reminderStartedAt;delete saved.reminderActorId}
  return record;
+}
+
+export const defaultLaundryLoadSteps=[
+ {id:'wash',kind:'wash',text:'Put a load on',autoDoingNow:false},
+ {id:'transfer',kind:'route',text:'Put out washing',dryerText:'Put in dryer',autoDoingNow:true},
+ {id:'put-away',kind:'finish',text:'Put away clothes on rail',dryerText:'Empty dryer',autoDoingNow:false}
+];
+export function laundryLoadSteps(state){return state.settings?.find(row=>row.id==='laundry-load-cycle-definition')?.steps||defaultLaundryLoadSteps;}
+export function saveLaundryLoadSteps(state,steps,at=new Date().toISOString()){
+ if(!Array.isArray(steps)||!steps.length||steps.some(step=>!step.id||!String(step.text||'').trim())||new Set(steps.map(s=>s.id)).size!==steps.length)throw Error('Every step needs a unique ID and a name.');
+ if(steps.filter(step=>step.kind==='wash').length!==1||steps.filter(step=>step.kind==='route').length!==1||steps.filter(step=>step.kind==='finish').length!==1)throw Error('Keep one washing, one transfer and one finish step.');
+ if(steps[0].kind!=='wash'||steps.at(-1).kind!=='finish'||steps.some(step=>['route','finish'].includes(step.kind)&&!String(step.dryerText||'').trim()))throw Error('Keep washing first, finishing last, and name both drying routes.');
+ const loads=laundryLoads(state);
+ for(const load of loads){const saved=state.settings.find(row=>row.id===load.id);saved.currentStepId=steps.some(step=>step.id===load.step.id)?load.step.id:steps[Math.min(load.index,steps.length-1)].id;saved.doingNow=load.completed>0&&!!steps.find(step=>step.id===saved.currentStepId)?.autoDoingNow;}
+ let definition=state.settings.find(row=>row.id==='laundry-load-cycle-definition');if(!definition){definition={id:'laundry-load-cycle-definition'};state.settings.push(definition)}
+ definition.steps=structuredClone(steps).map(step=>({...step,text:step.text.trim(),...(step.dryerText?{dryerText:step.dryerText.trim()}:{})}));definition.updatedAt=at;return definition;
+}
+export function laundryDoingSteps(state,now=Date.now()){
+ return (state.settings||[]).filter(task=>task.parentId&&task.doingNow&&!task.done&&laundryDue(task,now)&&childrenOf(state.settings,task.parentId).find(step=>!step.done)?.id===task.id);
+}
+export function addLaundryCycleStep(state,collection,parentId,text,id,autoDoingNow=false){
+ const items=state[collection],parent=items?.find(item=>item.id===parentId);text=String(text||'').trim();if(!parent||parent.done||!text||!['settings','templates'].includes(collection))return null;
+ const parentKey=collection==='templates'?'parentTemplateId':'parentId',siblings=items.filter(item=>item[parentKey]===parentId),step={id,text,[parentKey]:parentId,roomId:parent.roomId,area:parent.area||'Laundry',order:Math.max(-1,...siblings.map(item=>item.order||0))+1,autoDoingNow:!!autoDoingNow,done:false,...(collection==='settings'?{laundryTask:true,laundryImported:true}:{}),...(parent.nextDue?{nextDue:parent.nextDue}:{}),created:new Date().toISOString()};
+ items.push(step);return step;
 }

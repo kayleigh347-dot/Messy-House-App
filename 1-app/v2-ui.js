@@ -1,17 +1,18 @@
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {isLaundryItem,isLaundryCycleItem,deleteLaundryItem} from './laundry.js?v=laundry-library-20261011-v2';
-import {nextDueDate,setNextDue} from './recurring-schedule.js?v=schedule-20261010-v1';
+import {nextDueDate,setNextDue} from './recurring-schedule.js?v=tools-20261012-v1';
+import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?v=tools-20261012-v1';
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
-import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=schedule-20261010-v1';
-import {createSymbolCalendar} from './house-calendar.js?v=release-20261010-v3';
+import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=tools-20261012-v1';
+import {createSymbolCalendar} from './house-calendar.js?v=tools-20261012-v1';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
 import {createReusable,saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=new-tasks-first-20261010-v1';
-import {activeTask,completedToday} from './task-flow.js?v=schedule-20261010-v1';
+import {activeTask,completedToday} from './task-flow.js?v=tools-20261012-v1';
 import {navigate} from './navigation.js';
 import {messPieces,renderRoomMess} from './room-mess.js';
-import {displayPersonName} from './completion-history.js?v=release-20261010-v3';
+import {displayPersonName} from './completion-history.js?v=tools-20261012-v1';
 import {updateCompanion,leaveCompanion} from './room-companion.js?v=mobile-1';
 import {placeNewTasksFirst,ordered,priorityOrdered,move,freshTask,roomMess} from './v2-state.js?v=new-tasks-first-20261010-v1';
 let getState,save,makeTaskCard,collaboration={},selectedRoom=null,roomBucket="now",roomRecurringView='list',roomRecurringMonth=new Date(),roomRecurringSelectedDay=null,roomRecurringStatus='all',roomSideFilter='all';
@@ -75,7 +76,7 @@ export function editTask(t){
  form.elements.important.checked=t.priority==='high';
  fillAssignees(form.elements.assignee,st,t.assignedTo||'');
  const recipients=form.elements.notifyRecipient;recipients.replaceChildren(new Option('No notification',''));for(const person of st.householdPeople.filter(p=>p.id!=='local-device'))recipients.append(new Option(`Notify ${displayPersonName(person)}`,person.id));recipients.value='';
- const laundry=st.settings.some(x=>x.id===t.id),template=st.templates.some(x=>x.id===t.id),side=st.side.some(x=>x.id===t.id),r=t.recurrence;
+ const laundry=st.settings.some(x=>x.id===t.id),template=st.templates.some(x=>x.id===t.id),side=st.side.some(x=>x.id===t.id),r=t.recurrence;form.querySelector('[data-cycle-auto]')?.remove();const autoDoing=appendCycleAutoOption(t,template?'templates':laundry?'settings':'tasks',form);
  const imagePanel=document.querySelector('#editTaskImage');imagePanel.replaceChildren();imagePanel.hidden=!side;document.querySelector('#editQuestTab').hidden=!side;fillQuestTabs(form.elements.questType,st,t.type);if(side)appendItemImage(imagePanel,t,()=>getState().side.find(x=>x.id===t.id),save);
  document.querySelector('#editRepeatOptions').hidden=template||side;document.querySelector('#editRepeatOptions').open=!!r;
  recipients.closest('label').hidden=template;
@@ -91,7 +92,7 @@ export function editTask(t){
  if(side)t.type=form.elements.questType.value;
  if(!template&&!side){t.recurrence=kind?(kind==='weekdays'?{kind,days}:kind==='fixed-weekday'?{kind,day:days[0]}:{kind:kind==='daily'?'days':kind==='weekly'?'weeks':kind,every:['daily','weekly'].includes(kind)?1:Number(form.elements.interval.value)}):null;if(!t.recurrence)t.scheduled=false;}
  if(t.recurrence&&!side&&!template){if(form.elements.nextDue.value!==originalDue||!r||!t.nextDue)setNextDue(t,form.elements.nextDue.value);t.importantWhenOverdue=form.elements.importantWhenOverdue.checked;}
- t.estimatedMinutes=form.elements.estimatedMinutes.value?Number(form.elements.estimatedMinutes.value):null;t.effort=form.elements.effort.value||null;t.text=text;t.messImpact=form.elements.impact.value;t.priority=form.elements.important.checked?'high':'mid';t.roomId=rooms.value;t.allowanceDays=!t.recurrence&&form.elements.allowance.value?Number(form.elements.allowance.value):null;t.dueDate=!t.recurrence&&form.elements.dueDate.value?new Date(form.elements.dueDate.value+'T12:00:00').toISOString():null;t.assignedTo=form.elements.assignee.value||null;t.assignedToName=st.householdPeople.find(person=>person.id===t.assignedTo)?.name||null;if(t.allowanceDays&&!t.activeSince)t.activeSince=t.created||new Date().toISOString();const recipient=!template&&st.householdPeople.find(person=>person.id===recipients.value);if(recipient)collaboration.notifyTasks?.([t],recipient);dialog.close();save()};
+ if(autoDoing)t.autoDoingNow=autoDoing.checked;t.estimatedMinutes=form.elements.estimatedMinutes.value?Number(form.elements.estimatedMinutes.value):null;t.effort=form.elements.effort.value||null;t.text=text;t.messImpact=form.elements.impact.value;t.priority=form.elements.important.checked?'high':'mid';t.roomId=rooms.value;t.allowanceDays=!t.recurrence&&form.elements.allowance.value?Number(form.elements.allowance.value):null;t.dueDate=!t.recurrence&&form.elements.dueDate.value?new Date(form.elements.dueDate.value+'T12:00:00').toISOString():null;t.assignedTo=form.elements.assignee.value||null;t.assignedToName=st.householdPeople.find(person=>person.id===t.assignedTo)?.name||null;if(t.allowanceDays&&!t.activeSince)t.activeSince=t.created||new Date().toISOString();const recipient=!template&&st.householdPeople.find(person=>person.id===recipients.value);if(recipient)collaboration.notifyTasks?.([t],recipient);dialog.close();save()};
  dialog.showModal();
 }
 
@@ -104,7 +105,7 @@ function renderLibrary(st){
  let previousRoom=null;for(const t of ordered(st.templates.filter(t=>!t.parentTemplateId&&(isLaundryItem(t)||!roomFilter.value||t.roomId===roomFilter.value)))){const target=isLaundryItem(t)?laundryList:list;const room=st.rooms.find(r=>r.id===t.roomId);if(!roomFilter.value&&room?.id!==previousRoom){const heading=el('h3',room?.name||t.area||'Other');heading.className='template-room-heading';heading.style.setProperty('--room-hue',room?.hue||((st.rooms.findIndex(r=>r.id===room?.id)*43+160)%360));target.append(heading);previousRoom=room?.id}
   const row=el('article');row.dataset.taskId=t.id;row.dataset.collection=st.templates.some(x=>x.id===t.id)?'templates':'settings';row.className='task task-card reference-task';const body=el('div'),heading=el('div'),meta=el('span',t.area);body.className='body';heading.className='task-heading';meta.className='meta';heading.append(el('strong',t.text));body.append(heading,meta);const tools=el('div');tools.className='tools';
   row.style.setProperty('--task-hue',room?.hue||((st.rooms.findIndex(r=>r.id===room?.id)*43+160)%360));
-  const present=activeSavedTasks(st,t).length>0;const add=button(present?'Remove':'Add task',()=>{const state=getState();if(activeSavedTasks(state,t).length){removeSavedTasks(state,t);savedTasksNotice=`Removed ${t.text} from Tasks.`}else{addSavedTasks(state,[t.id]);savedTasksNotice=`Added ${t.text} to Tasks.`}save()});add.className='task-create';const footer=el('div'),options=el('details');footer.className='task-footer';options.className='task-options';tools.append(button('Edit',()=>editTask(t)),button('Delete',()=>{confirmDelete(()=>{deleteReusable(getState(),t);save()},t.groupId?()=>{deleteReusable(getState(),t,true);save()}:null,isLaundryCycleItem(st,t))}));options.append(el('summary','Edit & options'),tools);footer.append(add);const children=st.templates.filter(child=>child.parentTemplateId===t.id);if(children.length){const details=el('details');details.className='saved-subtasks';details.append(el('summary',`Subtasks (${children.length})`));const addChildren=(id,target)=>{for(const child of st.templates.filter(x=>x.parentTemplateId===id)){const line=el('div');line.append(el('strong',child.text),button('Edit',()=>editTask(child)),button('Delete',()=>{confirmDelete(()=>{deleteReusable(getState(),child);save()},null,isLaundryCycleItem(st,child))}));target.append(line);addChildren(child.id,line)}};addChildren(t.id,details);body.append(details)}body.append(options,footer);row.append(body);if(isLaundryItem(t))bindLaundryCard(row);target.append(row);
+  const present=activeSavedTasks(st,t).length>0;const add=button(present?'Remove':'Add task',()=>{const state=getState();if(activeSavedTasks(state,t).length){removeSavedTasks(state,t);savedTasksNotice=`Removed ${t.text} from Tasks.`}else{addSavedTasks(state,[t.id]);savedTasksNotice=`Added ${t.text} to Tasks.`}save()});add.className='task-create';const footer=el('div'),options=el('details');footer.className='task-footer';options.className='task-options';tools.append(button('Edit',()=>editTask(t)),button('Delete',()=>{confirmDelete(()=>{deleteReusable(getState(),t);save()},t.groupId?()=>{deleteReusable(getState(),t,true);save()}:null,isLaundryCycleItem(st,t))}));appendCycleStepControls(t,'templates',tools);options.append(el('summary','Edit & options'),tools);footer.append(add);const children=st.templates.filter(child=>child.parentTemplateId===t.id);if(children.length){const details=el('details');details.className='saved-subtasks';details.append(el('summary',`Subtasks (${children.length})`));const addChildren=(id,target)=>{for(const child of st.templates.filter(x=>x.parentTemplateId===id)){const line=el('div');line.append(el('strong',child.text),button('Edit',()=>editTask(child)),button('Delete',()=>{confirmDelete(()=>{deleteReusable(getState(),child);save()},null,isLaundryCycleItem(st,child))}));target.append(line);addChildren(child.id,line)}};addChildren(t.id,details);body.append(details)}body.append(options,footer);row.append(body);if(isLaundryItem(t))bindLaundryCard(row);target.append(row);
  }
  const candidates=[...st.tasks.filter(t=>t.done&&!t.recurrence),...st.wins.filter(w=>!st.tasks.some(t=>'win-'+t.id===w.id)&&!w.recurrence)].filter(item=>{
   const completion=item.completedAt||item.at||st.wins.find(w=>w.taskId===item.id||w.id==='win-'+item.id)?.at;
@@ -129,7 +130,7 @@ function bindLaundryCard(row){
 
 function renderLaundrySchedule(st){
  const list=document.querySelector('#laundryScheduleList');list.replaceChildren();
- const roots=(st.settings||[]).filter(t=>!t.parentId&&isLaundryItem(t)&&!t.done);
+ const roots=(st.settings||[]).filter(t=>!t.parentId&&!t.taskTiming&&isLaundryItem(t)&&!t.done);
  const renderItem=(t,target)=>{
   const row=el('article');row.dataset.taskId=t.id;row.dataset.collection=st.templates.some(x=>x.id===t.id)?'templates':'settings';row.className='task task-card reference-task';const body=el('div');body.className='body';body.append(el('strong',t.text));
   const options=el('details');options.className='task-options';options.append(el('summary','Edit & options'));
@@ -137,7 +138,7 @@ function renderLaundrySchedule(st){
    const warning=isLaundryCycleItem(getState(),t)?'This task is part of a laundry cycle. Deleting it may change that cycle. ':'';
    if(!window.confirm(warning+`Delete “${t.text}” and its subtasks? Completion history will stay.`))return;
    deleteLaundryItem(getState(),t);save();
-  }));body.append(options);
+  }));appendCycleStepControls(t,'settings',options);body.append(options);
   const children=st.settings.filter(child=>child.parentId===t.id);
   if(children.length){const details=el('details');details.className='saved-subtasks';details.append(el('summary',`Subtasks (${children.length})`));for(const child of children)renderItem(child,details);body.append(details)}
   row.append(body);if(isLaundryItem(t))bindLaundryCard(row);target.append(row);
@@ -221,8 +222,8 @@ function renderRoom(st){
  const history=(roomBucket==='side'?st.side:roomTaskItems).filter(t=>!t.parentId&&completedToday(t,st.wins)&&t.roomId===r.id&&(roomBucket!=='side'||sidequestMatches(t,roomSideFilter))&&(roomBucket==='side'||roomBucket==='recurring'?roomBucket==='side'||!!t.recurrence:true));if(history.length){const box=el('section');box.className='completed-list';box.append(el('h3','Completed today'));for(const t of history)box.append(makeTaskCard(t,roomBucket==='side'?'side':'task'));list.append(box)}if(roomBucket!=='recurring'&&!groups[roomBucket].length&&!history.length){const empty=el('p',roomBucket==='now'?'❧ No tasks right now. Enjoy your calm space.':'Nothing here yet. Add a task whenever you need it.');empty.className='room-empty';list.append(empty)}document.dispatchEvent(new Event('mc-lists-rendered'));
 }
 function renderRoomRecurringCalendar(root,state,room,tasks){
- const roomState={...state,tasks:state.tasks.filter(task=>task.roomId===room.id),appointments:[],errands:[]};
- root.replaceChildren(createSymbolCalendar(roomState,roomRecurringMonth,null,{storageKey:'mc-room-calendar-'+room.id,showRoomFilter:false,taskCountsOnly:true,showSetDay:false,nextDueOnly:true,onJump:date=>{roomRecurringMonth=new Date(date);renderRoom(getState())},onComplete:(type,id,done)=>{document.dispatchEvent(new CustomEvent('room-recurring-complete',{detail:{id,done}}))}}));
+ const roomState={...state,tasks:state.tasks.filter(task=>task.roomId===room.id&&task.bucket!=='side'&&!state.side.some(side=>side.id===task.id)),appointments:[],errands:[]};
+ root.replaceChildren(createSymbolCalendar(roomState,roomRecurringMonth,null,{storageKey:'mc-room-calendar-'+room.id,showRoomFilter:false,taskCountsOnly:false,showSetDay:true,taskActions:true,taskRoomId:room.id,onJump:date=>{roomRecurringMonth=new Date(date);renderRoom(getState())},onComplete:(type,id,done)=>{document.dispatchEvent(new CustomEvent('room-recurring-complete',{detail:{id,done}}))}}));
 }
 function quickFields(){const f=document.querySelector('#quickTaskForm');document.querySelector('#quickRepeat').hidden=f.elements.bucket.value!=='recurring';f.elements.every.disabled=f.elements.bucket.value!=='recurring';document.querySelector('#quickSide').hidden=f.elements.bucket.value!=='side'}
 export function quickAdd(roomId,options={}){

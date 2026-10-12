@@ -1,8 +1,8 @@
 import {localStorage} from './safe-storage.js';
-import {laundryProgress,laundryLoadProgress} from './laundry.js?v=laundry-loads-20261011-v1';
+import {laundryProgress,laundryLoadProgress} from './laundry.js?v=tools-20261012-v1';
 const TWO_HOURS=2*60*60*1000,HALF_HOUR=30*60*1000;
 export function laundryReminder(state,cycle,now=Date.now()){
- const load=typeof cycle==='number',progress=load?laundryLoadProgress(state,cycle):laundryProgress(state,cycle);if(!progress)return null;if(progress.index!==1)return null;
+ const load=typeof cycle==='number',progress=load?laundryLoadProgress(state,cycle):laundryProgress(state,cycle);if(!progress)return null;if(load?!progress.needsTransfer:progress.index!==1)return null;
  const saved=state.settings?.find(item=>item.id===(load?'laundry-load-'+cycle:cycle==='dryer'?'laundry-dryer-progress':'laundry-progress'));
  const win=state.wins?.find(item=>item.laundry&&(load?item.laundryLoad===cycle:(item.laundryCycle||'rail')===cycle)&&item.laundrySequence===progress.completed);
  const startedAt=Date.parse(saved?.reminderStartedAt||win?.at);if(!Number.isFinite(startedAt))return null;

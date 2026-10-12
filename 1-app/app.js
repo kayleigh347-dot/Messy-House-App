@@ -1,22 +1,25 @@
+import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=tools-20261012-v1';
+import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
+import {laundryDoingSteps} from './laundry.js?v=tools-20261012-v1';
 import {initTaskPlanning,openExistingSubtasks,openSnooze,offerDraggedParent} from './task-planning-ui.js';
 import {initReviewUI,applyListFilters} from './review-ui.js';
 import {localStorage,sessionStorage,criticalStorageProblem,downloadJSON} from './safe-storage.js';
 import {validateBackup,backupPreview} from './backup-tools.js';
-import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=laundry-loads-20261011-v1';
-import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=home-uniform-20261011-v1';
+import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=tools-20261012-v1';
+import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=tools-20261012-v1';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
-import {recurringTiming,appendTaskGroups} from './task-ui.js?v=schedule-20261010-v1';
+import {recurringTiming,appendTaskGroups} from './task-ui.js?v=tools-20261012-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=streamline-20261009-v2';
 import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=issues-2-20261012-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=tools-20261012-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
-import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification,taskNoticeForPerson} from './task-flow.js?v=schedule-20261010-v1';
+import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification,taskNoticeForPerson} from './task-flow.js?v=tools-20261012-v1';
 
 import {renderStats} from './stats-ui.js?v=streamline-20261009-v2';
 
@@ -24,13 +27,13 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=issues-2-20261012-v1";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=tools-20261012-v1";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=new-tasks-first-20261010-v1";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
-import {ensurePerson,setDisplayName,householdScoreboard,personName,unseenActivity} from './household.js?v=schedule-20261010-v1';
+import {ensurePerson,setDisplayName,householdScoreboard,personName,unseenActivity} from './household.js?v=tools-20261012-v1';
 
 
 
@@ -445,11 +448,11 @@ function renderLaundryPanel(){
  for(const root of document.querySelectorAll('[data-laundry-loads]')){
   root.replaceChildren();
   if(loads.length===2){const tabs=document.createElement('div');tabs.className='folder-tabs';tabs.setAttribute('aria-label','Laundry loads');for(const load of loads){const tab=document.createElement('button');tab.type='button';tab.textContent='Load '+load.slot;tab.setAttribute('aria-pressed',String(load.slot===selectedLaundryLoad));tab.onclick=()=>{selectedLaundryLoad=load.slot;renderLaundryPanel()};tabs.append(tab)}root.append(tabs)}
-  const progress=loads.find(load=>load.slot===selectedLaundryLoad),card=document.createElement('section'),number=document.createElement('p'),title=document.createElement('h4');card.className='laundry-cycle';number.className='laundry-step-number';number.textContent=`Load ${progress.slot} · Step ${progress.index+1} of 3`;title.textContent=progress.text;card.append(number,title);
+  const progress=loads.find(load=>load.slot===selectedLaundryLoad),card=document.createElement('section'),number=document.createElement('p'),title=document.createElement('h4');card.className='laundry-cycle';number.className='laundry-step-number';number.textContent=`Load ${progress.slot} · Step ${progress.index+1} of ${progress.total}`;title.textContent=progress.text;card.append(number,title);
   const actions=document.createElement('div');actions.className='laundry-load-actions';
-  for(const route of progress.index===1?['dryer','rail']:[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?'Put in dryer':route==='rail'?'Put on hanging rail':laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
+  for(const route of progress.needsTransfer?['dryer','rail']:[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
   const reminder=laundryReminder(st,progress.slot);if(reminder){const text=document.createElement('p');text.className='laundry-reminder';text.textContent=reminder.due?'Washing reminder due · repeats every 30 minutes':'Washing reminder at '+new Date(reminder.nextAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});card.append(text)}
-  if(loads.length===1&&progress.index===2){const start=document.createElement('button');start.type='button';start.textContent='＋ Start second load';start.onclick=()=>{if(startSecondLaundryLoad(st)){selectedLaundryLoad=2;changed()}};card.append(start)}
+  if(loads.length===1&&progress.step.kind==='finish'){const start=document.createElement('button');start.type='button';start.textContent='＋ Start second load';start.onclick=()=>{if(startSecondLaundryLoad(st)){selectedLaundryLoad=2;changed()}};card.append(start)}
   root.append(card);
  }
 }
@@ -507,8 +510,8 @@ function doingRoomFace(room){
 const collapsedDoingRooms=new Set();
 function renderDoingNow(){
  const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done),completed=items.filter(t=>t.done),groups=new Map();root.replaceChildren();
- const washing=laundryLoads(st).filter(load=>load.index===1),extras=doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask),extraActive=extras.filter(task=>!task.done),extraCompleted=extras.filter(task=>task.done);
- if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · Choose dryer or hanging rail`;actions.className='laundry-load-actions';for(const route of ['dryer','rail']){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?'Put in dryer':'Put on hanging rail';button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
+ const washing=laundryLoads(st).filter(load=>load.doingNow),extras=[...doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask),...laundryDoingSteps(st)],extraActive=extras.filter(task=>!task.done),extraCompleted=extras.filter(task=>task.done);
+ if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · ${progress.needsTransfer?'Choose dryer or hanging rail':progress.text}`;actions.className='laundry-load-actions';for(const route of progress.needsTransfer?['dryer','rail']:[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
 
  for(const task of active){const room=st.rooms.find(room=>room.id===task.roomId),key=room?.id||task.area||'General';if(!groups.has(key))groups.set(key,{room,name:room?.name||task.area||'General',tasks:[]});groups.get(key).tasks.push(task)}
  for(const [key,group] of groups){const section=document.createElement('details'),heading=document.createElement('summary'),title=document.createElement('h3'),list=document.createElement('div');section.className='doing-room-group';section.open=!collapsedDoingRooms.has(key);title.textContent=group.name;const count=document.createElement('span');count.className='meta';count.textContent=String(group.tasks.length);const face=doingRoomFace(group.room);if(face)heading.append(face);heading.append(title,count);section.append(heading,list);for(const task of group.tasks)list.append(mk(task,'task','doing'));section.ontoggle=()=>{if(!section.isConnected)return;if(section.open)collapsedDoingRooms.delete(key);else collapsedDoingRooms.add(key)};root.append(section)}
@@ -519,14 +522,14 @@ function renderDoingNow(){
 function render(){const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
 if(!$('#doing').classList.contains('hide'))renderDoingNow();
-if(!$('#doing').classList.contains('hide')||!$('#laundryLibrary').classList.contains('hide')){renderLaundryPanel();renderLaundryTasks();}
+if(['doing','laundryLibrary','laundry','house'].some(page=>!$('#'+page).classList.contains('hide')))renderLaundryPanel();if(['doing','laundry'].some(page=>!$('#'+page).classList.contains('hide')))renderLaundryTasks();
 renderTaskNotifications();
 categoryOptions();
 personOptions();
 renderRewards();
 let active=priorityOrdered(st.tasks).filter(t=>activeTask(t)&&inCategory(t)),cur=active.find(t=>t.id===shownCurrent)||active[0];
 
-for(const [tab,count] of [["doing",doingNowTasks(st.tasks,st.wins).filter(t=>!t.done).length+laundryLoads(st).filter(load=>load.index===1).length+doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask&&!task.done).length],["now",active.length],["side",st.side.filter(t=>!t.done&&inCategory(t)).length],["wins",uniqueWins(st).filter(inCategory).length]]){const b=document.querySelector('nav button[data-tab="'+tab+'"]');
+for(const [tab,count] of [["doing",doingNowTasks(st.tasks,st.wins).filter(t=>!t.done).length+laundryLoads(st).filter(load=>load.doingNow).length+doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask&&!task.done).length],["now",active.length],["side",st.side.filter(t=>!t.done&&inCategory(t)).length],["wins",uniqueWins(st).filter(inCategory).length]]){const b=document.querySelector('nav button[data-tab="'+tab+'"]');
 b.textContent=({doing:"Doing Now",now:"Tasks",side:"Side quests",wins:"Task Data"})[tab]}
 let d=uniqueWins(st).filter(inCategory).length+(st.completionArchive||[]).filter(row=>!categoryFilter||row.roomId===categoryFilter).reduce((sum,row)=>sum+(row.count||0),0),r=active.length;
 $("#doneN").textContent=d+" done";
@@ -537,7 +540,7 @@ $('#allTaskSummary').textContent=`${shownTasks.length} unfinished tasks${categor
 if(!$("#now").classList.contains("hide"))list("#nowList",shownTasks,"task",st.tasks.filter(t=>completedToday(t,st.wins)&&inCategory(t)));
 if(!$("#side").classList.contains("hide"))renderSidequestTabs($('#sideTabs'),st,filter,value=>{filter=value;render()},changed,()=>st);
 if(!$("#side").classList.contains("hide"))list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&sidequestMatches(t,filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&sidequestMatches(t,filter)));
-if(!$('#wins').classList.contains('hide'))renderStats(st,categoryFilter,personFilter,changed);renderFeatures();if(!$('#calendar').classList.contains('hide'))renderCalendar();colourTaskLists();renderUndoDeleted();applyListFilters();if(!$('#doing').classList.contains('hide'))showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
+if(!$('#wins').classList.contains('hide'))renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderTaskTools();if(!$('#calendar').classList.contains('hide'))renderCalendar();colourTaskLists();renderUndoDeleted();applyListFilters();if(!$('#doing').classList.contains('hide'))showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
 
 function renderHousehold(){
  $('#scoreboardHeading').textContent='Household members · '+$('#statsPeriod').selectedOptions[0].textContent;
@@ -584,7 +587,7 @@ function renderHousehold(){
 
 }
 
-function renderCalendar(){renderLocalCalendar(st,calendarMonth,(type,id,done)=>{if(type==='errand'){const item=st.errands.find(t=>t.id===id);if(item){item.done=done;changed()}return}const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(task.completionUndo&&!st.tasks.some(t=>t.id===task.completionUndo.nextTaskId&&t.done)&&undoCompletion(st,task))changed()},calendarDragOptions())}
+function renderCalendar(){renderLocalCalendar(st,calendarMonth,(type,id,done)=>{if(type==='errand'){const item=st.errands.find(t=>t.id===id);if(item){item.done=done;changed()}return}const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(task.completionUndo&&!st.tasks.some(t=>t.id===task.completionUndo.nextTaskId&&t.done)&&undoCompletion(st,task))changed()},{...calendarDragOptions(),taskActions:true})}
 document.addEventListener('room-recurring-complete',event=>{const task=st.tasks.find(t=>t.id===event.detail?.id);if(task){if(event.detail.done===false){if(undoCompletion(st,task))changed()}else finish(task,'task')}});
 $('#statsPeriod').value='month';localStorage.setItem('mc-stats-period','month');
 $("#statsPeriod").onchange=()=>{localStorage.setItem('mc-stats-period',$('#statsPeriod').value);renderHousehold();
@@ -656,13 +659,14 @@ changed();
  $("#revealedIcon").textContent=prize.icon;
 $("#revealedName").textContent=prize.name;
 
- $("#revealedTitle").textContent=reward.achievement||prize.title;
+ $("#revealedTitle").textContent=rewardUnlockReason(st,reward);renderRewardUnlocks(prize,reward);
 $("#revealedTreat").textContent=prize.treat;
 
  $("#rewardDialog").className=prize.colour;
 $("#rewardDialog").showModal();
 
 }
+function renderRewardUnlocks(prize,reward){const root=$('#rewardUnlockDetails');root.replaceChildren();for(const earned of st.rewards.filter(item=>item.prizeIndex===reward.prizeIndex).sort((a,b)=>a.index-b.index)){const line=document.createElement('p');line.textContent=rewardUnlockReason(st,earned)+(earned.at?' · '+new Date(earned.at).toLocaleDateString():'');root.append(line)}}
 function renderRewards(){
  const p=rewardProgress(st),ready=p.available.length;
 
@@ -675,8 +679,9 @@ function renderRewards(){
  $("#rewardShelfStatus").textContent=p.remaining+" more completed tasks to your next mystery."+(ready?" "+ready+" unopened "+(ready===1?"box":"boxes")+" ready.":"");
 
  $("#revealNext").hidden=!ready;
+ if($('#rewards').classList.contains('hide'))return;
 
- const challengeList=$('#rewardChallenges');challengeList.replaceChildren();for(const challenge of p.challenges){const line=document.createElement('p');line.textContent=challenge.label+' · '+challenge.count+'/'+challenge.target;challengeList.append(line)}
+ const challengeList=$('#rewardChallenges');challengeList.replaceChildren();const goalDetails=document.createElement('details'),goalSummary=document.createElement('summary');goalSummary.textContent='Unlock goals';goalDetails.append(goalSummary);for(const challenge of p.challenges){const row=document.createElement('section'),line=document.createElement('p'),progress=document.createElement('progress');line.textContent=challenge.label+' · '+challenge.count+'/'+challenge.target+' · '+challenge.remaining+' to go';progress.max=challenge.target;progress.value=challenge.count;progress.setAttribute('aria-label',challenge.label+' unlock progress');row.append(line,progress);goalDetails.append(row)}challengeList.append(goalDetails);
  const shelf=$("#rewardCollection");
 shelf.hidden=false;shelf.replaceChildren();
 
@@ -687,7 +692,7 @@ shelf.hidden=false;shelf.replaceChildren();
  for(let page=0;page<cabinets;page++){
   const cabinet=document.createElement('div');cabinet.className='prize-cabinet';
   for(let row=0;row<3;row++){const rail=document.createElement('div');rail.className='prize-rail';rail.style.top=[31,59,87][row]+'%';
-   for(const reward of rewards.slice(page*12+row*4,page*12+row*4+4)){const prize=prizes[reward.prizeIndex];if(!prize)continue;const item=document.createElement('button');item.className='shelf-prize';item.type='button';item.textContent=prize.icon;item.title=prize.name+(reward.count>1?' · Earned '+reward.count+' times':'');item.setAttribute('aria-label','About '+prize.name+(reward.edition>1?' · Edition '+reward.edition:''));item.onclick=()=>{$('#keepReward').textContent='Close';$('#rewardDialog .eyebrow').textContent='YOUR COLLECTION';$('#revealedIcon').textContent=prize.icon;$('#revealedName').textContent=prize.name;$('#revealedTitle').textContent=reward.achievement||prize.title;$('#revealedTreat').textContent=prize.treat;$('#rewardDialog').className=prize.colour;$('#rewardDialog').showModal()};rail.append(item)}
+   for(const reward of rewards.slice(page*12+row*4,page*12+row*4+4)){const prize=prizes[reward.prizeIndex];if(!prize)continue;const item=document.createElement('button');item.className='shelf-prize';item.type='button';item.textContent=prize.icon;item.title=prize.name+(reward.count>1?' · Earned '+reward.count+' times':'');item.setAttribute('aria-label','About '+prize.name+(reward.edition>1?' · Edition '+reward.edition:''));item.onclick=()=>{$('#keepReward').textContent='Close';$('#rewardDialog .eyebrow').textContent='YOUR COLLECTION';$('#revealedIcon').textContent=prize.icon;$('#revealedName').textContent=prize.name;$('#revealedTitle').textContent=rewardUnlockReason(st,reward);renderRewardUnlocks(prize,reward);$('#revealedTreat').textContent=prize.treat;$('#rewardDialog').className=prize.colour;$('#rewardDialog').showModal()};rail.append(item)}
    cabinet.append(rail)
   }shelf.append(cabinet)
  }
@@ -936,12 +941,13 @@ for(const tab of document.querySelectorAll('[data-edit-tab]'))tab.onclick=()=>{c
 $('#backupShortcut').onclick=()=>{$('#moreMenu').close();showPage('preferences')};
 $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').click()};
 
+initTaskTools({get:()=>st,save:changed,toast:featureToast});
 initTaskPlanning({get:()=>st,save:changed,actor:currentActor,toast:featureToast,expand:id=>expandedSubtasks.add(id)});
 initReviewUI({get:()=>st,save:changed});
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=issues-2-20261012-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=tools-20261012-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
