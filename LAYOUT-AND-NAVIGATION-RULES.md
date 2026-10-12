@@ -24,6 +24,7 @@ This is the standing layout and navigation document referenced by `AGENTS.md`. F
 - Schedule has **Manual edit** and **Schedule maker** options. Schedule maker replaces the previous automatic scheduling setup.
 - My rooms contains room management.
 - Calendar month view uses compact room/guardian symbols and event symbols (appointments, errands and laundry), with time/count indicators. Keep full room and task details available by tapping a day and through accessible labels.
+- Keep Skip this time available in both the main calendar and room recurring calendar, and in recurring tasks’ detailed options. Month symbols must not remove access to this action through day details.
 - Calendar recurring task rows offer Skip this time for a single current or projected occurrence. Skipping awards no points and records no completion; later repeats stay scheduled.
 - Calendar remains a separate page. Its task lists, completed task lists and whole-house task choices show recurring tasks only. One-off tasks remain in their existing task lists; appointments and errands remain calendar events.
 - **Backup & custom tasks** combines board backup controls and custom task upload on one page, with separate explicit import and upload actions.
@@ -60,6 +61,7 @@ This is the standing layout and navigation document referenced by `AGENTS.md`. F
 - Preset and custom tasks offer common and custom tools. Retain choices between wizard steps, show them in the preview, and carry them into the saved tasks and Tools needed checklists.
 - The final preview lists all current recurring cleaning tasks being replaced. Only after explicit confirmation, retire all of those routines and install the selected new schedule, including replacement of routines in unchecked rooms. Keep laundry, one-off tasks, hobbies, notes, shopping, completed records, points, and account sync intact.
 - Group selected tasks first by occurrence interval, then unchecked suggestions by interval. Keep a room's category when its name changes.
+- Schedule maker places each first due date roughly one repeat interval after the selected start date, shifting later as needed for rest days and capacity. Do not make all tasks due immediately at setup.
 - Rest days contain no automatically scheduled tasks. Manual additions remain possible.
 - User-set or measured task times are exempt from preset time multipliers. Show any longer repeat intervals in the schedule preview.
 - Catch up shows missed recurring work once per task series, with days or weeks overdue. A missed task must not accumulate duplicate catch-up entries when its next occurrence arrives.
