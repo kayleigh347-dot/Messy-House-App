@@ -57,7 +57,7 @@ test('Use current schedule keeps direct and template user times unchanged in pre
 test('Use current schedule preserves nested measured child times and multiplies only the preset portion after saving',()=>{
  for(const multiplier of [1,2,3]){
   const s=state();s.rooms=[{id:'r',name:'Custom',category:'custom'}];s.tasks=[
-   {id:'p',roomId:'r',text:'Routine',recurrence:{kind:'weeks',every:1}},
+   {id:'p',roomId:'r',text:'Routine',recurrence:{kind:'weeks',every:1},presetMinutes:20},
    {id:'group',parentId:'p',text:'Group'},
    {id:'measured',parentId:'group',text:'Measured step',estimatedMinutes:7,estimateSource:'measured',done:true},
    {id:'preset',parentId:'p',text:'Preset step',presetMinutes:5}
@@ -66,7 +66,7 @@ test('Use current schedule preserves nested measured child times and multiplies 
   const p=makeSchedulePreview(s,{...draft([]),dailyMax:120,multiplier,rooms:[room],replaceRecurring:true});
   assert.equal(p.changes[0].minutes,7+5*multiplier);
   let id=0;applySchedulePreview(s,p,()=>`new-${++id}`,new Date('2026-10-12'));
-  const saved=s.tasks.find(t=>!t.parentId&&!t.archived);assert.equal(saved.presetMinutes,undefined);
+  const saved=s.tasks.find(t=>!t.parentId&&!t.archived);assert.equal(saved.presetMinutes,20);
   assert.equal(adjustedTaskMinutes(s,saved,multiplier),7+5*multiplier);
   const child=s.tasks.find(t=>t.text==='Measured step'&&!t.archived&&!t.done);
   assert.equal(child.estimatedMinutes,7);assert.equal(child.estimateSource,'measured');

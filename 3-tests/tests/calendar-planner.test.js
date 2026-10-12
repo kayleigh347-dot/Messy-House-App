@@ -15,7 +15,7 @@ test('recurring-only calendar excludes dated, undated and manually planned one-o
 
 test('calendar always exempts saved user/template/measured times even with absent or false legacy settings',()=>{
  for(const multiplier of [1,2,3])for(const preserveUserTimes of [undefined,false,true]){
-  const s={tasks:[{id:'user',text:'User time',estimatedMinutes:23},{id:'template',text:'Template time',sourceTemplateId:'saved',presetMinutes:10},{id:'parent',text:'Mixed'},{id:'child-user',parentId:'parent',estimatedMinutes:7},{id:'child-preset',parentId:'parent',presetMinutes:5}],templates:[{id:'saved',estimatedMinutes:23}],calendarSettings:{dailyMax:500,multiplier,oneRoom:false,preserveUserTimes},side:[],calendarPlans:[],calendarSessions:[]};
+  const s={tasks:[{id:'user',text:'User time',estimatedMinutes:23},{id:'template',text:'Template time',sourceTemplateId:'saved',presetMinutes:10},{id:'parent',text:'Mixed',presetMinutes:20},{id:'child-user',parentId:'parent',estimatedMinutes:7},{id:'child-preset',parentId:'parent',presetMinutes:5}],templates:[{id:'saved',estimatedMinutes:23}],calendarSettings:{dailyMax:500,multiplier,oneRoom:false,preserveUserTimes},side:[],calendarPlans:[],calendarSessions:[]};
   for(const task of s.tasks)task.roomId='r';
   const before=structuredClone(s),p=buildCalendarPlan(s,options);
   assert.equal(p.entries.find(e=>e.taskId==='user').minutes,23);
