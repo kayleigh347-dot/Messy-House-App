@@ -10,6 +10,12 @@ const symbols={'room-master':'🛏️','room-penny':'🧸','room-kitchen':'🍽�
 export const roomSymbol=id=>symbols[id]||'🏠';
 
 export const calendarRoomEntries=(entries,roomId='')=>entries.filter(entry=>!roomId||(roomId==='household'?!entry.roomId:entry.roomId===roomId));
+export function recurringRoomCalendarState(state,roomId){
+ const side=new Set((state.side||[]).map(task=>task.id)),eligible=(state.tasks||[]).filter(task=>task.bucket!=='side'&&!side.has(task.id));
+ const ids=new Set(eligible.filter(task=>!task.parentId&&task.recurrence&&task.roomId===roomId).map(task=>task.id));
+ let added=true;while(added){added=false;for(const task of eligible)if(ids.has(task.parentId)&&!ids.has(task.id)){ids.add(task.id);added=true}}
+ return {...state,tasks:eligible.filter(task=>ids.has(task.id)),appointments:[],errands:[]};
+}
 // Future symbols project the repeat rule without creating or completing tasks.
 export function upcomingCalendarEntries(state,{showRecurring=true,showSetDay=true,start=null,end=null}={}){
  const entries=[];

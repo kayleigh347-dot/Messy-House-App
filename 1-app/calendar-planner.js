@@ -1,4 +1,4 @@
-import {automaticTaskMinutes} from './task-estimates.js?v=checklist-20261012-v3';
+import {automaticTaskMinutes,userTaskMinutes} from './task-estimates.js?v=review-fixes-20261012-v2';
 import {localDateKey} from './calendar.js';
 import {nextOccurrence,freshTask} from './v2-state.js?v=calendar-skip-20261012-v1';
 import {descendants,childrenOf,repeatChildren} from './subtasks.js';
@@ -11,7 +11,7 @@ export function addDays(key,n){const d=new Date(key+'T12:00:00');d.setDate(d.get
 export function weekStart(date){const d=new Date(date);d.setHours(12,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);return localDateKey(d);}
 export function taskMinutes(state,task){
  const estimate=t=>automaticTaskMinutes(state,t);
- if(Number.isFinite(task.estimatedMinutes)&&task.estimatedMinutes>0)return {base:estimate(task),unknown:0};
+ if(userTaskMinutes(state,task)||Number(task.presetMinutes)>0)return {base:estimate(task),unknown:0};
  const family=descendants(state.tasks,task.id),leaves=family.filter(t=>!t.archived&&!t.pausedAt&&!childrenOf(state.tasks,t.id).length);
  if(!leaves.length)return {base:estimate(task),unknown:0};
  return leaves.reduce((sum,t)=>({base:sum.base+(estimate(t)||0),unknown:sum.unknown+(estimate(t)===null?1:0)}),{base:0,unknown:0});
@@ -29,7 +29,7 @@ export function buildCalendarPlan(state,{today=localDateKey(new Date()),end=addD
   let occurrence=due||'undated',count=0;
   do{
    const key=task.id+'@'+occurrence,override=overrides.get(key);
-   if(occurrence==='undated'||occurrence<=end&&(count===0||occurrence>=today)){entries.push({id:key,taskId:task.id,title:task.text,roomId:task.roomId,dueDate:occurrence==='undated'?'':occurrence,projected:count>0,baseMinutes:duration.base,minutes:settings.preserveUserTimes?adjustedTaskMinutes(state,task,settings.multiplier):Math.ceil(duration.base*settings.multiplier),unknown:duration.unknown,sessionId:session?.id||'',sessionName:session?.name||'',manual:!!override,fixed:!!task.scheduleMaker&&occurrence>=today,date:override?.date||(task.scheduleMaker&&occurrence>=today?occurrence:''),done:false});}
+   if(occurrence==='undated'||occurrence<=end&&(count===0||occurrence>=today)){entries.push({id:key,taskId:task.id,title:task.text,roomId:task.roomId,dueDate:occurrence==='undated'?'':occurrence,projected:count>0,baseMinutes:duration.base,minutes:adjustedTaskMinutes(state,task,settings.multiplier),unknown:duration.unknown,sessionId:session?.id||'',sessionName:session?.name||'',manual:!!override,fixed:!!task.scheduleMaker&&occurrence>=today,date:override?.date||(task.scheduleMaker&&occurrence>=today?occurrence:''),done:false});}
    if(!task.recurrence||!due)break;
    const next=nextOccurrence(task.recurrence,new Date(occurrence+'T12:00:00'));if(!next)break;
    const nextKey=localDateKey(next);if(nextKey<=occurrence)break;occurrence=nextKey;count++;
@@ -68,8 +68,8 @@ export function movePlannedOccurrences(state,entries,date){
 export function undoPlanMove(state,undo){if(!undo||JSON.stringify(state.calendarPlans)!==JSON.stringify(undo.after))return false;state.calendarPlans=structuredClone(undo.before);return true;}
 
 export function adjustedTaskMinutes(state,task,multiplier=calendarSettings(state).multiplier){
- const own=t=>{const template=state.templates?.find(x=>x.id===t.sourceTemplateId);return Number(t.estimatedMinutes)>0||Number(template?.estimatedMinutes)>0};
- if(Number(task.estimatedMinutes)>0)return Math.ceil(automaticTaskMinutes(state,task));
+ const own=t=>!!userTaskMinutes(state,t);
+ if(own(task))return Math.ceil(automaticTaskMinutes(state,task));
  if(Number(task.presetMinutes)>0)return Math.ceil(task.presetMinutes*multiplier);
  const leaves=descendants(state.tasks,task.id).filter(t=>!t.archived&&!t.pausedAt&&!childrenOf(state.tasks,t.id).length);
  return leaves.length?leaves.reduce((n,t)=>n+Math.ceil(automaticTaskMinutes(state,t)*(own(t)?1:multiplier)),0):Math.ceil(automaticTaskMinutes(state,task)*(own(task)?1:multiplier));

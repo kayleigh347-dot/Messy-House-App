@@ -291,3 +291,11 @@ body.task-compact-view main .task-card>.body>.task-footer>.task-complete{margin-
 #taskTimingClock{display:block;font-size:36px;font-variant-numeric:tabular-nums;margin:16px 0}.timing-record{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid #765a96}.timing-record strong{flex:1 1 100%}.timing-record button{margin-left:auto}.cycle-edit-step{padding:12px 0;border-bottom:1px solid #765a96}.cycle-edit-step label{display:grid;gap:6px;margin:8px 0}.cycle-edit-step .checkbox-label{display:flex}#rewardChallenges progress{width:100%}#rewardUnlockDetails p{font-size:13px}body.task-compact-view #laundryLibrary .saved-subtasks button{display:none!important}
 
 body[data-view=taskTiming] .category-bar{display:none!important}
+
+/* Compact leaf subtasks keep their name and actions on a single row. */
+body.task-compact-view main .subtask-list>.subtask-card:not(.has-subtask-counter)>.body{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 4px}
+body.task-compact-view main .subtask-list>.subtask-card:not(.has-subtask-counter)>.body>.task-heading{grid-column:1;grid-row:1;min-width:0}
+body.task-compact-view main .subtask-list>.subtask-card:not(.has-subtask-counter) .task-heading>strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.task-compact-view main .subtask-list>.subtask-card:not(.has-subtask-counter)>.body>.task-footer{grid-column:2;grid-row:1;display:flex;flex-wrap:nowrap;margin:0;gap:3px}
+body.task-compact-view main .subtask-list>.subtask-card>.body>.completion-person{display:none!important}
+body.task-compact-view main .calendar-subtask-row>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

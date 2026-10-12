@@ -1,11 +1,15 @@
 const textKey=text=>String(text||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-export function automaticTaskMinutes(state,task){
+export function userTaskMinutes(state,task){
  const valid=value=>Number.isFinite(value)&&value>0;
  if(valid(task?.estimatedMinutes))return task.estimatedMinutes;
- if(valid(task?.presetMinutes))return task.presetMinutes;
  const templates=state.templates||[],key=textKey(task?.text);
  const source=templates.find(t=>t.id===task?.sourceTemplateId&&valid(t.estimatedMinutes))||templates.find(t=>textKey(t.text)===key&&t.roomId===task?.roomId&&valid(t.estimatedMinutes));
- if(source)return source.estimatedMinutes;
+ return source?.estimatedMinutes||null;
+}
+export function automaticTaskMinutes(state,task){
+ const saved=userTaskMinutes(state,task);if(saved)return saved;
+ if(Number.isFinite(task?.presetMinutes)&&task.presetMinutes>0)return task.presetMinutes;
+ const key=textKey(task?.text);
  if(/shower|bath\b|ceiling|deep clean/.test(key))return 20;
  if(/mirror|surfaces|bins?\b|light ?switch|hand towel|bath mat/.test(key))return 5;
  if(/toilet|sink|taps?|floor|hoover|vacuum|mop|dust|windows?|wash|laundry|put away/.test(key))return 10;

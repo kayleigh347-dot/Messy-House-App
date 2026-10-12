@@ -1,4 +1,4 @@
-import {automaticTaskMinutes} from './task-estimates.js?v=checklist-20261012-v3';
+import {automaticTaskMinutes} from './task-estimates.js?v=review-fixes-20261012-v2';
 import {laundryLoadSteps,saveLaundryLoadSteps} from './laundry.js?v=checklist-20261012-v3';
 export function timingChoices(state){
  const choices=[],seen=new Set();

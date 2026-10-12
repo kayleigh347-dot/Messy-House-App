@@ -2,11 +2,11 @@ import {toolsPicker} from './needed-tools.js?v=fuller-wizard-20261012-v1';
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {isLaundryItem,isLaundryCycleItem,deleteLaundryItem} from './laundry.js?v=checklist-20261012-v3';
 import {nextDueDate,setNextDue} from './recurring-schedule.js?v=tools-20261012-v1';
-import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?v=laundry-schedule-20261012-v1';
+import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?v=review-fixes-20261012-v2';
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=tools-20261012-v1';
-import {createSymbolCalendar} from './house-calendar.js?v=skip-first-due-20261012-v1';
+import {createSymbolCalendar,recurringRoomCalendarState} from './house-calendar.js?v=review-fixes-20261012-v2';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
 import {messPhrase,cleanPercent,isSparkling,barState} from './mess-phrase.js';
@@ -222,16 +222,16 @@ function renderRoom(st){
  const sideTabs=document.querySelector('#roomSideTabs');sideTabs.hidden=roomBucket!=='side';if(roomBucket==='side')renderSidequestTabs(sideTabs,st,roomSideFilter,value=>{roomSideFilter=value;renderRoom(getState())},save,getState);
  const list=document.querySelector('#roomTasks'),calendar=document.querySelector('#roomRecurringCalendar'),views=document.querySelector('#roomRecurringViews'),statusTabs=document.querySelector('#roomRecurringStatusTabs');list.replaceChildren();views.hidden=roomBucket!=='recurring';calendar.hidden=roomBucket!=='recurring'||roomRecurringView!=='calendar';list.hidden=roomBucket==='recurring'&&roomRecurringView==='calendar';statusTabs.hidden=roomBucket!=='recurring'||roomRecurringView!=='list';const toggle=document.querySelector('#roomRecurringToggle');toggle.textContent=roomRecurringView==='calendar'?'List view':'Calendar view';toggle.setAttribute('aria-label','Switch to '+toggle.textContent.toLowerCase());toggle.onclick=()=>{roomRecurringView=roomRecurringView==='calendar'?'list':'calendar';if(roomRecurringView==='list')roomRecurringStatus='all';renderRoom(getState())};
  if(roomBucket==='homeless'){renderHomeless(list,st,r.id);document.dispatchEvent(new Event('mc-lists-rendered'));return}
- if(roomBucket==='recurring'&&roomRecurringView==='calendar'){renderRoomRecurringCalendar(calendar,st,r,groups.recurring);document.dispatchEvent(new Event('mc-lists-rendered'));return}
+ if(roomBucket==='recurring'&&roomRecurringView==='calendar'){renderRoomRecurringCalendar(calendar,st,r);document.dispatchEvent(new Event('mc-lists-rendered'));return}
  if(roomBucket==='recurring'){
   statusTabs.replaceChildren();for(const [key,name] of [['all','All'],...recurringSections]){const tasks=groups.recurring.filter(task=>key==='all'||recurringTiming(task).status===key),tab=setTabLabel(button(name,()=>{roomRecurringStatus=key;renderRoom(getState())}),name,tasks.length);tab.setAttribute('aria-pressed',String(key===roomRecurringStatus));statusTabs.append(tab)}
   const tasks=groups.recurring.filter(task=>roomRecurringStatus==='all'||recurringTiming(task).status===roomRecurringStatus);appendTaskGroups(list,priorityOrdered(tasks),task=>appendRecurringTiming(makeTaskCard(task,'task'),task));if(!tasks.length)list.append(el('p','No tasks here.'));
  }else appendTaskGroups(list,priorityOrdered(groups[roomBucket]),t=>makeTaskCard(t,roomBucket==='side'?'side':'task'));
  const history=(roomBucket==='side'?st.side:roomTaskItems).filter(t=>!t.parentId&&completedToday(t,st.wins)&&t.roomId===r.id&&(roomBucket!=='side'||sidequestMatches(t,roomSideFilter))&&(roomBucket==='side'||roomBucket==='recurring'?roomBucket==='side'||!!t.recurrence:true));if(history.length){const box=el('section');box.className='completed-list';box.append(el('h3','Completed today'));for(const t of history)box.append(makeTaskCard(t,roomBucket==='side'?'side':'task'));list.append(box)}if(roomBucket!=='recurring'&&!groups[roomBucket].length&&!history.length){const empty=el('p',roomBucket==='now'?'❧ No tasks right now. Enjoy your calm space.':'Nothing here yet. Add a task whenever you need it.');empty.className='room-empty';list.append(empty)}document.dispatchEvent(new Event('mc-lists-rendered'));
 }
-function renderRoomRecurringCalendar(root,state,room,tasks){
- const roomState={...state,tasks:state.tasks.filter(task=>task.roomId===room.id&&task.bucket!=='side'&&!state.side.some(side=>side.id===task.id)),appointments:[],errands:[]};
- root.replaceChildren(createSymbolCalendar(roomState,roomRecurringMonth,null,{storageKey:'mc-room-calendar-'+room.id,showRoomFilter:false,taskCountsOnly:false,showSetDay:true,taskActions:true,taskRoomId:room.id,onSkip:(id,date)=>document.dispatchEvent(new CustomEvent('recurring-skip',{detail:{id,date}})),onJump:date=>{roomRecurringMonth=new Date(date);renderRoom(getState())},onComplete:(type,id,done)=>{document.dispatchEvent(new CustomEvent('room-recurring-complete',{detail:{id,done}}))}}));
+function renderRoomRecurringCalendar(root,state,room){
+ const roomState=recurringRoomCalendarState(state,room.id);
+ root.replaceChildren(createSymbolCalendar(roomState,roomRecurringMonth,null,{storageKey:'mc-room-calendar-'+room.id,showRoomFilter:false,taskCountsOnly:false,showSetDay:false,taskActions:true,taskRoomId:room.id,onSkip:(id,date)=>document.dispatchEvent(new CustomEvent('recurring-skip',{detail:{id,date}})),onJump:date=>{roomRecurringMonth=new Date(date);renderRoom(getState())},onComplete:(type,id,done)=>{document.dispatchEvent(new CustomEvent('room-recurring-complete',{detail:{id,done}}))}}));
 }
 function quickFields(){const f=document.querySelector('#quickTaskForm');document.querySelector('#quickRepeat').hidden=f.elements.bucket.value!=='recurring';f.elements.every.disabled=f.elements.bucket.value!=='recurring';document.querySelector('#quickSide').hidden=f.elements.bucket.value!=='side'}
 export function quickAdd(roomId,options={}){
