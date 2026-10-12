@@ -11,7 +11,7 @@ These are Kayleigh's standing defaults for the app's layout and navigation. Foll
 ## Page and tab order
 
 - Put tabs immediately beneath the page title, before the page content.
-- Use the same tab style across pages: purple, folder-like tabs with a cut-out tab shape. Tabs should read as tabs, not buttons.
+- Use the same tab style across pages: folder-like tabs with a cut-out tab shape. Top-level tabs are purple. Nested tabs use contrasting colours to distinguish levels. Tabs should read as tabs, not buttons.
 - Keep a page's tabs on one line on mobile, using concise labels where needed.
 - Keep headers, tabs, and view controls consistent across pages that use the same pattern.
 
@@ -34,3 +34,16 @@ An explicit instruction from Kayleigh for a particular page or change overrides 
 - Sidequests belong in the room’s Side quests tab, never its Tasks tab, including completed sidequests. Keep task and sidequest collections separate without rewriting personal task data.
 - Remove the Choose a small task function; do not reintroduce it.
 - Show **Undo deleted** only on pages containing task lists. Never show it on Task Data, Settings, or other pages without task lists.
+
+## Manage home and task options rules
+
+- Keep the settings cog at the top right on every page and room. On the home illustration, use the cog mapped to the house image instead.
+- Expandable option titles stay on one line when space allows, and wrap naturally to a second line when necessary.
+- The Add task form has a single compact row of checkboxes: Add to Doing Now, Needs attention, Sidequest. Put Add subtask below it. Put More options below the confirmation button; it opens a full options popup for assignment, tools, saved templates and other secondary fields.
+- More groups home configuration into Manage home: Tasks, Schedule, My rooms. Tasks has Reusable, Recurring, Tools/times; include laundry editing. Schedule has Manual edit and Schedule maker. Calendar remains separate.
+- Backup and custom task upload share one page, with separate explicit import and upload actions.
+- Schedule maker changes happen only after preview and explicit confirmation. Never replace a saved board during an app update. Keep hobbies, sidequests, notes, shopping, history, points and account sync intact.
+- Tool checklists in Doing Now and calendar day detail include each tool once, including unfinished subtasks.
+- Schedule setup visits Laundry, General, preset rooms, custom rooms. Group selected tasks first by interval, then unchecked suggestions by interval. Keep a room category when its name changes.
+- Rest days contain no automatically scheduled tasks. User-set or measured times are exempt from preset time multipliers. Show any longer repeat intervals in the schedule preview.
+- Catch up shows missed recurring work once per series, with days or weeks overdue.
