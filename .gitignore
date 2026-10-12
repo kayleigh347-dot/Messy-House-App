@@ -25,3 +25,7 @@ LATEST-HANDOFF.md
 backup/
 backups/
 previous-version/
+
+# Individual plans, checklists and review working records remain local.
+canned plans/
+canned checklists/

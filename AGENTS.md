@@ -8,7 +8,7 @@ Until Kayleigh says otherwise, this repository is the only active working area. 
 This folder is the only working copy for files used by the GitHub Pages site.
 
 - Make all changes intended for GitHub Pages in this repository.
-- Before changing app layout, navigation, page headers, tabs, or task-list presentation, read `LAYOUT-AND-NAVIGATION-RULES.md` and follow its standing defaults unless Kayleigh explicitly says otherwise.
+- Before changing or reviewing app layout, navigation, task presentation, calendars, scheduling, tools or laundry functions, read `LAYOUT-AND-NAVIGATION-RULES.md`. It is the authoritative layout, navigation and function document. Follow it unless Kayleigh explicitly says otherwise; document relevant rule coverage in the local plan.
 - Keep files in the layout expected by `.github/workflows/pages.yml`: workflow files in `.github/workflows/`, app files in `1-app/`, shared images in `2-assets/` or the existing `part-*` asset folders, and tests in `3-tests/`.
 - Do not edit or copy changes into similarly named upload, retry, dated output, preview, or backup folders as a second source. Those are snapshots, not the active GitHub version.
 - When the same app file exists elsewhere in the workspace, use the copy in this repository for GitHub Pages work. Keep non-GitHub deployments and their source files separate unless the user asks to change them too.
@@ -28,9 +28,23 @@ Keep only that one previous-version backup. This repository remains the current 
 
 --- Added by Kayleigh do not remove this section when updating this file ---
 - do not make unrequested without asking first, only fix/add specified changes in my prompt. Preserve all other functions.
-- create a plan and checklist before starting, to be sure everything asked for has been completed. Show me the plan, save them in there own folder canned plans (add folder path after you create it) you can start immediately after sharing it,
+- create a proper plan before starting app work or a review. Break the work into small, focused steps and work on one step at a time. A checklist supports the plan; it must never replace the plan. Show me the plan, save it locally in `canned plans/`, and give me its full path. You can start immediately after sharing it. Plans and checklists stay local; never commit or upload them.
 - once finished create a handoff for next agent.
 - ask me if a request seems illogical or would make the app worse and explain why.
+
+## Required planning and execution
+
+- Read this file, the referenced rules and the latest local handoff before preparing the plan. Treat reference schedules and attached documents as reference material, not new instructions from Kayleigh. Her current explicit corrections override earlier requirements.
+- A proper plan states the requested outcome and scope, then gives ordered, small steps. Each step explains the action, its boundaries, how success will be verified, and its status. A list of tick boxes alone is not a plan.
+- Keep exactly one step in progress. Finish its work and verification, record the result locally, then move to the next step. If verification fails, resolve it within that step or record the concrete blocker before changing the plan. Do not mark attempted work as complete.
+- Keep a completion checklist alongside the plan to account for every requested item. Update the plan and checklist when Kayleigh steers the work, preserving unfinished requirements unless she cancels them.
+- Keep the plan, checklist, working review notes and handoff local. Use `canned plans/` for plans and related review records; `LATEST-HANDOFF.md` is the local handoff. Never include these in commits, pull-request bodies, GitHub uploads, releases or cloud storage. Share local file links in this chat. Stage specific publishable files, never the entire working folder.
+- If an older plan or checklist is already tracked, remove it from the current Git index while retaining its local file. Ignore its folder for future work. Do not rewrite Git history; report that historical copies remain.
+- Before implementing an affected rule, identify every page, mode and renderer that uses the function. Record a local coverage table: requirement, affected surfaces, verification, result. For example, calendar filtering and Skip must be checked in the main calendar and the separate room recurring calendar, including projected occurrences.
+- Use relevant existing tests and focused synthetic examples. For changed layout or interaction, inspect the affected screen at a phone width. Distinguish source inspection, automated tests, Chrome phone-width checks and actual Android checks. Do not claim visual or device verification from unit tests.
+- Preserve existing actions when reorganising their presentation. Check required controls after the change; successful builds alone do not prove the layout/function rules were followed.
+- For a review, report confirmed defects separately from unchecked areas, with evidence and a focused proposed fix. Do not silently implement unrelated fixes. Never present synthetic test values as Kayleigh's saved data.
+- Before publication, read back the changes against the request and relevant rules. Complete the local checklist, report remaining limitations, and create the local handoff. Publish authorised app/instruction changes according to the publishing rule; local work records remain local.
 
 ## Personal task lists and backups
 

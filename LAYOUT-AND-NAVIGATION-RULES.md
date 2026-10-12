@@ -1,6 +1,15 @@
-# App layout and navigation rules
+# App layout, navigation and function rules
 
-This is the standing layout and navigation document referenced by `AGENTS.md`. Follow these integrated rules for every app UI change unless Kayleigh explicitly gives a different instruction.
+This is the authoritative layout, navigation and function document referenced by `AGENTS.md`. Follow these integrated rules for app changes and reviews unless Kayleigh explicitly gives a different instruction. Keep this filename so existing agent references remain valid.
+
+## Applying these rules
+
+- Follow the proper-plan and small-step workflow in `AGENTS.md`; plans and supporting checklists remain local.
+- Before editing, map the relevant requirements to every affected page, mode and renderer in a local coverage table. Recheck that coverage before publication. A rule implemented on one page does not prove it works on another.
+- Layout changes must preserve the required functions and controls below. Verify their availability and behaviour after reorganising a page. In particular, calendar symbols must preserve day details and Skip; the main and room calendars must both enforce recurring-only task filtering.
+- Record evidence as source inspection, automated test, screen check or actual device check. Mark unchecked behaviours explicitly. A passing build or test suite is not evidence that all these rules pass.
+- Use synthetic local data for destructive or replacement checks. Do not alter Kayleigh's live board to verify an update.
+- Review findings do not authorise unrelated app changes. Keep each proposed fix separate until it falls within Kayleigh's requested scope.
 
 ## Mobile-first layout
 
