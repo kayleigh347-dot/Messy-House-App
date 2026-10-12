@@ -1,4 +1,4 @@
-import {toolsPicker} from './needed-tools.js';
+import {toolsPicker} from './needed-tools.js?v=fuller-wizard-20261012-v1';
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {scheduleFields,scheduleSnapshot,recurringScheduleTasks,nextDueDate,setNextDue,schedulePlan,unchangedScheduleTasks} from './recurring-schedule.js?v=tools-20261012-v1';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups} from './task-ui.js?v=tools-20261012-v1';

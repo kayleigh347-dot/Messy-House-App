@@ -1,4 +1,4 @@
-import {openToolsNeeded} from './needed-tools.js';
+import {openToolsNeeded} from './needed-tools.js?v=fuller-wizard-20261012-v1';
 import {isLaundryItem} from './laundry.js?v=compact-week-20261012-v4';
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {localDateKey} from './calendar.js';

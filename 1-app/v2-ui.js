@@ -1,4 +1,4 @@
-import {toolsPicker} from './needed-tools.js';
+import {toolsPicker} from './needed-tools.js?v=fuller-wizard-20261012-v1';
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {isLaundryItem,isLaundryCycleItem,deleteLaundryItem} from './laundry.js?v=checklist-20261012-v3';
 import {nextDueDate,setNextDue} from './recurring-schedule.js?v=tools-20261012-v1';

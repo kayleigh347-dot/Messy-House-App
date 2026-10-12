@@ -1,4 +1,4 @@
-export const commonTools=['Vacuum cleaner','Mop','Bucket','Microfibre cloth','Duster','All-purpose cleaner','Glass cleaner','Toilet brush','Scrubbing brush','Rubber gloves','Broom','Dustpan','Laundry detergent'];
+export const commonTools=['Vacuum cleaner','Mop','Bucket','Microfibre cloth','Wet microfibre cloth','Dry microfibre cloth','Magic eraser','Glass cloth','Wet window cloth (e-cloth)','Dry glass cloth (e-cloth)','Duster','All-purpose cleaner','Glass cleaner','Toilet brush','Scrubbing brush','Rubber gloves','Broom','Dustpan','Laundry detergent','Litter scoop','Fresh cat litter','Bin bags','Washing-up liquid','Sponge','Tea towel','Carpet cleaner','Fish tank bucket'];
 export function cleanTools(values){const unique=new Map();for(const value of Array.isArray(values)?values:[]){const text=String(value).trim().slice(0,80);if(text&&!unique.has(text.toLocaleLowerCase()))unique.set(text.toLocaleLowerCase(),text)}return [...unique.values()]}
 export function toolsNeeded(state,taskIds){
  const items=[...(state.tasks||[]),...(state.side||[]),...(state.settings||[])],ids=new Set(taskIds),seen=new Set();let changed=true;

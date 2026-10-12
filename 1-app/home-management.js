@@ -1,5 +1,5 @@
 import {navigate} from './navigation.js?v=startup-navigation-20261012-v1';
-import {commonTools,openToolsNeeded} from './needed-tools.js';
+import {commonTools,openToolsNeeded} from './needed-tools.js?v=fuller-wizard-20261012-v1';
 import {doingNowTasks} from './task-flow.js';
 let api;
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};

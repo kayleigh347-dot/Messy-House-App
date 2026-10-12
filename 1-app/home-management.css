@@ -38,3 +38,7 @@ details.optional-section>summary{width:auto;max-width:100%;white-space:normal;ov
 #taskToolsBody fieldset{margin:.6rem 0;padding:.7rem}
 #taskToolsBody fieldset .checkbox-label{display:flex;gap:.4rem;align-items:center}
 #taskToolsBody input[type=checkbox]{width:auto}
+
+.maker-task-choice{cursor:pointer;scroll-margin:5rem 0}.maker-task-choice:focus-visible{outline:2px solid #a5e6df;outline-offset:2px}.maker-task-choice input,.maker-task-choice select{cursor:auto}
+
+.maker-calendar>label{display:flex;align-items:center;gap:.5rem;margin:.8rem 0}.maker-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.45rem}.maker-calendar-day{padding:.5rem;border:1px solid #a582c4;border-radius:.6rem;background:#2c1641;min-width:0;overflow-wrap:anywhere}.maker-calendar-day>strong,.maker-calendar-day>small{display:block}.maker-calendar-room{border-left:3px solid hsl(var(--preview-hue) 65% 70%);padding-left:.4rem;margin-top:.7rem}.maker-calendar-room h4{margin:.3rem 0;color:hsl(var(--preview-hue) 65% 80%)}.maker-calendar-room p{margin:.4rem 0;font-size:.85rem}.maker-calendar-day.is-rest{background:#172b33;border-style:dashed}@media(max-width:700px){.maker-calendar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
