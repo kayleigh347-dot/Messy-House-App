@@ -20,7 +20,7 @@ This is the standing layout and navigation document referenced by `AGENTS.md`. F
 ## More and Manage home navigation
 
 - More groups home configuration into **Manage home**, with **Tasks**, **Schedule**, and **My rooms** tabs.
-- Tasks has three tabs: **Reusable**, **Recurring**, and **Tools/times**. Include laundry editing in this management area.
+- Tasks has three tabs: **Reusable**, **Recurring**, and **Tools/times**. Laundry setup and cycle editing are a separate function in More → Laundry setup & editing.
 - Schedule has **Manual edit** and **Schedule maker** options. Schedule maker replaces the previous automatic scheduling setup.
 - My rooms contains room management.
 - Calendar remains a separate page.
@@ -47,7 +47,11 @@ This is the standing layout and navigation document referenced by `AGENTS.md`. F
 
 ## Schedule setup and catch up
 
-- Schedule setup visits **Laundry**, **General**, preset rooms, then custom rooms.
+- Schedule setup visits **General**, preset rooms, then custom rooms. Laundry must not appear in the cleaning wizard.
+- Laundry setup separately offers dryer and hanging-rail cycles, including using both, with editable cycle steps. Preserve active laundry progress when settings change.
+- The cleaning wizard starts by offering a local download of the current board backup, with an explicit option to continue without it. Never upload this backup.
+- Hide Start setup while a wizard is active. Show numbered progress, Back/Next, and Cancel controls.
+- The final preview lists all current recurring cleaning tasks being replaced. Only after explicit confirmation, retire all of those routines and install the selected new schedule, including replacement of routines in unchecked rooms. Keep laundry, one-off tasks, hobbies, notes, shopping, completed records, points, and account sync intact.
 - Group selected tasks first by occurrence interval, then unchecked suggestions by interval. Keep a room's category when its name changes.
 - Rest days contain no automatically scheduled tasks. Manual additions remain possible.
 - User-set or measured task times are exempt from preset time multipliers. Show any longer repeat intervals in the schedule preview.
