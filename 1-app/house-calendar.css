@@ -68,3 +68,22 @@ body:not([data-view=house]):not([data-view=calendar]) .tidy-brand{display:none}
 @media(min-width:750px){.calendar-day-overview{grid-template-columns:85px 1fr 210px auto}.calendar-day-overview>button{grid-column:4;grid-row:1}.calendar-day-duration{grid-column:3;display:grid;gap:3px}.calendar-day-overview h3{font-size:30px}.calendar-checklist-name{font-size:16px!important}}
 @media(max-width:380px){.calendar-day-overview{grid-template-columns:45px minmax(0,1fr) auto;gap:7px}.calendar-day-overview>.calendar-sprite{height:48px}.calendar-day-overview h3{font-size:19px}.calendar-day-overview>button{font-size:12px;padding:7px}.calendar-checklist-row{gap:6px}.calendar-checklist-duration{font-size:11px}}
 #calendar .calendar-checklist-row>input{appearance:none;border:2px solid #bcb0df;border-radius:4px;background:transparent;cursor:pointer}#calendar .calendar-checklist-row>input:checked{background:#9360c8;border-color:#caa4f4}#calendar .calendar-checklist-row>input:checked::after{content:'✓';display:block;text-align:center;font-size:17px;line-height:19px;color:white}#calendar .calendar-checklist-row>input:disabled{opacity:.45;cursor:default}#calendar .calendar-day-overview small,#calendar .calendar-checklist-duration small,#calendar .calendar-checklist-footer small,#calendar .tidy-card-content small,#calendar .tidy-card-date small{letter-spacing:0;font-weight:400}#calendar .calendar-checklist-text small{letter-spacing:0}
+
+/* All seven day selectors fit the phone; full details remain in the selected-day panel. */
+.tidy-card-minutes{display:none}
+#calendar .tidy-week-strip{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;overflow:visible;scroll-snap-type:none;padding:3px 3px 10px}
+#calendar .tidy-week-strip .tidy-day-card{padding:6px 2px;gap:5px;border-radius:9px;border-bottom-width:3px!important;overflow:hidden}
+#calendar .tidy-week-strip .tidy-card-date{flex:0 0 auto;width:100%;min-width:0}
+#calendar .tidy-week-strip .tidy-card-date strong{font-size:12px;line-height:1.2}
+#calendar .tidy-week-strip .tidy-card-date small{font-size:9px;white-space:nowrap}
+#calendar .tidy-week-strip .tidy-card-art{flex:0 0 auto;width:100%;height:36px;min-width:0}
+#calendar .tidy-week-strip .tidy-card-art .calendar-sprite{height:34px;min-width:0}
+#calendar .tidy-week-strip .tidy-card-art:has(.calendar-sprite+.calendar-sprite) .calendar-sprite{height:18px}
+#calendar .tidy-week-strip .tidy-card-content{display:flex;flex-direction:column;gap:4px;min-width:0}
+#calendar .tidy-week-strip .tidy-card-content>strong{font-size:9px;line-height:1.2;height:2.4em;overflow:hidden;overflow-wrap:anywhere}
+#calendar .tidy-week-strip .tidy-card-content>small,#calendar .tidy-week-strip .tidy-card-duration{display:none}
+#calendar .tidy-week-strip .tidy-card-minutes{display:block;font-size:9px;white-space:nowrap}
+#calendar .tidy-week-strip progress{height:5px;width:100%;min-width:0}
+#calendar .tidy-view-switch{justify-content:flex-end;margin:8px 0}
+#calendar .tidy-view-switch button{flex:0 1 auto;min-width:120px;background:#7041ad!important;color:white!important}
+@media(min-width:750px){#calendar .tidy-week-strip .tidy-day-card{padding:10px 6px}#calendar .tidy-week-strip .tidy-card-date strong{font-size:16px}#calendar .tidy-week-strip .tidy-card-date small{font-size:12px}#calendar .tidy-week-strip .tidy-card-art{height:65px}#calendar .tidy-week-strip .tidy-card-art .calendar-sprite{height:60px}#calendar .tidy-week-strip .tidy-card-content>strong{font-size:13px}#calendar .tidy-week-strip .tidy-card-minutes{font-size:12px}}

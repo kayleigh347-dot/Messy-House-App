@@ -1,13 +1,13 @@
-import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=checklist-20261012-v3';
-import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=checklist-20261012-v3';
+import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=compact-week-20261012-v4';
+import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=compact-week-20261012-v4';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
-import {laundryDoingSteps} from './laundry.js?v=checklist-20261012-v3';
+import {laundryDoingSteps} from './laundry.js?v=compact-week-20261012-v4';
 import {initTaskPlanning,openExistingSubtasks,openSnooze,offerDraggedParent} from './task-planning-ui.js';
 import {initReviewUI,applyListFilters} from './review-ui.js';
 import {localStorage,sessionStorage,criticalStorageProblem,downloadJSON} from './safe-storage.js';
 import {validateBackup,backupPreview} from './backup-tools.js';
 import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=tools-20261012-v1';
-import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,uniformCycleSteps,uniformStepColour,uniformHangingReminder,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=checklist-20261012-v3';
+import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,uniformCycleSteps,uniformStepColour,uniformHangingReminder,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=compact-week-20261012-v4';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=tools-20261012-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -16,7 +16,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=checklist-20261012-v3';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=compact-week-20261012-v4';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -28,9 +28,9 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=checklist-20261012-v3";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=compact-week-20261012-v4";
 
-import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=checklist-20261012-v3";
+import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=compact-week-20261012-v4";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
