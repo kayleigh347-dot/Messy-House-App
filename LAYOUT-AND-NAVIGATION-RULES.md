@@ -50,7 +50,9 @@ This is the standing layout and navigation document referenced by `AGENTS.md`. F
 - Schedule setup visits **General**, preset rooms, then custom rooms. Laundry must not appear in the cleaning wizard.
 - Laundry setup separately offers dryer and hanging-rail cycles, including using both, with editable cycle steps. Preserve active laundry progress when settings change.
 - The cleaning wizard starts by offering a local download of the current board backup, with an explicit option to continue without it. Never upload this backup.
-- Hide Start setup while a wizard is active. Show numbered progress, Back/Next, and Cancel controls.
+- Hide Start setup while a wizard is active. Show numbered progress, Back/Next, and Cancel controls. Back, including browser/device Back, returns to the previous part and retains choices; only Cancel exits. At the first part, Back keeps setup open.
+- Task repeat editing offers Days and Weeks for preset and custom tasks.
+- Preset and custom tasks offer common and custom tools. Retain choices between wizard steps, show them in the preview, and carry them into the saved tasks and Tools needed checklists.
 - The final preview lists all current recurring cleaning tasks being replaced. Only after explicit confirmation, retire all of those routines and install the selected new schedule, including replacement of routines in unchecked rooms. Keep laundry, one-off tasks, hobbies, notes, shopping, completed records, points, and account sync intact.
 - Group selected tasks first by occurrence interval, then unchecked suggestions by interval. Keep a room's category when its name changes.
 - Rest days contain no automatically scheduled tasks. Manual additions remain possible.
