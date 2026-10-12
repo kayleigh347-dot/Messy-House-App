@@ -1,6 +1,6 @@
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {roomHues} from './room-colours.js';
-import {recurrenceLabel,nextOccurrence} from './v2-state.js?v=checklist-20261012-v3';
+import {recurrenceLabel,nextOccurrence} from './v2-state.js?v=calendar-skip-20261012-v1';
 import {localDateKey as dateKey} from './calendar.js';
 import {taskDeadline} from './task-extras.js';
 import {setNextDue} from './recurring-schedule.js?v=schedule-20261010-v1';
@@ -79,12 +79,12 @@ export function scheduledCalendarState(state,proposals){
 }
 export function calendarStep(anchor,direction){const d=new Date(anchor);if($('#calendarView').value==='week')d.setDate(d.getDate()+direction*7);else{d.setDate(1);d.setMonth(d.getMonth()+direction)}return d}
 function jump(date){document.dispatchEvent(new CustomEvent('calendar-jump',{detail:{date}}))}
-function appendDayEntries(container,entries,rooms,state,onComplete){
- for(const event of entries.filter(event=>!event.done))container.append(eventRow(event,rooms,state,onComplete));
+function appendDayEntries(container,entries,rooms,state,onComplete,onSkip){
+ for(const event of entries.filter(event=>!event.done))container.append(eventRow(event,rooms,state,onComplete,onSkip));
  const completed=entries.filter(event=>event.done);
- if(completed.length){const group=el('section');group.className='calendar-completed-tasks';group.append(el('h4','Completed tasks'));for(const event of completed)group.append(eventRow(event,rooms,state,onComplete));container.append(group)}
+ if(completed.length){const group=el('section');group.className='calendar-completed-tasks';group.append(el('h4','Completed tasks'));for(const event of completed)group.append(eventRow(event,rooms,state,onComplete,onSkip));container.append(group)}
 }
-function eventRow(event,rooms,state,onComplete){
+function eventRow(event,rooms,state,onComplete,onSkip){
  const entry=el('article');entry.className='calendar-event calendar-task-row '+event.type+(event.estimated?' estimated':'')+(event.done?' completed':'');entry.dataset.entryId=event.id||'';
  const room=rooms.get(event.roomId);entry.classList.toggle('calendar-muted-room',!!room?.muted);if(room)entry.style.setProperty('--room-hue',room.hue);
  const row=el('div');row.className='calendar-task-main';row.append(el('span',room?room.symbol+' '+room.name: (event.type==='appointment'?'Appointment':'Errand')));const title=el('button',event.title);title.type='button';title.className='calendar-task-title';row.append(title);
@@ -100,7 +100,7 @@ function eventRow(event,rooms,state,onComplete){
  }
  if(children.length){const sublist=el('div');sublist.className='calendar-subtasks';for(const child of children){const childRow=el('div');childRow.className='calendar-subtask-row'+(child.done?' completed':'');childRow.append(el('span',(child.done?'✓ ':'○ ')+child.text));if(onComplete&&!event.estimated){const done=el('button',child.done?'Undo':'Done it!');done.type='button';done.className='calendar-done';done.disabled=child.done&&!child.completionUndo;done.setAttribute('aria-label',(child.done?'Undo completion: ':'Complete: ')+child.text);done.onclick=e=>{e.stopPropagation();onComplete('task',child.id,!child.done)};childRow.append(done)}sublist.append(childRow)}info.append(sublist)}
  if(info.children.length){title.setAttribute('aria-expanded',String(!info.hidden));title.setAttribute('aria-label','Task information: '+event.title);title.onclick=()=>{info.hidden=!info.hidden;title.setAttribute('aria-expanded',String(!info.hidden))};entry.append(info)}else title.disabled=true;
- if(event.projected)entry.append(el('small','Projected repeat'));
+ if(onSkip&&task?.recurrence&&!event.done){const skip=el('button','Skip this time');skip.type='button';skip.setAttribute('aria-label','Skip this time: '+event.title);skip.onclick=e=>{e.stopPropagation();onSkip(task.id,event.date)};let footer=entry.querySelector('.calendar-task-footer');if(!footer){footer=el('div');footer.className='calendar-task-footer';entry.append(footer)}footer.append(skip)}if(event.projected)entry.append(el('small','Projected repeat'));
  if(event.time||event.location)entry.append(el('small',[event.time&&event.time+(event.end?'–'+event.end:''),event.location].filter(Boolean).join(' · ')));
  const footer=entry.querySelector('.calendar-task-footer');if(footer)entry.append(footer);return entry;
 }
@@ -137,11 +137,11 @@ export function renderLocalCalendar(state,anchor,onComplete,options={}){
     cell.append(chip)
    }
   }
-  if(weekly){if(options.taskActions){const add=el('button','Add / move task');add.type='button';add.onclick=()=>selectDay(d);cell.append(add)}appendDayEntries(cell,dayEntries,rooms,state,onComplete);if(!dayEntries.length)cell.append(el('p','Nothing scheduled.'))}
+  if(weekly){if(options.taskActions){const add=el('button','Add / move task');add.type='button';add.onclick=()=>selectDay(d);cell.append(add)}appendDayEntries(cell,dayEntries,rooms,state,onComplete,options.onSkip);if(!dayEntries.length)cell.append(el('p','Nothing scheduled.'))}
   else{if(options.taskCountsOnly&&tasks.length){const count=el('button',`${tasks.length}`);count.type='button';count.className='calendar-task-count';count.setAttribute('aria-label',`${tasks.length} tasks become active on ${d.toLocaleDateString()}`);count.onclick=()=>selectDay(d);cell.append(count)}for(const event of dayEntries.filter(e=>e.type!=='recurring'&&e.type!=='task')){const n=el('button',(event.type==='appointment'?'● ':'◆ ')+event.title);n.type='button';n.className='calendar-event '+event.type;n.title=event.title;n.onclick=()=>selectDay(d);cell.append(n)}}grid.append(cell)
  }
  const agenda=$('#calendarAgenda');agenda.replaceChildren();agenda.hidden=weekly||options.showAgenda===false;
- if(!weekly&&options.showAgenda!==false){const date=new Date(selectedKey+'T12:00:00'),heading=el('div'),title=el('h3',date.toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'})),viewWeek=el('button','View week'),selectedRoomDetails=wholeRoom?null:rooms.get(selectedRoom);heading.className='calendar-agenda-heading';viewWeek.type='button';viewWeek.onclick=()=>{$('#calendarView').value='week';if(options.elements)sessionStorage.setItem(storageKey+'-view','week');else localStorage.setItem('mc-calendar-view','week');jump(date)};heading.append(title,viewWeek);if(options.taskActions){const add=el('button','Add / move task');add.type='button';add.onclick=()=>document.dispatchEvent(new CustomEvent('calendar-day-actions',{detail:{date:selectedKey,roomId:wholeRoom||options.taskRoomId||''}}));heading.append(add)}agenda.append(heading);const dayEntries=filteredEntries.filter(x=>x.date===selectedKey).sort((a,b)=>(a.time||'').localeCompare(b.time||''));appendDayEntries(agenda,dayEntries,rooms,state,onComplete);if(!dayEntries.length)agenda.append(el('p',selectedRoomDetails?'No tasks for this room on this day.':'Nothing scheduled.'))}
+ if(!weekly&&options.showAgenda!==false){const date=new Date(selectedKey+'T12:00:00'),heading=el('div'),title=el('h3',date.toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'})),viewWeek=el('button','View week'),selectedRoomDetails=wholeRoom?null:rooms.get(selectedRoom);heading.className='calendar-agenda-heading';viewWeek.type='button';viewWeek.onclick=()=>{$('#calendarView').value='week';if(options.elements)sessionStorage.setItem(storageKey+'-view','week');else localStorage.setItem('mc-calendar-view','week');jump(date)};heading.append(title,viewWeek);if(options.taskActions){const add=el('button','Add / move task');add.type='button';add.onclick=()=>document.dispatchEvent(new CustomEvent('calendar-day-actions',{detail:{date:selectedKey,roomId:wholeRoom||options.taskRoomId||''}}));heading.append(add)}agenda.append(heading);const dayEntries=filteredEntries.filter(x=>x.date===selectedKey).sort((a,b)=>(a.time||'').localeCompare(b.time||''));appendDayEntries(agenda,dayEntries,rooms,state,onComplete,options.onSkip);if(!dayEntries.length)agenda.append(el('p',selectedRoomDetails?'No tasks for this room on this day.':'Nothing scheduled.'))}
  const unscheduled=$('#unscheduledErrands');unscheduled.hidden=!!wholeRoom&&wholeRoom!=='household';if($('#calendarUnscheduled'))$('#calendarUnscheduled').hidden=unscheduled.hidden;unscheduled.replaceChildren();for(const t of state.errands.filter(t=>!t.done&&!t.dueDate&&t.showOnCalendar!==false))unscheduled.append(el('p',t.text+' · add a date in Errands'));if(!unscheduled.children.length)unscheduled.append(el('p','No undated calendar errands.'));
 }
 

@@ -24,7 +24,7 @@ function groups(entries){const out=new Map();for(const e of entries){const key=e
 function summary(date,entries,events){const state=api.get(),rooms=[...new Set(entries.map(e=>e.roomId))].map(id=>state.rooms.find(r=>r.id===id)).filter(Boolean),whole=entries.length&&entries.every(e=>e.sessionId&&e.sessionId===entries[0].sessionId);return {rooms,title:whole?entries[0].sessionName:rooms.length?rooms[0].name+(rooms.length>1?` + ${rooms.length-1} ${rooms.length===2?'room':'rooms'}`:''):events.length?'Household events':'Nothing scheduled'};}
 function openDayEdit(entries){
  const {d,body}=dialog('Edit cleaning day');body.append(el('p','Choose a task to edit.'));
- for(const entry of entries){const choice=button(entry.title,()=>{body.replaceChildren(el('h2',entry.title));body.append(button('Edit task',()=>{d.close();api.edit(entry.taskId);}),button('Move planned date',()=>{d.close();move([entry]);}));});body.append(choice);}
+ for(const entry of entries){const choice=button(entry.title,()=>{body.replaceChildren(el('h2',entry.title));body.append(button('Edit task',()=>{d.close();api.edit(entry.taskId);}),button('Move planned date',()=>{d.close();move([entry]);}),button('Skip this time',()=>{try{skipCalendarOccurrence(api.get(),entry);d.close();save();api.toast('Skipped this occurrence. The repeat schedule is kept.')}catch(error){api.toast(error.message)}}));});body.append(choice);}
  if(entries.length)body.append(button('Move whole day',()=>{d.close();move(entries);}));
 }
 function taskRow(entry){

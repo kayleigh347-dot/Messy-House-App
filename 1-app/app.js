@@ -1,6 +1,7 @@
+import {skipCalendarOccurrence} from './calendar-planner.js?v=calendar-skip-20261012-v1';
 import {initHomeManagement,updateManagementRoute} from './home-management.js?v=fuller-wizard-20261012-v1';
-import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=fuller-wizard-20261012-v1';
-import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=calendar-skip-20261012-v1';
+import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=skip-first-due-20261012-v1';
+import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=skip-first-due-20261012-v1';
 import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=laundry-schedule-20261012-v1';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
 import {laundryDoingSteps} from './laundry.js?v=laundry-schedule-20261012-v1';
@@ -16,7 +17,7 @@ import {appendItemImage,readItemImage} from './item-images.js';
 import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=streamline-20261009-v2';
 import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
-import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
+import {calendarStep} from './house-calendar.js?v=skip-first-due-20261012-v1';
 import {localDateKey} from './calendar.js';
 import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=fuller-wizard-20261012-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
@@ -30,7 +31,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js?v=startup-navigation-20261012-v1';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=calendar-skip-20261012-v1";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=skip-first-due-20261012-v1";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=calendar-skip-20261012-v1";
 
@@ -398,7 +399,7 @@ if(kind==='side')tools.prepend(v2EditButton(t));
 const quickMoves=document.createElement('div');quickMoves.className='task-quick-actions';
 const doingControl=tools.querySelector('.do-now');for(const control of [...tools.querySelectorAll('button')].filter(b=>['Top','Last'].includes(b.textContent))){control.classList.add('quick-reorder');if(control.textContent==='Top')control.textContent='First';quickMoves.append(control)}
 
-const options=document.createElement('details'),summary=document.createElement('summary');options.className='task-options';summary.textContent='Edit & options';options.append(summary,tools);if(kind==='task'&&!t.parentId&&!t.pausedAt){const snooze=document.createElement('button');snooze.type='button';snooze.textContent='Snooze';snooze.onclick=()=>openSnooze(t.id);tools.append(snooze)}const secondary=document.createElement('div');secondary.className='task-secondary-actions';secondary.append(quickMoves,options);body.append(secondary);subtaskPanel(t,kind,context,secondary);if(t.parentId){const detach=document.createElement('button');detach.textContent='Make standalone';detach.onclick=()=>{detachTask(kind==='side'?st.side:st.tasks,t.id);changed()};tools.append(detach)}const footer=document.createElement('div');footer.className='task-footer';footer.append(quickMoves);if(doingControl)footer.append(doingControl);if(t.parentId){const more=document.createElement('button');more.type='button';more.className='subtask-options-toggle';more.textContent='⋯';more.setAttribute('aria-label','Options for subtask: '+t.text);more.onclick=()=>{options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)};footer.append(more)}footer.append(focus,check);body.append(footer);a.append(body);a.classList.toggle('compact-expanded',expandedSubtasks.has(t.id));a.onclick=e=>{if(a.dataset.suppressClick)return;if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form')||e.target===strong)return;toggleCompactCard()};let swipeX=0,swipeY=0;a.addEventListener('touchstart',e=>{if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form'))return;swipeX=e.touches[0].clientX;swipeY=e.touches[0].clientY},{passive:true});a.addEventListener('touchend',e=>{if(e.target.closest('.task')!==a||document.body.classList.contains('task-drag-active')||a.dataset.suppressClick||!document.body.classList.contains('task-compact-view')||!swipeX)return;const dx=e.changedTouches[0].clientX-swipeX,dy=e.changedTouches[0].clientY-swipeY;swipeX=0;if(dx>80&&Math.abs(dy)<50){e.preventDefault();finish(t,kind)}},{passive:false});
+const options=document.createElement('details'),summary=document.createElement('summary');options.className='task-options';summary.textContent='Edit & options';options.append(summary,tools);if(kind==='task'&&!t.parentId&&!t.pausedAt){const snooze=document.createElement('button');snooze.type='button';snooze.textContent='Snooze';snooze.onclick=()=>openSnooze(t.id);tools.append(snooze);if(t.recurrence&&!t.done){const skip=document.createElement('button');skip.type='button';skip.textContent='Skip this time';skip.onclick=()=>skipRecurring(t.id);tools.append(skip)}}const secondary=document.createElement('div');secondary.className='task-secondary-actions';secondary.append(quickMoves,options);body.append(secondary);subtaskPanel(t,kind,context,secondary);if(t.parentId){const detach=document.createElement('button');detach.textContent='Make standalone';detach.onclick=()=>{detachTask(kind==='side'?st.side:st.tasks,t.id);changed()};tools.append(detach)}const footer=document.createElement('div');footer.className='task-footer';footer.append(quickMoves);if(doingControl)footer.append(doingControl);if(t.parentId){const more=document.createElement('button');more.type='button';more.className='subtask-options-toggle';more.textContent='⋯';more.setAttribute('aria-label','Options for subtask: '+t.text);more.onclick=()=>{options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)};footer.append(more)}footer.append(focus,check);body.append(footer);a.append(body);a.classList.toggle('compact-expanded',expandedSubtasks.has(t.id));a.onclick=e=>{if(a.dataset.suppressClick)return;if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form')||e.target===strong)return;toggleCompactCard()};let swipeX=0,swipeY=0;a.addEventListener('touchstart',e=>{if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form'))return;swipeX=e.touches[0].clientX;swipeY=e.touches[0].clientY},{passive:true});a.addEventListener('touchend',e=>{if(e.target.closest('.task')!==a||document.body.classList.contains('task-drag-active')||a.dataset.suppressClick||!document.body.classList.contains('task-compact-view')||!swipeX)return;const dx=e.changedTouches[0].clientX-swipeX,dy=e.changedTouches[0].clientY-swipeY;swipeX=0;if(dx>80&&Math.abs(dy)<50){e.preventDefault();finish(t,kind)}},{passive:false});
 return a}
 function list(sel,arr,kind,completed=[]){let e=$(sel);
 e.innerHTML="";
@@ -598,6 +599,8 @@ initTidyCalendar({get:()=>st,save:changed,toast:featureToast,edit:id=>editTask(s
  errand:id=>{const item=st.errands.find(t=>t.id===id);if(item){item.done=true;changed();}}
 });
 function renderCalendar(){renderTidyCalendar();}
+function skipRecurring(id,date){try{const task=st.tasks.find(t=>t.id===id),due=date||localDateKey(task?.nextDue||task?.activeSince||task?.created);skipCalendarOccurrence(st,{id:id+'@'+due,taskId:id,dueDate:due,date:due});changed();featureToast('Skipped this occurrence. The repeat schedule is kept.')}catch(error){featureToast(error.message)}}
+document.addEventListener('recurring-skip',event=>skipRecurring(event.detail.id,event.detail.date));
 document.addEventListener('room-recurring-complete',event=>{const task=st.tasks.find(t=>t.id===event.detail?.id);if(task){if(event.detail.done===false){if(undoCompletion(st,task))changed()}else finish(task,'task')}});
 $('#statsPeriod').value='month';localStorage.setItem('mc-stats-period','month');
 $("#statsPeriod").onchange=()=>{localStorage.setItem('mc-stats-period',$('#statsPeriod').value);renderHousehold();
@@ -963,7 +966,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=calendar-skip-20261012-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=skip-first-due-20261012-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");

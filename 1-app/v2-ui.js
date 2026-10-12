@@ -6,7 +6,7 @@ import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=tools-20261012-v1';
-import {createSymbolCalendar} from './house-calendar.js?v=tools-20261012-v1';
+import {createSymbolCalendar} from './house-calendar.js?v=skip-first-due-20261012-v1';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
 import {messPhrase,cleanPercent,isSparkling,barState} from './mess-phrase.js';
@@ -231,7 +231,7 @@ function renderRoom(st){
 }
 function renderRoomRecurringCalendar(root,state,room,tasks){
  const roomState={...state,tasks:state.tasks.filter(task=>task.roomId===room.id&&task.bucket!=='side'&&!state.side.some(side=>side.id===task.id)),appointments:[],errands:[]};
- root.replaceChildren(createSymbolCalendar(roomState,roomRecurringMonth,null,{storageKey:'mc-room-calendar-'+room.id,showRoomFilter:false,taskCountsOnly:false,showSetDay:true,taskActions:true,taskRoomId:room.id,onJump:date=>{roomRecurringMonth=new Date(date);renderRoom(getState())},onComplete:(type,id,done)=>{document.dispatchEvent(new CustomEvent('room-recurring-complete',{detail:{id,done}}))}}));
+ root.replaceChildren(createSymbolCalendar(roomState,roomRecurringMonth,null,{storageKey:'mc-room-calendar-'+room.id,showRoomFilter:false,taskCountsOnly:false,showSetDay:true,taskActions:true,taskRoomId:room.id,onSkip:(id,date)=>document.dispatchEvent(new CustomEvent('recurring-skip',{detail:{id,date}})),onJump:date=>{roomRecurringMonth=new Date(date);renderRoom(getState())},onComplete:(type,id,done)=>{document.dispatchEvent(new CustomEvent('room-recurring-complete',{detail:{id,done}}))}}));
 }
 function quickFields(){const f=document.querySelector('#quickTaskForm');document.querySelector('#quickRepeat').hidden=f.elements.bucket.value!=='recurring';f.elements.every.disabled=f.elements.bucket.value!=='recurring';document.querySelector('#quickSide').hidden=f.elements.bucket.value!=='side'}
 export function quickAdd(roomId,options={}){

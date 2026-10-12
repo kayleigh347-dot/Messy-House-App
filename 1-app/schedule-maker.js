@@ -40,24 +40,24 @@ export function makeSchedulePreview(state,draft,today=localDateKey(new Date())){
  if(!validDate(draft.start||today))throw Error('Choose a valid start date.');const start=draft.start||today,max=Number(draft.dailyMax),multiplier=Number(draft.multiplier),rest=new Set(draft.restDays||[]);
  if(!Number.isFinite(max)||max<1||max>1440||![1,2,3].includes(multiplier))throw Error('Choose a daily limit from 1 to 1440 minutes and a time setting.');if(rest.size===7)throw Error('Keep at least one cleaning day.');
  const retired=draft.replaceRecurring?replacementRows(state):[],retiredIds=new Set(retired.map(t=>t.id));
- const loads=Array(364).fill(0),dayRooms=Array.from({length:364},()=>new Set()),changes=[],unplaced=[];const chosen=draft.rooms.filter(r=>r.selected),selectedIds=new Set(chosen.flatMap(r=>(r.tasks||[]).filter(t=>t.selected&&t.id).map(t=>t.id)));
+ const horizon=364+Math.max(0,...draft.rooms.filter(r=>r.selected).flatMap(r=>(r.tasks||[]).filter(t=>t.selected).map(t=>Number(t.days)||0)));const loads=Array(horizon).fill(0),dayRooms=Array.from({length:horizon},()=>new Set()),changes=[],unplaced=[];const chosen=draft.rooms.filter(r=>r.selected),selectedIds=new Set(chosen.flatMap(r=>(r.tasks||[]).filter(t=>t.selected&&t.id).map(t=>t.id)));
  // Existing routines outside this setup retain their dates and reserve capacity.
- for(const t of state.tasks||[]){if(retiredIds.has(t.id)||selectedIds.has(t.id)||t.done||t.archived||t.pausedAt||t.parentId||isLaundryItem(t)||t.bucket==='side')continue;const raw=t.nextDue||t.dueDate;if(!raw||!Number.isFinite(Date.parse(raw)))continue;let date=localDateKey(raw),count=0;while(date<=addDays(start,363)&&count++<20000){const offset=Math.round((Date.UTC(...date.split('-').map((x,i)=>i===1?+x-1:+x))-Date.UTC(...start.split('-').map((x,i)=>i===1?+x-1:+x)))/86400000);if(offset>=0){loads[offset]+=adjustedTaskMinutes(state,t,multiplier);if(t.recurrence)dayRooms[offset].add(t.roomId||'household')}if(!t.recurrence)break;const next=nextOccurrence(t.recurrence,new Date(date+'T12:00:00'));if(!next||localDateKey(next)<=date)break;date=localDateKey(next)}}
+ for(const t of state.tasks||[]){if(retiredIds.has(t.id)||selectedIds.has(t.id)||t.done||t.archived||t.pausedAt||t.parentId||isLaundryItem(t)||t.bucket==='side')continue;const raw=t.nextDue||t.dueDate;if(!raw||!Number.isFinite(Date.parse(raw)))continue;let date=localDateKey(raw),count=0;while(date<=addDays(start,horizon-1)&&count++<20000){const offset=Math.round((Date.UTC(...date.split('-').map((x,i)=>i===1?+x-1:+x))-Date.UTC(...start.split('-').map((x,i)=>i===1?+x-1:+x)))/86400000);if(offset>=0){loads[offset]+=adjustedTaskMinutes(state,t,multiplier);if(t.recurrence)dayRooms[offset].add(t.roomId||'household')}if(!t.recurrence)break;const next=nextOccurrence(t.recurrence,new Date(date+'T12:00:00'));if(!next||localDateKey(next)<=date)break;date=localDateKey(next)}}
  for(const room of chosen)for(const task of (room.tasks||[]).filter(t=>t.selected)){
   if(!task.text.trim()||!Number.isInteger(Number(task.days))||task.days<1||task.days>3650)throw Error('Each selected task needs a name and an interval from 1 to 3650 days.');
   const current=task.id?state.tasks.find(t=>t.id===task.id):null,base=current?taskMinutes(state,current).base:task.minutes,minutes=current?adjustedTaskMinutes(state,current,multiplier):Math.ceil(base*(task.manualTime?1:multiplier));
   if(minutes>max){unplaced.push({room:room.name,text:task.text,reason:`${minutes} min exceeds your ${max} min daily limit. Increase the limit or split this task.`});continue}
   let interval=Number(task.days)*(draft.capacityFactor||1),placed=null;
   for(let attempt=0;attempt<52&&!placed;attempt++){
-   for(let offset=0;offset<Math.min(interval,364);offset++){
+   for(let phase=0;phase<Math.min(Math.max(interval,7),horizon);phase++){const offset=interval+phase;
     if(rest.has(new Date(addDays(start,offset)+'T12:00:00').getDay()))continue;
-    const dates=[];for(let day=offset;day<364;day+=interval){if(rest.has(new Date(addDays(start,day)+'T12:00:00').getDay()))continue;dates.push(day)}
-    if(dates.length&&dates.every(day=>loads[day]+minutes<=max&&(!draft.oneRoom||[...dayRooms[day]].every(id=>id===room.id)))){placed={offset,dates};break}
+    const dates=[];for(let day=offset;day<horizon;day+=interval){if(rest.has(new Date(addDays(start,day)+'T12:00:00').getDay()))continue;dates.push(day)}
+    if(!dates.length)dates.push(offset);if(dates.every(day=>(loads[day]||0)+minutes<=max&&(!draft.oneRoom||[...(dayRooms[day]||[])].every(id=>id===room.id)))){placed={offset,dates};break}
    }
    if(!placed)interval=interval<7?7:Math.ceil(interval/7)*7+7;
   }
   if(!placed){unplaced.push({room:room.name,text:task.text,reason:'No capacity in the next year.'});continue}
-  for(const day of placed.dates){loads[day]+=minutes;dayRooms[day].add(room.id)}
+  for(const day of placed.dates){loads[day]=(loads[day]||0)+minutes;(dayRooms[day]||=new Set()).add(room.id)}
   changes.push({roomId:room.id,roomName:room.name,category:room.category,roomExisting:room.existing,roomBefore:room.before,task,minutes,base,date:addDays(start,placed.offset),interval,restDays:[...rest],dates:placed.dates.map(d=>addDays(start,d))});
  }
  if(unplaced.some(t=>t.reason==='No capacity in the next year.')&&(draft.capacityFactor||1)<52)return makeSchedulePreview(state,{...draft,capacityFactor:(draft.capacityFactor||1)+1},today);
