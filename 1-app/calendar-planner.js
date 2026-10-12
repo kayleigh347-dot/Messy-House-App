@@ -1,4 +1,4 @@
-import {automaticTaskMinutes,userTaskMinutes} from './task-estimates.js?v=review-fixes-20261012-v2';
+import {automaticTaskMinutes,userTaskMinutes} from './task-estimates.js?v=review-fixes-20261012-v3';
 import {localDateKey} from './calendar.js';
 import {nextOccurrence,freshTask} from './v2-state.js?v=calendar-skip-20261012-v1';
 import {descendants,childrenOf,repeatChildren} from './subtasks.js';
@@ -9,12 +9,13 @@ export function calendarSettings(state){return {...defaultCalendarSettings,...st
 export function validDate(key){const d=new Date(key+'T12:00:00');return /^\d{4}-\d{2}-\d{2}$/.test(key)&&localDateKey(d)===key;}
 export function addDays(key,n){const d=new Date(key+'T12:00:00');d.setDate(d.getDate()+n);return localDateKey(d);}
 export function weekStart(date){const d=new Date(date);d.setHours(12,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);return localDateKey(d);}
+const timedChildren=(state,task)=>childrenOf(state.tasks,task.id).filter(t=>!t.archived&&!t.pausedAt);
+const useParentPreset=(state,task)=>Number(task.presetMinutes)>0&&!descendants(state.tasks,task.id).some(t=>!t.archived&&!t.pausedAt&&userTaskMinutes(state,t));
 export function taskMinutes(state,task){
  const estimate=t=>automaticTaskMinutes(state,t);
- if(userTaskMinutes(state,task)||Number(task.presetMinutes)>0)return {base:estimate(task),unknown:0};
- const family=descendants(state.tasks,task.id),leaves=family.filter(t=>!t.archived&&!t.pausedAt&&!childrenOf(state.tasks,t.id).length);
- if(!leaves.length)return {base:estimate(task),unknown:0};
- return leaves.reduce((sum,t)=>({base:sum.base+(estimate(t)||0),unknown:sum.unknown+(estimate(t)===null?1:0)}),{base:0,unknown:0});
+ if(userTaskMinutes(state,task)||useParentPreset(state,task))return {base:estimate(task),unknown:0};
+ const children=timedChildren(state,task);if(!children.length)return {base:estimate(task),unknown:0};
+ return children.reduce((sum,t)=>{const time=taskMinutes(state,t);return {base:sum.base+time.base,unknown:sum.unknown+time.unknown}},{base:0,unknown:0});
 }
 // A pure suggestion layer: neither due dates nor recurrence rules are rewritten.
 export function buildCalendarPlan(state,{today=localDateKey(new Date()),end=addDays(today,90),recurringOnly=false}={}){
@@ -70,9 +71,9 @@ export function undoPlanMove(state,undo){if(!undo||JSON.stringify(state.calendar
 export function adjustedTaskMinutes(state,task,multiplier=calendarSettings(state).multiplier){
  const own=t=>!!userTaskMinutes(state,t);
  if(own(task))return Math.ceil(automaticTaskMinutes(state,task));
- if(Number(task.presetMinutes)>0)return Math.ceil(task.presetMinutes*multiplier);
- const leaves=descendants(state.tasks,task.id).filter(t=>!t.archived&&!t.pausedAt&&!childrenOf(state.tasks,t.id).length);
- return leaves.length?leaves.reduce((n,t)=>n+Math.ceil(automaticTaskMinutes(state,t)*(own(t)?1:multiplier)),0):Math.ceil(automaticTaskMinutes(state,task)*(own(task)?1:multiplier));
+ if(useParentPreset(state,task))return Math.ceil(task.presetMinutes*multiplier);
+ const children=timedChildren(state,task);
+ return children.length?children.reduce((n,t)=>n+adjustedTaskMinutes(state,t,multiplier),0):Math.ceil(automaticTaskMinutes(state,task)*multiplier);
 }
 
 export function skipCalendarOccurrence(state,entry,now=new Date()){

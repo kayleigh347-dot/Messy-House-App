@@ -1,11 +1,11 @@
-import {automaticTaskMinutes,setTaskBaseMinutes} from './task-estimates.js?v=review-fixes-20261012-v2';
-import {buildCalendarPlan,movePlannedOccurrences} from './calendar-planner.js?v=review-fixes-20261012-v2';
+import {automaticTaskMinutes,setTaskBaseMinutes} from './task-estimates.js?v=review-fixes-20261012-v3';
+import {buildCalendarPlan,movePlannedOccurrences} from './calendar-planner.js?v=review-fixes-20261012-v3';
 import {localStorage} from './safe-storage.js';
 import {timingChoices,recordTaskTiming,useTimingEstimate} from './task-timing.js?v=checklist-20261012-v3';
 import {laundryLoadSteps,saveLaundryLoadSteps,saveLaundrySetup,laundryRoutes,addLaundryCycleStep,isLaundryItem} from './laundry.js?v=laundry-schedule-20261012-v1';
 import {freshTask,placeNewTasksFirst} from './v2-state.js?v=checklist-20261012-v3';
 import {setNextDue} from './recurring-schedule.js';
-import {recurringRoomCalendarState} from './house-calendar.js?v=review-fixes-20261012-v2';
+import {recurringRoomCalendarState} from './house-calendar.js?v=review-fixes-20261012-v3';
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n},button=(text,run)=>{const n=el('button',text);n.type='button';n.onclick=run;return n};
 let api,watchInterval;const watchKey='mc-task-stopwatch-v1';
 const readWatch=()=>localStorage.readJSON(watchKey,null,value=>value===null||typeof value==='object'&&typeof value.taskId==='string'&&Number.isFinite(value.elapsed));

@@ -2,7 +2,7 @@ import {openToolsNeeded} from './needed-tools.js?v=fuller-wizard-20261012-v1';
 import {isLaundryItem} from './laundry.js?v=compact-week-20261012-v4';
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {localDateKey} from './calendar.js';
-import {buildCalendarPlan,calendarSettings,addDays,weekStart,movePlannedOccurrences,undoPlanMove,skipCalendarOccurrence} from './calendar-planner.js?v=review-fixes-20261012-v2';
+import {buildCalendarPlan,calendarSettings,addDays,weekStart,movePlannedOccurrences,undoPlanMove,skipCalendarOccurrence} from './calendar-planner.js?v=review-fixes-20261012-v3';
 import {roomHues} from './room-colours.js';
 import {roomMess} from './v2-state.js?v=compact-week-20261012-v4';
 import {childrenOf,subtasksForDisplay,descendants} from './subtasks.js';

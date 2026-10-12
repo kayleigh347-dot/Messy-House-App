@@ -1,8 +1,8 @@
-import {skipCalendarOccurrence} from './calendar-planner.js?v=review-fixes-20261012-v2';
+import {skipCalendarOccurrence} from './calendar-planner.js?v=review-fixes-20261012-v3';
 import {initHomeManagement,updateManagementRoute} from './home-management.js?v=fuller-wizard-20261012-v1';
-import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=review-fixes-20261012-v2';
-import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=review-fixes-20261012-v2';
-import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=review-fixes-20261012-v2';
+import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=review-fixes-20261012-v3';
+import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=review-fixes-20261012-v3';
+import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=review-fixes-20261012-v3';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
 import {laundryDoingSteps} from './laundry.js?v=laundry-schedule-20261012-v1';
 import {initTaskPlanning,openExistingSubtasks,openSnooze,offerDraggedParent} from './task-planning-ui.js';
@@ -17,7 +17,7 @@ import {appendItemImage,readItemImage} from './item-images.js';
 import {childrenOf,subtasksForDisplay,descendants,rootTask,nestTask,detachTask,repeatChildren} from './subtasks.js?v=streamline-20261009-v2';
 import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
-import {calendarStep} from './house-calendar.js?v=review-fixes-20261012-v2';
+import {calendarStep} from './house-calendar.js?v=review-fixes-20261012-v3';
 import {localDateKey} from './calendar.js';
 import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=fuller-wizard-20261012-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
@@ -31,7 +31,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js?v=startup-navigation-20261012-v1';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=review-fixes-20261012-v2";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=review-fixes-20261012-v3";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=calendar-skip-20261012-v1";
 
@@ -966,7 +966,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=review-fixes-20261012-v2").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=review-fixes-20261012-v3").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");

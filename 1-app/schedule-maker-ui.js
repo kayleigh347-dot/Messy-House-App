@@ -1,4 +1,4 @@
-import {roomCategories,roomCategory,roomTaskDraft,makeSchedulePreview,applySchedulePreview,catchUpTasks,currentRoomTaskDraft,schedulePreviewWeek} from './schedule-maker.js?v=review-fixes-20261012-v2';
+import {roomCategories,roomCategory,roomTaskDraft,makeSchedulePreview,applySchedulePreview,catchUpTasks,currentRoomTaskDraft,schedulePreviewWeek} from './schedule-maker.js?v=review-fixes-20261012-v3';
 import {toolsPicker} from './needed-tools.js?v=fuller-wizard-20261012-v1';
 import {setBackHandler} from './navigation.js?v=startup-navigation-20261012-v1';
 import {downloadJSON} from './safe-storage.js';
