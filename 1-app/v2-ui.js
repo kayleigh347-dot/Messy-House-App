@@ -1,7 +1,7 @@
 import {localStorage,sessionStorage} from './safe-storage.js';
-import {isLaundryItem,isLaundryCycleItem,deleteLaundryItem} from './laundry.js?v=laundry-library-20261011-v2';
+import {isLaundryItem,isLaundryCycleItem,deleteLaundryItem} from './laundry.js?v=checklist-20261012-v3';
 import {nextDueDate,setNextDue} from './recurring-schedule.js?v=tools-20261012-v1';
-import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?v=tools-20261012-v1';
+import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?v=checklist-20261012-v3';
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=tools-20261012-v1';
@@ -15,7 +15,7 @@ import {navigate} from './navigation.js';
 import {messPieces,renderRoomMess} from './room-mess.js';
 import {displayPersonName} from './completion-history.js?v=tools-20261012-v1';
 import {updateCompanion,leaveCompanion} from './room-companion.js?v=mobile-1';
-import {placeNewTasksFirst,ordered,priorityOrdered,move,freshTask,roomMess,setRoomMessLevel} from './v2-state.js?v=new-tasks-first-20261010-v1';
+import {placeNewTasksFirst,ordered,priorityOrdered,move,freshTask,roomMess,setRoomMessLevel} from './v2-state.js?v=checklist-20261012-v3';
 let getState,save,makeTaskCard,collaboration={},selectedRoom=null,roomBucket="now",roomRecurringView='list',roomRecurringMonth=new Date(),roomRecurringSelectedDay=null,roomRecurringStatus='all',roomSideFilter='all';
 let navigationDebugModule,navigationDebugImport;
 function syncNavigationDebug(scene,roomId){
@@ -71,7 +71,7 @@ export function editTask(t){
  const st=getState();if(isLaundryCycleItem(st,t)&&!window.confirm('This task is part of a laundry cycle. Editing it may change that cycle. Continue?'))return;
  const dialog=document.querySelector('#taskEditor'),form=document.querySelector('#editTaskForm'),originalTask=JSON.stringify(t);
  for(const section of form.querySelectorAll('details.optional-section'))section.open=false;
- form.elements.text.value=t.text;form.elements.estimatedMinutes.value=t.estimatedMinutes||'';form.elements.effort.value=t.effort||'';
+ form.elements.text.value=t.text;form.elements.effort.value=t.effort||'';
  const rooms=form.elements.room;rooms.replaceChildren();for(const r of ordered(st.rooms).filter(r=>!r.archived||r.id===t.roomId||isLaundryItem(t)&&r.id==='room-laundry'))rooms.append(new Option(r.name+(r.archived?' (archived)':''),r.id));rooms.value=t.roomId||(isLaundryItem(t)?'room-laundry':'');
  form.elements.allowance.value=t.allowanceDays||'';form.elements.dueDate.value=t.dueDate?new Date(t.dueDate).toISOString().slice(0,10):'';form.elements.impact.value=t.messImpact||'normal';
  form.elements.important.checked=t.priority==='high';
@@ -93,7 +93,7 @@ export function editTask(t){
  if(side)t.type=form.elements.questType.value;
  if(!template&&!side){t.recurrence=kind?(kind==='weekdays'?{kind,days}:kind==='fixed-weekday'?{kind,day:days[0]}:{kind:kind==='daily'?'days':kind==='weekly'?'weeks':kind,every:['daily','weekly'].includes(kind)?1:Number(form.elements.interval.value)}):null;if(!t.recurrence)t.scheduled=false;}
  if(t.recurrence&&!side&&!template){if(form.elements.nextDue.value!==originalDue||!r||!t.nextDue)setNextDue(t,form.elements.nextDue.value);t.importantWhenOverdue=form.elements.importantWhenOverdue.checked;}
- if(autoDoing)t.autoDoingNow=autoDoing.checked;t.estimatedMinutes=form.elements.estimatedMinutes.value?Number(form.elements.estimatedMinutes.value):null;t.effort=form.elements.effort.value||null;t.text=text;t.messImpact=form.elements.impact.value;t.priority=form.elements.important.checked?'high':'mid';t.roomId=rooms.value;t.allowanceDays=!t.recurrence&&form.elements.allowance.value?Number(form.elements.allowance.value):null;t.dueDate=!t.recurrence&&form.elements.dueDate.value?new Date(form.elements.dueDate.value+'T12:00:00').toISOString():null;t.assignedTo=form.elements.assignee.value||null;t.assignedToName=st.householdPeople.find(person=>person.id===t.assignedTo)?.name||null;if(t.allowanceDays&&!t.activeSince)t.activeSince=t.created||new Date().toISOString();const recipient=!template&&st.householdPeople.find(person=>person.id===recipients.value);if(recipient)collaboration.notifyTasks?.([t],recipient);dialog.close();save()};
+ if(autoDoing)t.autoDoingNow=autoDoing.checked;t.effort=form.elements.effort.value||null;t.text=text;t.messImpact=form.elements.impact.value;t.priority=form.elements.important.checked?'high':'mid';t.roomId=rooms.value;t.allowanceDays=!t.recurrence&&form.elements.allowance.value?Number(form.elements.allowance.value):null;t.dueDate=!t.recurrence&&form.elements.dueDate.value?new Date(form.elements.dueDate.value+'T12:00:00').toISOString():null;t.assignedTo=form.elements.assignee.value||null;t.assignedToName=st.householdPeople.find(person=>person.id===t.assignedTo)?.name||null;if(t.allowanceDays&&!t.activeSince)t.activeSince=t.created||new Date().toISOString();const recipient=!template&&st.householdPeople.find(person=>person.id===recipients.value);if(recipient)collaboration.notifyTasks?.([t],recipient);dialog.close();save()};
  dialog.showModal();
 }
 
@@ -140,7 +140,7 @@ function renderLaundrySchedule(st){
    if(!window.confirm(warning+`Delete “${t.text}” and its subtasks? Completion history will stay.`))return;
    deleteLaundryItem(getState(),t);save();
   }));appendCycleStepControls(t,'settings',options);body.append(options);
-  const children=st.settings.filter(child=>child.parentId===t.id);
+  const children=st.settings.filter(child=>child.parentId===t.id&&!child.archived);
   if(children.length){const details=el('details');details.className='saved-subtasks';details.append(el('summary',`Subtasks (${children.length})`));for(const child of children)renderItem(child,details);body.append(details)}
   row.append(body);if(isLaundryItem(t))bindLaundryCard(row);target.append(row);
  };
@@ -173,7 +173,7 @@ function renderHouse(st){
  const root=document.querySelector('#houseRooms');root.replaceChildren();
  if(document.body.classList.contains('simple-view')){const list=el('div');list.className='simple-rooms';ordered(st.rooms).filter(r=>!r.archived).forEach((r,i)=>{const b=button('',()=>openRoom(r.id));b.style.setProperty('--room-hue',String(i*137.5%360));b.append(el('strong',r.name),el('span',messPhrase(roomMess(st,r.id).percent)));list.append(b)});root.append(list);return;}
  const scene=el('div');scene.className='house-scene';
- const img=el('img');img.src='assets/house.png';img.alt='Mission Control house. Choose a labelled room to open it.';scene.append(img);
+ const img=el('img');img.src='assets/house.png';img.alt='Tidy-ish house. Choose a labelled room to open it.';scene.append(img);
  const other=el('div');other.className='other-rooms';
  for(const r of ordered(st.rooms).filter(r=>!r.archived)){
   const m=roomMess(st,r.id),pos=positions[r.id];const b=button('',()=>openRoom(r.id),`Open ${r.name}, ${messLabel(m)}`);b.dataset.state=m.state;b.dataset.barState=barState(m.percent,m.state);b.dataset.room=r.id;

@@ -1,18 +1,19 @@
+import {automaticTaskMinutes} from './task-estimates.js?v=checklist-20261012-v3';
 import {localDateKey} from './calendar.js';
-import {nextOccurrence} from './v2-state.js';
+import {nextOccurrence} from './v2-state.js?v=checklist-20261012-v3';
 import {descendants,childrenOf} from './subtasks.js';
 import {taskDeadline} from './task-extras.js';
-import {isLaundryItem} from './laundry.js';
+import {isLaundryItem} from './laundry.js?v=checklist-20261012-v3';
 export const defaultCalendarSettings={dailyMax:240,multiplier:2,oneRoom:true,wholeHouse:true};
 export function calendarSettings(state){return {...defaultCalendarSettings,...state.calendarSettings};}
 export function validDate(key){const d=new Date(key+'T12:00:00');return /^\d{4}-\d{2}-\d{2}$/.test(key)&&localDateKey(d)===key;}
 export function addDays(key,n){const d=new Date(key+'T12:00:00');d.setDate(d.getDate()+n);return localDateKey(d);}
 export function weekStart(date){const d=new Date(date);d.setHours(12,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);return localDateKey(d);}
 export function taskMinutes(state,task){
- const estimate=t=>Number.isFinite(t.estimatedMinutes)&&t.estimatedMinutes>0?t.estimatedMinutes:null;
- if(estimate(task)!==null)return {base:estimate(task),unknown:0};
+ const estimate=t=>automaticTaskMinutes(state,t);
+ if(Number.isFinite(task.estimatedMinutes)&&task.estimatedMinutes>0)return {base:estimate(task),unknown:0};
  const family=descendants(state.tasks,task.id),leaves=family.filter(t=>!t.archived&&!t.pausedAt&&!childrenOf(state.tasks,t.id).length);
- if(!leaves.length)return {base:0,unknown:1};
+ if(!leaves.length)return {base:estimate(task),unknown:0};
  return leaves.reduce((sum,t)=>({base:sum.base+(estimate(t)||0),unknown:sum.unknown+(estimate(t)===null?1:0)}),{base:0,unknown:0});
 }
 // A pure suggestion layer: neither due dates nor recurrence rules are rewritten.

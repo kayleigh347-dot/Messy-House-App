@@ -1,5 +1,5 @@
 import {matchesTask,taskTiming,repeatedTaskGroups,archiveReviewedTask} from './review-tools.js';
-import {recurrenceLabel} from './v2-state.js';
+import {recurrenceLabel} from './v2-state.js?v=checklist-20261012-v3';
 import {displayPersonName} from './completion-history.js';
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
 const timingNames={all:'All dates',active:'Due or unscheduled',overdue:'Overdue',today:'Due today',upcoming:'Upcoming',unscheduled:'Unscheduled',paused:'Paused',completed:'Completed'};

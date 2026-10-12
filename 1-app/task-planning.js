@@ -2,7 +2,7 @@ import {activeTask} from './task-flow.js';
 import {childrenOf,descendants,nestTask} from './subtasks.js';
 import {setNextDue} from './recurring-schedule.js';
 import {localDateKey} from './calendar.js';
-import {isLaundryItem} from './laundry.js';
+import {isLaundryItem} from './laundry.js?v=checklist-20261012-v3';
 export function smallTasks(state,{minutes=10,effort='low',actorId='',now=Date.now()}={}){
  return state.tasks.filter(t=>!t.parentId&&activeTask(t,now)&&!t.doingNow&&!isLaundryItem(t)&&(!actorId||actorId==='local-device'||!t.assignedTo||t.assignedTo===actorId)&&((Number.isFinite(t.estimatedMinutes)&&t.estimatedMinutes>0&&t.estimatedMinutes<=minutes)||(!t.estimatedMinutes&&t.effort==='low'))&&(!effort||t.effort===effort||!t.effort&&!!t.estimatedMinutes)).sort((a,b)=>(a.estimatedMinutes||Infinity)-(b.estimatedMinutes||Infinity)||a.text.localeCompare(b.text));
 }

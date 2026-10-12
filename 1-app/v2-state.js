@@ -1,6 +1,6 @@
 import {canonicalRoomName,roomNames} from './room-names.js';
-import {migrateKitchenLaundry,restoreUniformBackupSteps} from './laundry-migration.js?v=laundry-uniform-20261010-v2';
-import {settleScheduledLaundry} from './laundry.js?v=laundry-uniform-20261010-v2';
+import {migrateKitchenLaundry,restoreUniformBackupSteps} from './laundry-migration.js?v=checklist-20261012-v3';
+import {settleScheduledLaundry,updateUniformCycles} from './laundry.js?v=checklist-20261012-v3';
 import {activeTask,recurringDueNotification} from './task-flow.js?v=schedule-20261010-v1';
 import {normalizeSubtasks,childrenOf,rootTask,repeatChildren} from './subtasks.js';
 import {seedCommonTasks} from './common-tasks.js?v=release-20261010-v3';
@@ -79,6 +79,7 @@ export function normalize(input){
  for(const key of ['tasks','side'])normalizeSubtasks(state[key]);
  migrateKitchenLaundry(state);
  restoreUniformBackupSteps(state);
+ updateUniformCycles(state);
  settleScheduledLaundry(state);
  completeReadyParents(state);
  // Retain an overloaded room's scale until its current mess is cleared.
@@ -102,7 +103,7 @@ export function validateV2(board){
   if(new Set(board[key].map(x=>x.id)).size!==board[key].length)throw new Error('Backup contains duplicate '+key+'.');
  }
  for(const t of [...board.tasks,...(board.templates||[])]){
-  if(t.messImpact!==undefined&&!['none','small','normal','big'].includes(t.messImpact))throw new Error('Backup contains an invalid mess impact.');
+  if(t.messImpact!==undefined&&!['none','tiny','small','normal','big'].includes(t.messImpact))throw new Error('Backup contains an invalid mess impact.');
   if(t.priority!==undefined&&!['high','mid','low'].includes(t.priority))throw new Error('Backup contains an invalid task priority.');
   if(!validRecurrence(t.recurrence))throw new Error('Backup contains invalid recurrence settings.');
   if(t.allowanceDays!=null&&(!Number.isFinite(t.allowanceDays)||t.allowanceDays<=0))throw new Error('Backup contains an invalid time allowance.');
@@ -155,7 +156,7 @@ export function recurrenceLabel(t){
  return `Every ${r.every} ${r.kind==='weeks'?(r.every===1?'week':'weeks'):(r.every===1?'day':'days')}`;
 }
 // Recurring occurrences contribute once when due; ordinary task allowance pressure remains capped.
-export const MESS_CONFIG={impact:{none:0,small:0.5,normal:1,big:2},overduePerDay:0.25,maxOverdueDays:14,thresholds:{clean:0.01,messy:5,disaster:14}};
+export const MESS_CONFIG={impact:{none:0,tiny:0.14,small:0.5,normal:1,big:2},overduePerDay:0.25,maxOverdueDays:14,thresholds:{clean:0.01,messy:5,disaster:14}};
 // Parents organise work; only actionable leaves contribute to a room's mess.
 export function roomMessTasks(st,roomId,now=Date.now()){
  const sideIds=new Set((st.side||[]).map(task=>task.id).filter(Boolean)),parents=new Set(st.tasks.filter(task=>task.parentId).map(task=>task.parentId));
@@ -170,21 +171,22 @@ export function roomMessTasks(st,roomId,now=Date.now()){
 export function setRoomMessLevel(st,roomId,percent,now=Date.now()){
  const room=st.rooms.find(item=>item.id===roomId),level=Number(percent);
  if(!room||!Number.isFinite(level)||level<0||level>100)throw new Error('Choose a mess level between 0 and 100.');
- room.messCalibration={percent:level,weights:roomMessTasks(st,roomId,now).map(task=>({id:task.id,weight:MESS_CONFIG.impact[task.messImpact||'normal']??1})),updatedAt:new Date(now).toISOString()};
+ room.messCalibration={percent:level,tinyIds:roomMessTasks(st,roomId,now).filter(t=>t.messImpact==='tiny').map(t=>t.id),weights:roomMessTasks(st,roomId,now).filter(t=>t.messImpact!=='tiny').map(task=>({id:task.id,weight:MESS_CONFIG.impact[task.messImpact||'normal']??1})),updatedAt:new Date(now).toISOString()};
  return room.messCalibration;
 }
 function adjustedRoomMess(room,tasks){
  const calibration=room?.messCalibration;
  if(!calibration||!Number.isFinite(calibration.percent)||calibration.percent<0||calibration.percent>100||!Array.isArray(calibration.weights)||calibration.weights.some(item=>!item||typeof item.id!=='string'||!Number.isFinite(item.weight)||item.weight<0))return null;
  const weights=new Map(calibration.weights.map(item=>[item.id,item.weight])),total=[...weights.values()].reduce((sum,weight)=>sum+weight,0);
- let remaining=0,extra=0;
- for(const task of tasks){if(weights.has(task.id))remaining+=weights.get(task.id);else extra+=MESS_CONFIG.impact[task.messImpact||'normal']??1}
- const perPoint=total>0&&calibration.percent>0?calibration.percent/total:100/MESS_CONFIG.thresholds.disaster;
- return Math.max(0,Math.min(100,(total>0?calibration.percent*remaining/total:calibration.percent)+extra*perPoint));
+ const tinyIds=new Set(calibration.tinyIds||[]),tinyUnit=tinyIds.size?Math.min(1,calibration.percent/tinyIds.size):1,basePercent=Math.max(0,calibration.percent-tinyIds.size*tinyUnit);let remaining=0,extra=0,tiny=0;
+ for(const task of tasks){if(task.messImpact==='tiny'){tiny+=tinyIds.has(task.id)?tinyUnit:1;continue;}if(weights.has(task.id))remaining+=weights.get(task.id);else extra+=MESS_CONFIG.impact[task.messImpact||'normal']??1}
+ const perPoint=total>0&&basePercent>0?basePercent/total:100/MESS_CONFIG.thresholds.disaster;
+ return Math.max(0,Math.min(100,(total>0?basePercent*remaining/total:basePercent)+extra*perPoint+tiny));
 }
 export function roomMess(st,roomId,now=Date.now()){
  const tasks=roomMessTasks(st,roomId,now);
- const score=tasks.reduce((sum,t)=>{
+ const tinyCount=tasks.filter(t=>t.messImpact==='tiny').length;const normalScore=tasks.reduce((sum,t)=>{
+  if(t.messImpact==='tiny')return sum;
   const weight=MESS_CONFIG.impact[t.messImpact||'normal']??1;
   if(t.recurrence){
    const due=Date.parse(t.nextDue||t.activeSince||t.created);
@@ -194,9 +196,10 @@ export function roomMess(st,roomId,now=Date.now()){
   return sum+weight*(1+Math.min(MESS_CONFIG.maxOverdueDays,overdue)*MESS_CONFIG.overduePerDay);
  },0);
  const {thresholds}=MESS_CONFIG,stored=st.rooms?.find(room=>room.id===roomId)?.messCapacity;
- const capacity=Math.max(thresholds.disaster,Number.isFinite(stored)?stored:0,score);
+ const capacity=Math.max(thresholds.disaster,Number.isFinite(stored)?stored:0,normalScore);
+ const score=normalScore+tinyCount*capacity/100;
  const scaledScore=score/capacity*thresholds.disaster;
- const adjusted=adjustedRoomMess(st.rooms?.find(room=>room.id===roomId),tasks),percent=adjusted===null?Math.min(100,Math.round(score/capacity*1000)/10):Math.round(adjusted*10)/10;
+ const adjusted=adjustedRoomMess(st.rooms?.find(room=>room.id===roomId),tasks),percent=adjusted===null?Math.min(100,Math.round((normalScore/capacity*100+tinyCount)*10)/10):Math.round(adjusted*10)/10;
  return {score,capacity,percent,count:tasks.length,calibrated:adjusted!==null,state:adjusted===null?(scaledScore>=thresholds.disaster?'DISASTER':scaledScore>=thresholds.messy?'MESSY':score>=thresholds.clean?'CLEAN':'SPOTLESS'):(percent>=100?'DISASTER':percent>=thresholds.messy/thresholds.disaster*100?'MESSY':percent>0?'CLEAN':'SPOTLESS')};
 }
 

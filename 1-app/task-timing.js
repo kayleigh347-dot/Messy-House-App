@@ -1,10 +1,11 @@
-import {laundryLoadSteps,saveLaundryLoadSteps} from './laundry.js?v=tools-20261012-v1';
+import {automaticTaskMinutes} from './task-estimates.js?v=checklist-20261012-v3';
+import {laundryLoadSteps,saveLaundryLoadSteps} from './laundry.js?v=checklist-20261012-v3';
 export function timingChoices(state){
  const choices=[],seen=new Set();
  for(const collection of ['templates','tasks','settings'])for(const task of state[collection]||[]){
-  if(task.done||task.archived||collection==='tasks'&&!task.recurrence||collection==='settings'&&!task.laundryTask&&!task.laundryUniform)continue;
+  if(task.done||task.archived||collection==='settings'&&!task.laundryTask&&!task.laundryUniform)continue;
   const key=collection==='tasks'?(task.seriesId||task.recurringGroupId||task.id):task.id;if(seen.has(collection+':'+key))continue;seen.add(collection+':'+key);
-  choices.push({collection,id:task.id,text:task.text,area:task.area||'Laundry',estimatedMinutes:task.estimatedMinutes});
+  choices.push({collection,id:task.id,text:task.text,area:task.area||'Laundry',estimatedMinutes:automaticTaskMinutes(state,task)});
  }for(const step of laundryLoadSteps(state))choices.push({collection:'laundrySteps',id:step.id,text:step.text,area:'Laundry load cycle',estimatedMinutes:step.estimatedMinutes});return choices.sort((a,b)=>a.text.localeCompare(b.text));
 }
 export function recordTaskTiming(state,collection,taskId,milliseconds,id,at=new Date().toISOString()){

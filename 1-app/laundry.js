@@ -1,5 +1,5 @@
-import {scheduleNext} from './v2-state.js?v=laundry-uniform-20261010-v2';
-import {repeatChildren,childrenOf} from './subtasks.js';
+import {scheduleNext} from './v2-state.js?v=checklist-20261012-v3';
+import {repeatChildren,childrenOf,descendants} from './subtasks.js';
 import {completionRecord} from './task-stats.js';
 
 export const laundrySteps=['Put a load on','Put out washing','Put away clothes on rail'];
@@ -31,7 +31,7 @@ export function completeLaundryStep(state,expectedCompleted,actor,at=new Date().
  return record;
 }
 
-export const laundryDue=(task,now=Date.now())=>!task.done&&!task.pausedAt&&(!task.nextDue||Date.parse(task.nextDue)<=now);
+export const laundryDue=(task,now=Date.now())=>!task.done&&!task.archived&&!task.pausedAt&&(!task.nextDue||Date.parse(task.nextDue)<=now);
 export const laundryTasks=(state,now=Date.now())=>(state.settings||[]).filter(item=>item.laundryTask&&laundryDue(item,now));
 // Completed extras remain visible below the due tasks; completion still uses laundryTasks.
 export const laundryTaskList=(state,now=Date.now())=>[...laundryTasks(state,now).filter(t=>!t.parentId),...(state.settings||[]).filter(t=>t.laundryTask&&!t.parentId&&t.done).sort((a,b)=>String(a.completedAt).localeCompare(String(b.completedAt)))];
@@ -54,22 +54,23 @@ export function deleteLaundryItem(state,task){
 export function undoLaundryTask(state,taskId,at=new Date().toISOString()){
  const task=(state.settings||[]).find(t=>t.id===taskId&&t.done&&(t.laundryTask||t.laundryUniform||t.parentId&&isLaundryItem(state.settings.find(parent=>parent.id===t.parentId)||t)));if(!task)return false;
  const parent=state.settings.find(item=>item.id===task.parentId);if(parent?.done){if(!undoLaundryTask(state,parent.id,at))return false;if(!task.done)return true;}
+ let uniformRoot=task;const ancestors=new Set();while(uniformRoot.parentId&&!ancestors.has(uniformRoot.id)){ancestors.add(uniformRoot.id);uniformRoot=state.settings.find(row=>row.id===uniformRoot.parentId)||uniformRoot; }const handoff=state.settings.find(row=>row.uniformHandoff&&row.uniformId===uniformRoot.id);if(handoff){const load=state.settings.find(row=>row.id===loadKey(handoff.slot));if(JSON.stringify(load)!==JSON.stringify(handoff.afterLoad))return false;if(handoff.beforeLoad){Object.keys(load).forEach(key=>delete load[key]);Object.assign(load,structuredClone(handoff.beforeLoad));}else state.settings=state.settings.filter(row=>row!==load);state.settings=state.settings.filter(row=>row!==handoff);}
  const completedAt=task.completedAt,ids=new Set([task.id]);let more=true;
  while(more){more=false;for(const item of state.settings)if(ids.has(item.parentId)&&!ids.has(item.id)){ids.add(item.id);more=true}}
  const reopened=state.settings.filter(t=>ids.has(t.id)&&t.completedAt===completedAt),reopenedIds=new Set(reopened.map(t=>t.id));
  if(task.recurrence){const next=scheduleNext(task,new Date(completedAt));const occurrence=next&&state.settings.find(t=>t.id===next.id);if(occurrence&&!occurrence.done)deleteLaundryItem(state,occurrence)}
  state.wins=(state.wins||[]).filter(w=>!reopenedIds.has(w.taskId));
- for(const item of reopened){item.done=false;delete item.completedAt;item.updatedAt=at}
+ for(const item of reopened){if(item.laundryScheduleUndo){const previous=item.laundryScheduleUndo;if(previous.hasNextDue)item.nextDue=previous.nextDue;else delete item.nextDue;if(previous.hasLastDone)item.lastDone=previous.lastDone;else delete item.lastDone;delete item.laundryScheduleUndo;}item.done=false;delete item.completedAt;item.updatedAt=at}
  return true;
 }
 export function uniformProgress(state,now=Date.now()){
  const task=(state.settings||[]).find(item=>item.laundryUniform&&laundryDue(item,now));if(!task)return null;
- const steps=childrenOf(state.settings,task.id).sort((a,b)=>(a.order||0)-(b.order||0)),step=steps.find(item=>!item.done)||task;
+ const steps=uniformCycleSteps(state,task),step=steps.find(item=>!item.done)||task;
  return {task,step,total:steps.length||1,index:steps.length?steps.indexOf(step):0};
 }
 export function uniformHomeProgress(state,now=Date.now()){
  const progress=uniformProgress(state,now);if(!progress)return null;
- const colours=childrenOf(state.settings,progress.task.id).filter(step=>/\b(darks|whites)\b/i.test(step.text||''));
+ const colours=uniformCycleSteps(state,progress.task).filter(step=>/\b(darks|whites)\b/i.test(step.text||''));
  return colours.length&&colours.every(step=>step.done)?null:progress;
 }
 export function addLaundryTask(state,text,taskId,at=new Date().toISOString()){
@@ -87,14 +88,15 @@ export function completeLaundryTask(state,taskId,actor,at=new Date().toISOString
 }
 function finishLaundryItem(state,task,person,at){
  if(task.done)return null;
- const children=childrenOf(state.settings,task.id);
+ const children=childrenOf(state.settings,task.id).filter(t=>!t.archived);
  for(const child of children)if(!child.done)finishLaundryItem(state,child,person,at);
  const parent=state.settings.find(item=>item.id===task.parentId);
  const record={...completionRecord({...task,area:'Laundry'},at,'task',person),points:children.length?0:1,aggregate:!!children.length,...(parent?{rootTaskId:parent.id,rootText:parent.text,rootRecurrence:parent.recurrence||null}:{})};
  state.wins||=[];if(!state.wins.some(win=>win.id===record.id))state.wins.unshift(record);
  task.done=true;task.completedAt=at;task.updatedAt=at;
- if(parent){const next=childrenOf(state.settings,parent.id).find(item=>!item.done);if(next?.autoDoingNow)next.doingNow=true;}
- if(!task.parentId)scheduleLaundry(state,task,at);
+ if(parent){const next=childrenOf(state.settings,parent.id).find(item=>!item.done&&!item.archived);if(next?.autoDoingNow)next.doingNow=true;}
+ if(task.laundryUniform)handoffUniformLaundry(state,task,at);
+ if(!task.parentId){task.laundryScheduleUndo={hasNextDue:Object.hasOwn(task,'nextDue'),nextDue:task.nextDue,hasLastDone:Object.hasOwn(task,'lastDone'),lastDone:task.lastDone};scheduleLaundry(state,task,at);}
  return record;
 }
 function scheduleLaundry(state,task,at){
@@ -104,19 +106,23 @@ function scheduleLaundry(state,task,at){
  state.settings.push(next,...repeatChildren(state.settings,task,next));
 }
 export function settleScheduledLaundry(state){
- for(const parent of [...(state.settings||[])]){
-  if(!parent.laundryImported||parent.parentId||parent.done)continue;
-  const children=childrenOf(state.settings,parent.id);if(!children.length||!children.every(child=>child.done))continue;
-  const last=children.reduce((a,b)=>String(a.completedAt)>String(b.completedAt)?a:b),at=last.completedAt;
-  if(!at)continue;
-  const credited=state.wins?.find(win=>win.taskId===last.id),person={id:credited?.completedBy,name:credited?.completedByName};
-  finishLaundryItem(state,parent,person,at);
+ for(let pass=0;pass<(state.settings||[]).length;pass++){
+  let changed=false;
+  for(const parent of [...(state.settings||[])].reverse()){
+   if((!parent.laundryImported&&!parent.parentId)||parent.done||parent.archived)continue;
+   const children=childrenOf(state.settings,parent.id).filter(t=>!t.archived);if(!children.length||!children.every(child=>child.done))continue;
+   const last=children.reduce((a,b)=>String(a.completedAt)>String(b.completedAt)?a:b),at=last.completedAt;if(!at)continue;
+   const credited=state.wins?.find(win=>win.taskId===last.id),person={id:credited?.completedBy,name:credited?.completedByName};
+   if(parent.laundryUniform)handoffUniformLaundry(state,parent,at);
+   finishLaundryItem(state,parent,person,at);changed=true;
+  }
+  if(!changed)break;
  }
 }
 export function completeUniformStep(state,stepId,actor,at=new Date().toISOString()){
  const person=state.householdPeople?.find(item=>item.id===actor?.id&&item.id!=='local-device');
  const progress=uniformProgress(state,Date.parse(at));if(!person||!progress||progress.step.id!==stepId)return null;
- const record=finishLaundryItem(state,progress.step,person,at);settleScheduledLaundry(state);return record;
+ const record=finishLaundryItem(state,progress.step,person,at);handoffUniformLaundry(state,progress.task,at);settleScheduledLaundry(state);return record;
 }
 
 export function laundryCompletionPhrase(text){
@@ -155,7 +161,7 @@ export function laundryLoads(state){
     reminderActorId:saved?.reminderActorId||state.wins?.find(win=>win.laundry&&(win.laundryCycle||'rail')===previous?.route&&win.laundrySequence===previous?.progress.completed)?.completedBy});
   }
  }
- return [1,2].filter(slot=>state.settings.some(row=>row.id===loadKey(slot))).map(slot=>laundryLoadProgress(state,slot));
+ return state.settings.filter(row=>/^laundry-load-\d+$/.test(row.id)).map(row=>Number(row.id.split('-').at(-1))).sort((a,b)=>a-b).map(slot=>laundryLoadProgress(state,slot));
 }
 export function laundryLoadProgress(state,slot){
  const saved=state.settings?.find(row=>row.id===loadKey(slot));if(!saved)return null;
@@ -163,7 +169,7 @@ export function laundryLoadProgress(state,slot){
  const completed=Math.max(validCount(saved.completedSteps),validCount(latest?.laundrySequence)),steps=laundryLoadSteps(state);
  const currentId=latest&&latest.laundrySequence>validCount(saved.completedSteps)?latest.laundryNextStepId:saved.currentStepId;
  const found=steps.findIndex(step=>step.id===currentId),index=found>=0?found:completed%steps.length;
- const route=latest&&latest.laundrySequence>=validCount(saved.completedSteps)?latest.laundryRoute:saved.route;
+ const route=latest&&latest.laundrySequence>validCount(saved.completedSteps)?latest.laundryRoute:saved.route;
  const step=steps[index];return {...saved,slot,completed,index,route,step,total:steps.length,needsTransfer:step.kind==='route',doingNow:step.kind==='route'&&!state.settings?.some(row=>row.id==='laundry-load-cycle-definition')||!!saved.doingNow,text:step.kind==='finish'?(route==='dryer'?step.dryerText:step.text):step.text};
 }
 export function startSecondLaundryLoad(state,at=new Date().toISOString()){
@@ -208,3 +214,27 @@ export function addLaundryCycleStep(state,collection,parentId,text,id,autoDoingN
  const parentKey=collection==='templates'?'parentTemplateId':'parentId',siblings=items.filter(item=>item[parentKey]===parentId),step={id,text,[parentKey]:parentId,roomId:parent.roomId,area:parent.area||'Laundry',order:Math.max(-1,...siblings.map(item=>item.order||0))+1,autoDoingNow:!!autoDoingNow,done:false,...(collection==='settings'?{laundryTask:true,laundryImported:true}:{}),...(parent.nextDue?{nextDue:parent.nextDue}:{}),created:new Date().toISOString()};
  items.push(step);return step;
 }
+
+// Retire only the requested uniform steps; keep records and completion history intact.
+export function updateUniformCycles(state){
+ for(const parent of state.settings||[]){
+  if(!parent.laundryUniform)continue;
+  for(const step of descendants(state.settings,parent.id))if(/remove dye|dye removal|put away/i.test(step.text||'')){step.archived=true;step.uniformRetiredStep=true;step.doingNow=false;}
+ }
+}
+export function uniformCycleSteps(state,parent){return descendants(state.settings,parent.id).filter(step=>!step.archived&&!childrenOf(state.settings,step.id).some(child=>!child.archived));}
+export const uniformHangingReminder=step=>/put out|hang.*dry|hang.*rail/i.test(step?.text||'')?'Remember to stretch out on the rail.':'';
+export function handoffUniformLaundry(state,parent,at=new Date().toISOString()){
+ const steps=uniformCycleSteps(state,parent),hanging=steps.filter(step=>/put out|hang.*dry|hang.*rail/i.test(step.text||''));
+ if(!hanging.some(step=>uniformStepColour(state,step)==='darks'&&step.done)||!hanging.some(step=>uniformStepColour(state,step)==='whites'&&step.done))return false;
+ const markerId='uniform-handoff-'+parent.id;if(state.settings.some(row=>row.id===markerId))return false;
+ const loads=laundryLoads(state),available=loads.find(load=>load.step.kind==='finish'&&load.route==='rail')||loads.find(load=>load.index===0);
+ const slot=available?.slot||Math.max(0,...loads.map(load=>load.slot))+1;
+ let saved=state.settings.find(row=>row.id===loadKey(slot)),beforeLoad=saved?structuredClone(saved):null;
+ if(!saved){saved={id:loadKey(slot),completedSteps:0};state.settings.push(saved);}
+ const finish=laundryLoadSteps(state).find(step=>step.kind==='finish');
+ Object.assign(saved,{currentStepId:finish.id,route:'rail',doingNow:!!finish.autoDoingNow,uniformSourceIds:[...new Set([...(saved.uniformSourceIds||[]),parent.id])],updatedAt:at});delete saved.reminderStartedAt;delete saved.reminderActorId;
+ state.settings.push({id:markerId,uniformHandoff:true,uniformId:parent.id,slot,beforeLoad,afterLoad:structuredClone(saved),createdAt:at});return true;
+}
+
+export function uniformStepColour(state,step){const seen=new Set();let current=step;while(current&&!seen.has(current.id)){seen.add(current.id);if(/darks/i.test(current.text||''))return 'darks';if(/whites/i.test(current.text||''))return 'whites';current=state.settings.find(t=>t.id===current.parentId);}return '';}

@@ -1,5 +1,5 @@
 import {prizes} from './rewards.js';
-import {validateV2,validRecurrence} from './v2-state.js';
+import {validateV2,validRecurrence} from './v2-state.js?v=checklist-20261012-v3';
 export const boardCollections=['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions'];
 export function validateBackup(board){
  if(!board||typeof board!=='object'||Array.isArray(board))throw Error('Choose a Tidy-ish backup file.');

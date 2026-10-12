@@ -1,6 +1,6 @@
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {roomHues} from './room-colours.js';
-import {recurrenceLabel,nextOccurrence} from './v2-state.js?v=release-20261010-v3';
+import {recurrenceLabel,nextOccurrence} from './v2-state.js?v=checklist-20261012-v3';
 import {localDateKey as dateKey} from './calendar.js';
 import {taskDeadline} from './task-extras.js';
 import {setNextDue} from './recurring-schedule.js?v=schedule-20261010-v1';

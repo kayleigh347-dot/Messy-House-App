@@ -1,5 +1,5 @@
 import {localStorage} from './safe-storage.js';
-import {laundryProgress,laundryLoadProgress} from './laundry.js?v=tools-20261012-v1';
+import {laundryProgress,laundryLoadProgress} from './laundry.js?v=checklist-20261012-v3';
 const TWO_HOURS=2*60*60*1000,HALF_HOUR=30*60*1000;
 export function laundryReminder(state,cycle,now=Date.now()){
  const load=typeof cycle==='number',progress=load?laundryLoadProgress(state,cycle):laundryProgress(state,cycle);if(!progress)return null;if(load?!progress.needsTransfer:progress.index!==1)return null;

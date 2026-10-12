@@ -1,4 +1,4 @@
-import {placeNewTasksFirst,dueAt,freshTask,ordered} from './v2-state.js?v=new-tasks-first-20261010-v1';
+import {placeNewTasksFirst,dueAt,freshTask,ordered} from './v2-state.js?v=checklist-20261012-v3';
 import {descendants} from './subtasks.js';
 export function activeSavedTasks(state,template){return state.tasks.filter(task=>!task.done&&!task.archived&&!task.parentId&&task.roomId===template.roomId&&(task.sourceTemplateId===template.id||task.text.trim().toLocaleLowerCase()===template.text.trim().toLocaleLowerCase()))}
 export function removeSavedTasks(state,template){const roots=activeSavedTasks(state,template),ids=new Set(roots.flatMap(root=>[root,...descendants(state.tasks,root.id)]).map(task=>task.id));state.tasks=state.tasks.filter(task=>!ids.has(task.id));return roots.length}

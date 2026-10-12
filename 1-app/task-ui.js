@@ -1,6 +1,6 @@
 import {sessionStorage} from './safe-storage.js';
 // Shared recurring sections and timing badges for room and management lists.
-import {priorityOf} from './v2-state.js?v=release-20261010-v3';
+import {priorityOf} from './v2-state.js?v=checklist-20261012-v3';
 export function taskOrderGroups(tasks){
  return [['high','Needs done first'],['mid','Other tasks']].map(([id,label])=>({id,label,tasks:tasks.filter(task=>priorityOf(task)===id)})).filter(group=>group.tasks.length);
 }

@@ -1,13 +1,13 @@
-import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=tidy-20261012-v1';
-import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=tools-20261012-v1';
+import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=checklist-20261012-v3';
+import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=checklist-20261012-v3';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
-import {laundryDoingSteps} from './laundry.js?v=tools-20261012-v1';
+import {laundryDoingSteps} from './laundry.js?v=checklist-20261012-v3';
 import {initTaskPlanning,openExistingSubtasks,openSnooze,offerDraggedParent} from './task-planning-ui.js';
 import {initReviewUI,applyListFilters} from './review-ui.js';
 import {localStorage,sessionStorage,criticalStorageProblem,downloadJSON} from './safe-storage.js';
 import {validateBackup,backupPreview} from './backup-tools.js';
 import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=tools-20261012-v1';
-import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=tools-20261012-v1';
+import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,uniformCycleSteps,uniformStepColour,uniformHangingReminder,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=checklist-20261012-v3';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=tools-20261012-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -16,7 +16,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=tools-20261012-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=checklist-20261012-v3';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -28,9 +28,9 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=tools-20261012-v1";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=checklist-20261012-v3";
 
-import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=new-tasks-first-20261010-v1";
+import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=checklist-20261012-v3";
 
 import {notifyCompanionTaskCompleted} from './room-companion.js?v=mobile-1';
 
@@ -433,12 +433,12 @@ function renderLaundryPanel(){
   const heading=document.createElement('h4'),number=document.createElement('p'),step=document.createElement('h4'),button=document.createElement('button');heading.textContent='Wash uniform';number.className='laundry-step-number';number.textContent=`Step ${uniform.index+1} of ${uniform.total}`;step.textContent=uniform.step.text;button.type='button';button.textContent=laundryCompletionPhrase(uniform.step.text);button.disabled=uniformBusy;button.setAttribute('aria-label','Complete uniform step: '+uniform.step.text);
   button.onclick=()=>{if(uniformBusy)return;const before=rewardProgress(st).earned,record=completeUniformStep(st,uniform.step.id,currentActor());
    if(!record){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete laundry and keep your points.');return}
-   uniformBusy=true;changed();featureToast(record.text+' complete. +1 point.');if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');setTimeout(()=>{uniformBusy=false;renderLaundryPanel()},800);
+   const handoff=st.settings.find(item=>item.uniformHandoff&&item.uniformId===uniform.task.id);if(handoff)selectedLaundryLoad=handoff.slot;uniformBusy=true;changed();featureToast(record.text+' complete. +1 point.');if(rewardProgress(st).earned>before)featureToast('A new mystery joined your shelf!');setTimeout(()=>{uniformBusy=false;renderLaundryPanel()},800);
   };
-  const current=document.createElement('div');current.className='uniform-current-step';current.append(number,step,button);root.append(heading,current);
-  const steps=childrenOf(st.settings,uniform.task.id),colours=document.createElement('div');colours.className='uniform-colours';
+  const current=document.createElement('div');current.className='uniform-current-step';current.append(number,step);const reminder=uniformHangingReminder(uniform.step);if(reminder){const text=document.createElement('p');text.className='uniform-hanging-reminder';text.textContent=reminder;current.append(text);}current.append(button);root.append(heading,current);
+  const steps=uniformCycleSteps(st,uniform.task),colours=document.createElement('div');colours.className='uniform-colours';
   for(const colour of ['darks','whites']){
-   const stages=steps.filter(item=>new RegExp('\\b'+colour+'\\b','i').test(item.text||''));if(!stages.length)continue;
+   const stages=steps.filter(item=>uniformStepColour(st,item)===colour);if(!stages.length)continue;
    const group=document.createElement('section'),label=document.createElement('h5');label.textContent=colour==='darks'?'Darks':'Whites';group.append(label);
    for(const [index,item] of stages.entries()){const row=document.createElement('p');row.className='uniform-stage'+(item.done?' uniform-stage-done':'');row.textContent=`${item.done?'✓ ':''}Step ${index+1} · ${item.text}`;group.append(row)}colours.append(group);
   }
@@ -448,7 +448,7 @@ function renderLaundryPanel(){
  const loads=laundryLoads(st);if(!loads.some(load=>load.slot===selectedLaundryLoad))selectedLaundryLoad=1;
  for(const root of document.querySelectorAll('[data-laundry-loads]')){
   root.replaceChildren();
-  if(loads.length===2){const tabs=document.createElement('div');tabs.className='folder-tabs';tabs.setAttribute('aria-label','Laundry loads');for(const load of loads){const tab=document.createElement('button');tab.type='button';tab.textContent='Load '+load.slot;tab.setAttribute('aria-pressed',String(load.slot===selectedLaundryLoad));tab.onclick=()=>{selectedLaundryLoad=load.slot;renderLaundryPanel()};tabs.append(tab)}root.append(tabs)}
+  if(loads.length>1){const tabs=document.createElement('div');tabs.className='folder-tabs';tabs.setAttribute('aria-label','Laundry loads');for(const load of loads){const tab=document.createElement('button');tab.type='button';tab.textContent='Load '+load.slot;tab.setAttribute('aria-pressed',String(load.slot===selectedLaundryLoad));tab.onclick=()=>{selectedLaundryLoad=load.slot;renderLaundryPanel()};tabs.append(tab)}root.append(tabs)}
   const progress=loads.find(load=>load.slot===selectedLaundryLoad),card=document.createElement('section'),number=document.createElement('p'),title=document.createElement('h4');card.className='laundry-cycle';number.className='laundry-step-number';number.textContent=`Load ${progress.slot} · Step ${progress.index+1} of ${progress.total}`;title.textContent=progress.text;card.append(number,title);
   const actions=document.createElement('div');actions.className='laundry-load-actions';
   for(const route of progress.needsTransfer?['dryer','rail']:[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
