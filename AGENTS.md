@@ -36,4 +36,8 @@ Keep only that one previous-version backup. This repository remains the current 
 
 - Preserve Kayleigh’s personal task lists, names, subtasks, schedules and ordering unless she explicitly asks to change them. App UI fixes must not rewrite, clean, replace or import her personal data.
 - Do not edit her personal task-list backup files unless explicitly asked. This is separate from the required rolling app-source backup.
-- If Kayleigh requests a backup edit and says not to upload it, return the edited backup as a downloadable file only. Do not upload, publish, import or sync it.
+- Never upload Kayleigh’s personal task-list backups or recovery copies to Git, GitHub, a website, cloud storage, or any other service, at any point. Never include them in app releases or upload bundles. Requested backup edits must be returned as downloadable local files only, never imported or synced on her behalf. The rolling app-source backup also stays local and is never committed or uploaded. App backup/export code and synthetic tests are permitted in releases; they are not personal backups.
+
+## Preserve the account board during updates
+
+App updates must preserve the board already saved on Kayleigh’s account, including task lists, completions, points and existing account backup/sync. Never reset, replace, delete, disable or restore that saved board as part of a code update. The prohibition on uploading personal backup files does not disable normal app saves or account sync. Importing an older backup must never be an automatic update step.

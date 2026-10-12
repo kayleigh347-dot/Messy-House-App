@@ -16,3 +16,12 @@ CHANGE-CHECKLIST-*.md
 TASK-CHECKLIST-*.md
 HANDOFF-*.md
 LATEST-HANDOFF.md
+
+*BACKUP*.json
+*recovery*.json
+*RECOVERY*.json
+*backup*.zip
+*BACKUP*.zip
+backup/
+backups/
+previous-version/
