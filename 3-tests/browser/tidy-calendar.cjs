@@ -10,6 +10,18 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE_PATH||'playwright');
   localStorage.setItem('mc-state-v1',JSON.stringify({schemaVersion:7,rooms:[{id:'room-bathroom',name:'Bathroom',guardian:'Water Sprite',order:0},{id:'room-kitchen',name:'Kitchen',guardian:'Gremlin',order:1}],tasks:[{id:'bath',text:'Clean bath',roomId:'room-bathroom',area:'Bathroom',estimatedMinutes:30,dueDate:at,order:0},{id:'mirror',text:'Clean mirror',roomId:'room-bathroom',area:'Bathroom',estimatedMinutes:15,dueDate:at,order:1},{id:'kitchen',text:'Clean kitchen',roomId:'room-kitchen',area:'Kitchen',estimatedMinutes:50,dueDate:at,order:2},{id:'automatic',text:'Clean sink',roomId:'room-kitchen',area:'Kitchen',order:3}],householdPeople:[{id:'tester',name:'Tester'}],wins:[],settings:[{id:'uniform',text:'Wash uniform',laundryUniform:true,laundryImported:true,done:false,nextDue:at},...['Wash darks','Put out darks','Wash whites','Put out whites','Remove dye from tops if possible','Put away darks','Put away whites'].map((text,i)=>({id:'uniform-step-'+i,parentId:'uniform',text,order:i,done:i===0,completedAt:i===0?at:undefined}))],side:[],calendarSessions:[]}));
  });
  await page.goto(preview);await page.locator('nav [data-tab=calendar]').click();assert.deepEqual(errors,[]);assert.equal(await page.title(),'Tidy-ish');
+ async function sevenDaysFit(){
+  assert.equal(await page.locator('.tidy-view-switch button').count(),1);
+  assert.equal(await page.locator('.tidy-week-strip .tidy-day-card').count(),7);
+  assert.equal(await page.locator('.tidy-week-strip').evaluate(strip=>{const bounds=strip.getBoundingClientRect();return strip.scrollWidth<=strip.clientWidth+1&&[...strip.children].every(card=>{const r=card.getBoundingClientRect();return r.left>=bounds.left&&r.right<=bounds.right&&r.right<=innerWidth;});}),true);
+ }
+ assert.doesNotMatch(await page.locator('#tidyCalendar').innerText(),/\d+ min max|of \d+.*max/);
+ await sevenDaysFit();await page.screenshot({path:'/private/tmp/tidy-seven-days-phone.png',fullPage:true});
+ for(const width of [320,430]){await page.setViewportSize({width,height:844});await sevenDaysFit();}
+ await page.setViewportSize({width:390,height:844});
+ const selected=await page.locator('.tidy-week-strip .is-selected').getAttribute('data-date');const initialWeek=await page.locator('#calendarMonthLabel').innerText();
+ await page.locator('.tidy-view-switch button').click();assert.equal(await page.locator('.tidy-week-overview .tidy-day-card').count(),7);assert.equal(await page.locator('.tidy-view-switch button').count(),1);
+ await page.locator('.tidy-view-switch button').click();await sevenDaysFit();assert.equal(await page.locator('.tidy-week-strip .is-selected').getAttribute('data-date'),selected);assert.equal(await page.locator('#calendarMonthLabel').innerText(),initialWeek);
  assert.equal(await page.locator('.tidy-week-strip .tidy-day-card').count(),7);assert.equal(await page.locator('.calendar-checklist-row').count(),2);
  assert.equal(await page.locator('.tidy-day-panel').getByRole('button',{name:'Edit',exact:true}).count(),1);
  assert.equal(await page.locator('#calendar button').filter({hasText:/^(First|Last|Edit base time|Edit task \/ recurrence)$/}).count(),0);
