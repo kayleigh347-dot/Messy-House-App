@@ -3,12 +3,12 @@
 .manage-home-heading h2{padding-right:2.8rem}
 .manage-home-heading .folder-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;margin:.4rem 0 0;gap:.25rem}
 .manage-home-heading .folder-tabs button{min-width:0;flex:1;white-space:nowrap;padding:.65rem .35rem;font-size:.88rem}
-.folder-tabs.nested-tabs button{background:#225f6c!important;border-color:#7acbda!important;color:#fff!important}
-.folder-tabs.nested-tabs button[aria-pressed=true]{background:#a5e6df!important;color:#122c30!important}
-.folder-tabs.nested-tabs button:nth-child(2){background:#713b5d!important;border-color:#eda5cc!important}
-.folder-tabs.nested-tabs button:nth-child(2)[aria-pressed=true]{background:#f0b9d7!important;color:#361d2e!important}
-.folder-tabs.nested-tabs button:nth-child(3){background:#635022!important;border-color:#e2c36a!important}
-.folder-tabs.nested-tabs button:nth-child(3)[aria-pressed=true]{background:#f4db9a!important;color:#352911!important}
+.dark-mode .page .folder-tabs.nested-tabs button{background:#225f6c!important;border-color:#7acbda!important;color:#fff!important}
+.dark-mode .page .folder-tabs.nested-tabs button[aria-pressed=true]{background:#a5e6df!important;color:#122c30!important}
+.dark-mode .page .folder-tabs.nested-tabs button:nth-child(2){background:#713b5d!important;border-color:#eda5cc!important}
+.dark-mode .page .folder-tabs.nested-tabs button:nth-child(2)[aria-pressed=true]{background:#f0b9d7!important;color:#361d2e!important}
+.dark-mode .page .folder-tabs.nested-tabs button:nth-child(3){background:#635022!important;border-color:#e2c36a!important}
+.dark-mode .page .folder-tabs.nested-tabs button:nth-child(3)[aria-pressed=true]{background:#f4db9a!important;color:#352911!important}
 body[data-management]:not([data-management=""]) .manage-home-heading~h2,body[data-management]:not([data-management=""]) .settings-heading h2{font-size:1.1rem;margin:.6rem 0}
 #simpleSettings{display:grid;place-items:center;position:fixed;top:max(.65rem,env(safe-area-inset-top));right:max(.65rem,env(safe-area-inset-right));z-index:45;width:2.7rem;height:2.7rem;padding:0;font-size:1.5rem;border-radius:50%;background:#592473;color:#fff}
 #simpleSettings[hidden]{display:none!important}
