@@ -23,6 +23,8 @@ This is the standing layout and navigation document referenced by `AGENTS.md`. F
 - Tasks has three tabs: **Reusable**, **Recurring**, and **Tools/times**. Laundry setup and cycle editing are a separate function in More → Laundry setup & editing.
 - Schedule has **Manual edit** and **Schedule maker** options. Schedule maker replaces the previous automatic scheduling setup.
 - My rooms contains room management.
+- Calendar month view uses compact room/guardian symbols and event symbols (appointments, errands and laundry), with time/count indicators. Keep full room and task details available by tapping a day and through accessible labels.
+- Calendar recurring task rows offer Skip this time for a single current or projected occurrence. Skipping awards no points and records no completion; later repeats stay scheduled.
 - Calendar remains a separate page. Its task lists, completed task lists and whole-house task choices show recurring tasks only. One-off tasks remain in their existing task lists; appointments and errands remain calendar events.
 - **Backup & custom tasks** combines board backup controls and custom task upload on one page, with separate explicit import and upload actions.
 
