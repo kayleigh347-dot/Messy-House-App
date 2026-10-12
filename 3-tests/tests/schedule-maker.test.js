@@ -37,3 +37,47 @@ test('visual preview weeks mirror scheduled dates, daily totals and rest days',(
 
 test('first wizard due dates are one interval into the future, including daily and long intervals',()=>{for(const interval of [1,7,28,84,3650]){const s=state(),p=makeSchedulePreview(s,{...draft([{...task('Clean'),days:interval}]),dailyMax:100,multiplier:1,restDays:[]});assert.equal(p.unplaced.length,0);const c=p.changes[0];assert.equal(c.interval,interval);assert.equal(c.date,new Date(Date.UTC(2026,9,12+interval)).toISOString().slice(0,10));assert.ok(c.dates.every(date=>date>=c.date));let id=0;applySchedulePreview(s,p,()=>String(++id),new Date('2026-10-12'));assert.equal(s.tasks[0].scheduled,true);assert.equal(s.tasks[0].recurrence.anchor,c.date);}});
 test('first due shifts later for rest days while repeat intervals and room limits remain valid',()=>{const p=makeSchedulePreview(state(),{...draft([{...task('Daily'),days:1}]),dailyMax:100,multiplier:1,restDays:[2]});assert.equal(p.changes[0].interval,1);assert.equal(p.changes[0].date,'2026-10-14');assert.ok(p.changes[0].dates.every(date=>new Date(date+'T12:00:00').getDay()!==2));});
+
+test('Use current schedule keeps direct and template user times unchanged in preview, saved routines and later repeats',()=>{
+ for(const multiplier of [1,2,3])for(const type of ['direct','template','matching-template']){
+  const s=state();s.rooms=[{id:'r',name:'Custom',category:'custom'}];
+  const t={id:'old',roomId:'r',text:'Synthetic routine',recurrence:{kind:'weeks',every:1},presetMinutes:10};
+  if(type==='direct'){t.estimatedMinutes=23;t.estimateSource='measured'}
+  else{s.templates=[{id:'saved',text:t.text,roomId:'r',estimatedMinutes:23}];if(type==='template')t.sourceTemplateId='saved'}
+  s.tasks=[t];const room={...s.rooms[0],selected:true};room.tasks=currentRoomTaskDraft(s,room).filter(t=>t.selected);
+  assert.equal(room.tasks[0].minutes,23);assert.equal(room.tasks[0].manualTime,true);
+  const before=structuredClone(s),p=makeSchedulePreview(s,{...draft([]),dailyMax:120,multiplier,rooms:[room],replaceRecurring:true});
+  assert.deepEqual(s,before);assert.equal(p.changes[0].minutes,23);assert.equal(adjustedTaskMinutes(s,t,multiplier),23);
+  let id=0;applySchedulePreview(s,p,()=>`new-${++id}`,new Date('2026-10-12'));
+  const saved=s.tasks.find(t=>!t.parentId&&!t.archived);assert.equal(saved.estimatedMinutes,23);
+  assert.equal(adjustedTaskMinutes(s,saved,multiplier),23);
+  const next=scheduleNext(saved,new Date('2026-10-19'));assert.equal(next.estimatedMinutes,23);
+ }
+});
+test('Use current schedule preserves nested measured child times and multiplies only the preset portion after saving',()=>{
+ for(const multiplier of [1,2,3]){
+  const s=state();s.rooms=[{id:'r',name:'Custom',category:'custom'}];s.tasks=[
+   {id:'p',roomId:'r',text:'Routine',recurrence:{kind:'weeks',every:1}},
+   {id:'group',parentId:'p',text:'Group'},
+   {id:'measured',parentId:'group',text:'Measured step',estimatedMinutes:7,estimateSource:'measured',done:true},
+   {id:'preset',parentId:'p',text:'Preset step',presetMinutes:5}
+  ];
+  const room={...s.rooms[0],selected:true};room.tasks=currentRoomTaskDraft(s,room).filter(t=>t.selected);
+  const p=makeSchedulePreview(s,{...draft([]),dailyMax:120,multiplier,rooms:[room],replaceRecurring:true});
+  assert.equal(p.changes[0].minutes,7+5*multiplier);
+  let id=0;applySchedulePreview(s,p,()=>`new-${++id}`,new Date('2026-10-12'));
+  const saved=s.tasks.find(t=>!t.parentId&&!t.archived);assert.equal(saved.presetMinutes,undefined);
+  assert.equal(adjustedTaskMinutes(s,saved,multiplier),7+5*multiplier);
+  const child=s.tasks.find(t=>t.text==='Measured step'&&!t.archived&&!t.done);
+  assert.equal(child.estimatedMinutes,7);assert.equal(child.estimateSource,'measured');
+ }
+});
+test('Use current schedule continues to multiply preset-only parent estimates',()=>{
+ for(const multiplier of [1,2,3]){
+  const s=state();s.tasks=[{id:'p',roomId:'r',text:'Routine',recurrence:{kind:'weeks',every:1},presetMinutes:11}];
+  const room={id:'r',name:'Custom',category:'custom',selected:true};room.tasks=currentRoomTaskDraft(s,room).filter(t=>t.selected);
+  assert.equal(room.tasks[0].manualTime,false);
+  const p=makeSchedulePreview(s,{...draft([]),dailyMax:120,multiplier,rooms:[room],replaceRecurring:true});
+  assert.equal(p.changes[0].minutes,11*multiplier);
+ }
+});
