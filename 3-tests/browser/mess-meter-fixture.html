@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><title>Local mess-meter checks</title>
+<script>
+if(!['localhost','127.0.0.1'].includes(location.hostname))throw new Error('Synthetic checks run only locally');
+const at=new Date().toISOString(),future=new Date(Date.now()+86400000).toISOString();
+localStorage.setItem('mc-config-v1',JSON.stringify({url:'',key:''}));
+localStorage.setItem('mc-sync-v2',JSON.stringify({actor:{id:'tester',name:'Tester'}}));
+localStorage.setItem('mc-state-v1',JSON.stringify({schemaVersion:7,rooms:[{id:'room-master',name:'Master Bedroom',order:0}],tasks:[
+{id:'parent',text:'Bedroom reset',roomId:'room-master',messImpact:'big',order:0},
+{id:'a',text:'Put clothes away',roomId:'room-master',parentId:'parent',messImpact:'normal',order:0},
+{id:'b',text:'Clear bedside table',roomId:'room-master',parentId:'parent',messImpact:'normal',order:1},
+{id:'doing',text:'Hoover bedroom',roomId:'room-master',doingNow:true,messImpact:'normal',order:1},
+{id:'future',text:'Future bed linen',roomId:'room-master',recurrence:{kind:'days',every:7},nextDue:future,scheduled:true,order:2},
+{id:'later-normal',text:'Tomorrow tidy',roomId:'room-master',dueDate:future,order:3}
+],side:[],wins:[{id:'history',taskId:'previous',text:'Previous progress',at,completedBy:'tester',points:2}],householdPeople:[{id:'tester',name:'Tester'}],settings:[]}));
+localStorage.setItem('mc-task-layout','compact');
+location.replace('./');
+</script>
