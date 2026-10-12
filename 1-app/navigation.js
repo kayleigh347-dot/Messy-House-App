@@ -1,4 +1,5 @@
-let onRoute;
+let onRoute,backHandler;
+export function setBackHandler(handler){backHandler=handler}
 export function navigate(page,room=null,{replace=false}={}){
  const route={mc:true,page,room};
  if(!replace&&history.state?.mc&&history.state.page===page&&history.state.room===room)return;
@@ -7,6 +8,7 @@ export function navigate(page,room=null,{replace=false}={}){
 export function initNavigation(render,initial='house'){
  onRoute=render;
  window.addEventListener('popstate',e=>{
+  if(backHandler?.()){history.pushState({mc:true,page:document.body.dataset.view,room:null},'');return}
   document.querySelectorAll('dialog[open]').forEach(d=>d.close());
   const route=e.state?.mc?e.state:{mc:true,page:'house',room:null};
   onRoute(route);

@@ -1,5 +1,5 @@
 import {initHomeManagement,updateManagementRoute} from './home-management.js?v=laundry-schedule-20261012-v1';
-import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=laundry-schedule-20261012-v1';
+import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=schedule-weeks-tools-20261012-v1';
 import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=compact-week-20261012-v4';
 import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=laundry-schedule-20261012-v1';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
@@ -963,7 +963,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-schedule-20261012-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=schedule-weeks-tools-20261012-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
