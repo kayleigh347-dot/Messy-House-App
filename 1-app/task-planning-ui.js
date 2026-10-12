@@ -1,11 +1,10 @@
-import {smallTasks,subtaskCandidates,addExistingSubtasks,snoozeTask,createNamedParent} from './task-planning.js';
+import {subtaskCandidates,addExistingSubtasks,snoozeTask,createNamedParent} from './task-planning.js';
 import {childrenOf,nestTask} from './subtasks.js';
-import {addToDoingNow} from './task-flow.js';
 import {localDateKey} from './calendar.js';
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
 let api;const button=(text,fn)=>{const b=el('button',text);b.type='button';b.onclick=fn;return b};
 function dialog(title){const d=document.querySelector('#taskPlanningDialog'),body=document.querySelector('#taskPlanningBody');body.replaceChildren(el('h2',title));d.showModal();return {d,body}}
-export function initTaskPlanning(handlers){api=handlers;document.querySelector('#chooseSmallTask').onclick=openSmallTask}
+export function initTaskPlanning(handlers){api=handlers}
 export function offerDraggedParent(draggedId,targetId,kind='task'){
  const key=kind==='side'?'side':'tasks',items=api.get()[key],target=items.find(t=>t.id===targetId),dragged=items.find(t=>t.id===draggedId);if(!target||!dragged)return;
  if(childrenOf(items,targetId).length){if(nestTask(items,draggedId,targetId)){api.expand(targetId);api.save()}return}
@@ -14,10 +13,6 @@ export function offerDraggedParent(draggedId,targetId,kind='task'){
  const parent=named?createNamedParent(current,draggedId,targetId,input.value,crypto.randomUUID()):nestTask(current,draggedId,targetId)&&current.find(t=>t.id===targetId);if(!parent){status.textContent=named?'Enter a parent name to continue.':'These tasks cannot be grouped.';return}api.expand(parent.id);api.save();d.close()};
  body.append(el('p','Would you like a new named parent containing both tasks?'),el('strong',target.text+' + '+dragged.text),label,button('Create named parent',()=>apply(true)),button('Keep existing task as parent',()=>apply(false)),status);input.focus();
 }
-export function openSmallTask(){const {d,body}=dialog('Choose a small task'),form=el('div'),minutes=el('select'),effort=el('select'),suggestion=el('div'),status=el('p');status.setAttribute('role','status');
- for(const n of [5,10,15,20,30])minutes.append(new Option(n+' minutes or less',n));minutes.value='10';minutes.setAttribute('aria-label','Available time');for(const [value,name] of [['low','Low effort'],['','Any effort']])effort.append(new Option(name,value));effort.setAttribute('aria-label','Effort');form.className='planning-filters';form.append(minutes,effort);body.append(form,suggestion,status);let currentId,index=0;
- const draw=()=>{const items=smallTasks(api.get(),{minutes:Number(minutes.value),effort:effort.value,actorId:api.actor().id});suggestion.replaceChildren();const task=items[index%items.length];currentId=task?.id;status.textContent=items.length?`${items.length} matching ${items.length===1?'task':'tasks'}`:'No matching tasks. Add an estimated time or low effort in task editing.';add.disabled=!task;another.disabled=items.length<2;if(task){suggestion.append(el('h3',task.text),el('p',[task.area,task.estimatedMinutes?task.estimatedMinutes+' minutes':'',task.effort?task.effort+' effort':''].filter(Boolean).join(' · ')))}};
- const another=button('Choose another',()=>{index++;draw()}),add=button('Add to Doing Now',()=>{const task=smallTasks(api.get(),{minutes:Number(minutes.value),effort:effort.value,actorId:api.actor().id}).find(t=>t.id===currentId);if(!task){draw();return}addToDoingNow(task,api.get().tasks);api.save();d.close();api.toast('Added '+task.text+' to Doing Now.')});body.append(another,add);minutes.onchange=effort.onchange=()=>{index=0;draw()};draw();minutes.focus();}
 export function openExistingSubtasks(parentId,kind='task'){
  const key=kind==='side'?'side':'tasks',state=api.get(),parent=state[key].find(t=>t.id===parentId);if(!parent)return;
  const {d,body}=dialog('Add existing tasks as subtasks'),originalParent=JSON.stringify(parent),originals=new Map(state[key].map(t=>[t.id,JSON.stringify(t)])),selected=new Set(),search=el('input'),room=el('select'),list=el('div'),count=el('output'),notice=el('p'),confirm=button('Add selected tasks',()=>{

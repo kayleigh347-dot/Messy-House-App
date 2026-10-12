@@ -12,7 +12,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=laundry-uniform-20261010-v2';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=review-20261011-v3';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=issues-2-20261012-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -24,7 +24,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=review-20261011-v3";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=issues-2-20261012-v1";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=new-tasks-first-20261010-v1";
 
@@ -77,7 +77,7 @@ for(const tab of $$('[data-settings-tab]'))tab.onclick=()=>settingsTab(tab.datas
 function remember(){localStorage.setItem(M,JSON.stringify(meta))}
 const expandedSubtasks=new Set();
 let lastDeleted=null;
-function renderUndoDeleted(){for(const page of document.querySelectorAll('.page,#roomDetail')){let holder=page.querySelector(':scope > .undo-deleted');if(!holder){holder=document.createElement('div');holder.className='undo-deleted';page.append(holder)}holder.replaceChildren();holder.hidden=!lastDeleted;if(!lastDeleted)continue;const label=document.createElement('span'),undo=document.createElement('button');label.textContent=`Deleted “${lastDeleted.items[0]?.text||'task'}”`;undo.textContent='Undo deleted';undo.onclick=()=>{const target=lastDeleted.kind==='side'?st.side:st.tasks;for(const item of lastDeleted.items)if(!target.some(t=>t.id===item.id))target.push(item);lastDeleted=null;changed()};holder.append(label,undo)}}
+function renderUndoDeleted(){for(const page of document.querySelectorAll('#now,#side,#doing,#roomDetail,#recurring')){let holder=page.querySelector(':scope > .undo-deleted');if(!holder){holder=document.createElement('div');holder.className='undo-deleted';page.append(holder)}holder.replaceChildren();holder.hidden=!lastDeleted;if(!lastDeleted)continue;const label=document.createElement('span'),undo=document.createElement('button');label.textContent=`Deleted “${lastDeleted.items[0]?.text||'task'}”`;undo.textContent='Undo deleted';undo.onclick=()=>{const target=lastDeleted.kind==='side'?st.side:st.tasks;for(const item of lastDeleted.items)if(!target.some(t=>t.id===item.id))target.push(item);lastDeleted=null;changed()};holder.append(label,undo)}}
 function rememberSubtaskExpansion(){for(const details of document.querySelectorAll('.subtasks')){const id=details.closest('.task')?.dataset.taskId;if(!id)continue;if(details.open)expandedSubtasks.add(id);else expandedSubtasks.delete(id)}}
 let laundryReminderController;
 function changed(){st=normalize(st);
@@ -231,7 +231,7 @@ function win(t,kind,at=iso(),actor=currentActor(),details={}){const record={...c
 }
 function finish(t,kind,actor=currentActor(),silent=false){t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return false;
  actor=st.householdPeople.find(p=>p.id===actor?.id&&p.id!=='local-device');if(!actor){if(!silent){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete tasks and keep your points.');}return false}
-const items=kind==='side'?st.side:st.tasks,childIds=descendants(items,t.id).reverse().map(child=>child.id);for(const childId of childIds){const childItems=kind==='side'?st.side:st.tasks,child=childItems.find(item=>item.id===childId);if(child&&!child.done)finish(child,kind,actor,true)}t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return true;
+const items=kind==='side'?st.side:st.tasks,childIds=descendants(items,t.id).reverse().map(child=>child.id);for(const childId of childIds){const childItems=kind==='side'?st.side:st.tasks,child=childItems.find(item=>item.id===childId);if(child&&!child.done)finish(child,kind,actor,true)}t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done){if(!silent)changed();return true;}
 const roomId=t.roomId,fromMood=roomId&&roomMess(st,roomId).state;
 // Capture any overdue growth before removing this task's contribution.
 const messRoom=st.rooms?.find(room=>room.id===roomId);
@@ -244,9 +244,10 @@ let next=null;if(kind==="task"&&!t.parentId&&t.recurrence){next=scheduleNext(t,n
 if(next&&!st.tasks.some(x=>x.id===next.id)){next.order=Math.max(-1,...st.tasks.map(x=>x.order))+1;
 st.tasks.push(next,...repeatChildren(st.tasks,t,next))}}if(kind==="task"&&st.current===t.id)st.current=null;
 captureCompletion(t,completedAt,record.id,next?.id||null,previous);
-changed();
 const parentId=t.parentId;
 if(parentId){const currentItems=kind==='side'?st.side:st.tasks,parent=currentItems.find(item=>item.id===parentId),siblings=currentItems.filter(item=>item.parentId===parentId);if(parent&&!parent.done&&siblings.length&&siblings.every(item=>item.done))finish(parent,kind,actor,true)}
+// Save and render once for the entire parent/subtask completion.
+if(!silent)changed();
 if(!silent&&roomId)notifyCompanionTaskCompleted({id:t.id,roomId,fromMood,toMood:roomMess(st,roomId).state,kind:kind==="side"?"sidequest":"task"});
 if(!silent&&actor.id===currentActor().id){const earned=rewardProgress(st).earned;if(earned>before)featureToast("A new mystery joined your shelf! "+prizes[st.rewards.at(-1)?.prizeIndex||0].treat);else celebrate("Task complete — "+rewardProgress(st).remaining+" more to your next mystery.")}return true}
 $("#unlockOpen").onclick=()=>{$("#mysteryUnlocked").close();
@@ -296,7 +297,7 @@ strong.textContent=t.text;strong.title=t.text;
 let meta=document.createElement("span");
 meta.className="meta";
 meta.textContent=(t.area||'General')+(overdue?' · Overdue by '+(Date.now()-deadline<86400000?Math.max(1,Math.floor((Date.now()-deadline)/3600000))+'h':Math.floor((Date.now()-deadline)/86400000)+' days'):'')+' · '+(st.householdPeople.find(person=>person.id===t.assignedTo)?.name||t.assignedToName||'Anyone');
-const heading=document.createElement("div");heading.className="task-heading";strong.tabIndex=0;strong.setAttribute('role','button');strong.setAttribute('aria-label',(t.parentId&&!childrenOf(kind==='side'?st.side:st.tasks,t.id).length?'Subtask options: ':'Expand subtasks: ')+t.text);const toggleCompactCard=()=>{const panel=a.querySelector(':scope > .body > .task-secondary-actions > details.subtasks');if(!panel){if(t.parentId){const options=a.querySelector('.task-options');options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)}return;}panel.open=!panel.open;a.classList.toggle('compact-expanded',panel.open);panel.open?expandedSubtasks.add(t.id):expandedSubtasks.delete(t.id);if(!panel.open)a.scrollIntoView({block:'start',behavior:'smooth'})};strong.onclick=toggleCompactCard;strong.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCompactCard()}};heading.append(strong);const children=childrenOf(kind==='side'?st.side:st.tasks,t.id);if(children.length){a.classList.add('has-subtask-counter');const count=document.createElement('span');count.className='subtask-progress';count.textContent=`${children.filter(child=>child.done).length}/${children.length}`;heading.append(count)}const arrow=document.createElement('span');arrow.className='subtask-chevron';arrow.setAttribute('aria-hidden','true');arrow.textContent='⌄';if(children.length)heading.append(arrow);check.classList.add('task-complete');body.append(heading,meta);if(kind==='side')appendItemImage(body,t,()=>st.side.find(item=>item.id===t.id),changed,{editable:false});
+const heading=document.createElement("div");heading.className="task-heading";strong.tabIndex=0;strong.setAttribute('role','button');strong.setAttribute('aria-label',(t.parentId&&!childrenOf(kind==='side'?st.side:st.tasks,t.id).length?'Subtask options: ':'Expand subtasks: ')+t.text);const toggleCompactCard=()=>{const panel=a.querySelector(':scope > .body > .task-secondary-actions > details.subtasks');if(!panel){if(t.parentId&&!document.body.classList.contains('task-compact-view')){const options=a.querySelector('.task-options');options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)}return;}panel.open=!panel.open;a.classList.toggle('compact-expanded',panel.open);panel.open?expandedSubtasks.add(t.id):expandedSubtasks.delete(t.id);if(!panel.open)a.scrollIntoView({block:'start',behavior:'smooth'})};strong.onclick=toggleCompactCard;strong.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCompactCard()}};heading.append(strong);const children=childrenOf(kind==='side'?st.side:st.tasks,t.id);if(children.length){a.classList.add('has-subtask-counter');const count=document.createElement('span');count.className='subtask-progress';count.textContent=`${children.filter(child=>child.done).length}/${children.length}`;heading.append(count)}const arrow=document.createElement('span');arrow.className='subtask-chevron';arrow.setAttribute('aria-hidden','true');arrow.textContent='⌄';if(children.length)heading.append(arrow);check.classList.add('task-complete');body.append(heading,meta);if(kind==='side')appendItemImage(body,t,()=>st.side.find(item=>item.id===t.id),changed,{editable:false});
 if(t.notes){const details=document.createElement("details"),summary=document.createElement("summary"),note=document.createElement("p");
 summary.textContent="Notes";
 note.textContent=t.notes;
@@ -347,7 +348,7 @@ tools.append(bottom);
 }else if(kind==="task"){
  tools.append(v2EditButton(t));
 
- const peers=ordered(st.tasks.filter(x=>x.parentId===t.parentId&&activeTask(x)&&(t.parentId||(!$("#roomDetail").classList.contains("hide")?x.roomId===t.roomId:inCategory(x)))));
+ const peers=ordered(st.tasks.filter(x=>x.parentId===t.parentId&&!x.done&&!x.archived&&(t.parentId||(!$("#roomDetail").classList.contains("hide")?x.roomId===t.roomId:inCategory(x)))));
 
  const priorityPeers=ordered(peers.filter(peer=>t.parentId||priorityOf(peer)===priorityOf(t)));
  const top=document.createElement('button');
@@ -389,9 +390,9 @@ addDragHandle(a,t,kind,tools,context);
 if(kind==='task'){const side=document.createElement('button');side.textContent='Side quest';side.onclick=()=>{const family=[t,...descendants(st.tasks,t.id)],ids=new Set(family.map(x=>x.id));delete t.parentId;st.side.push(...family.map((x,i)=>({...x,type:'organisation',messImpact:'none',bucket:'now',scheduled:false,doingNow:false,order:st.side.length+i})));st.tasks=st.tasks.filter(x=>!ids.has(x.id));if(st.current===t.id)st.current=null;changed()};tools.append(side)}
 if(kind==='side')tools.prepend(v2EditButton(t));
 const quickMoves=document.createElement('div');quickMoves.className='task-quick-actions';
-const doingControl=tools.querySelector('.do-now');for(const control of [...tools.querySelectorAll('button')].filter(b=>['Top','Last'].includes(b.textContent))){control.classList.add('quick-reorder');quickMoves.append(control)}
+const doingControl=tools.querySelector('.do-now');for(const control of [...tools.querySelectorAll('button')].filter(b=>['Top','Last'].includes(b.textContent))){control.classList.add('quick-reorder');if(control.textContent==='Top')control.textContent='First';quickMoves.append(control)}
 
-const options=document.createElement('details'),summary=document.createElement('summary');options.className='task-options';summary.textContent='Edit & options';options.append(summary,tools);if(kind==='task'&&!t.parentId&&!t.pausedAt){const snooze=document.createElement('button');snooze.type='button';snooze.textContent='Snooze';snooze.onclick=()=>openSnooze(t.id);tools.append(snooze)}const secondary=document.createElement('div');secondary.className='task-secondary-actions';secondary.append(quickMoves,options);body.append(secondary);subtaskPanel(t,kind,context,secondary);if(t.parentId){const detach=document.createElement('button');detach.textContent='Make standalone';detach.onclick=()=>{detachTask(kind==='side'?st.side:st.tasks,t.id);changed()};tools.append(detach)}const footer=document.createElement('div');footer.className='task-footer';if(t.parentId)footer.append(quickMoves);if(doingControl)footer.append(doingControl);if(t.parentId){const more=document.createElement('button');more.type='button';more.className='subtask-options-toggle';more.textContent='⋯';more.setAttribute('aria-label','Options for subtask: '+t.text);more.onclick=()=>{options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)};footer.append(more)}footer.append(focus,check);body.append(footer);a.append(body);a.classList.toggle('compact-expanded',expandedSubtasks.has(t.id));a.onclick=e=>{if(a.dataset.suppressClick)return;if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form')||e.target===strong)return;toggleCompactCard()};let swipeX=0,swipeY=0;a.addEventListener('touchstart',e=>{if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form'))return;swipeX=e.touches[0].clientX;swipeY=e.touches[0].clientY},{passive:true});a.addEventListener('touchend',e=>{if(e.target.closest('.task')!==a||document.body.classList.contains('task-drag-active')||a.dataset.suppressClick||!document.body.classList.contains('task-compact-view')||!swipeX)return;const dx=e.changedTouches[0].clientX-swipeX,dy=e.changedTouches[0].clientY-swipeY;swipeX=0;if(dx>80&&Math.abs(dy)<50){e.preventDefault();finish(t,kind)}},{passive:false});
+const options=document.createElement('details'),summary=document.createElement('summary');options.className='task-options';summary.textContent='Edit & options';options.append(summary,tools);if(kind==='task'&&!t.parentId&&!t.pausedAt){const snooze=document.createElement('button');snooze.type='button';snooze.textContent='Snooze';snooze.onclick=()=>openSnooze(t.id);tools.append(snooze)}const secondary=document.createElement('div');secondary.className='task-secondary-actions';secondary.append(quickMoves,options);body.append(secondary);subtaskPanel(t,kind,context,secondary);if(t.parentId){const detach=document.createElement('button');detach.textContent='Make standalone';detach.onclick=()=>{detachTask(kind==='side'?st.side:st.tasks,t.id);changed()};tools.append(detach)}const footer=document.createElement('div');footer.className='task-footer';footer.append(quickMoves);if(doingControl)footer.append(doingControl);if(t.parentId){const more=document.createElement('button');more.type='button';more.className='subtask-options-toggle';more.textContent='⋯';more.setAttribute('aria-label','Options for subtask: '+t.text);more.onclick=()=>{options.open=!options.open;a.classList.toggle('subtask-expanded',options.open)};footer.append(more)}footer.append(focus,check);body.append(footer);a.append(body);a.classList.toggle('compact-expanded',expandedSubtasks.has(t.id));a.onclick=e=>{if(a.dataset.suppressClick)return;if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form')||e.target===strong)return;toggleCompactCard()};let swipeX=0,swipeY=0;a.addEventListener('touchstart',e=>{if(e.target.closest('.task')!==a)return;if(e.target.closest('button,input,select,textarea,summary,a,label,form'))return;swipeX=e.touches[0].clientX;swipeY=e.touches[0].clientY},{passive:true});a.addEventListener('touchend',e=>{if(e.target.closest('.task')!==a||document.body.classList.contains('task-drag-active')||a.dataset.suppressClick||!document.body.classList.contains('task-compact-view')||!swipeX)return;const dx=e.changedTouches[0].clientX-swipeX,dy=e.changedTouches[0].clientY-swipeY;swipeX=0;if(dx>80&&Math.abs(dy)<50){e.preventDefault();finish(t,kind)}},{passive:false});
 return a}
 function list(sel,arr,kind,completed=[]){let e=$(sel);
 e.innerHTML="";
@@ -517,8 +518,8 @@ function renderDoingNow(){
 
 function render(){const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
-renderDoingNow();
-renderLaundryPanel();renderLaundryTasks();
+if(!$('#doing').classList.contains('hide'))renderDoingNow();
+if(!$('#doing').classList.contains('hide')||!$('#laundryLibrary').classList.contains('hide')){renderLaundryPanel();renderLaundryTasks();}
 renderTaskNotifications();
 categoryOptions();
 personOptions();
@@ -533,10 +534,10 @@ $("#openN").textContent=r+" remaining";
 $("#bar").value=(d+r)?Math.round(d/(d+r)*100):0;
 const shownTasks=st.tasks.filter(t=>!t.parentId&&!t.done&&!t.archived&&inCategory(t));
 $('#allTaskSummary').textContent=`${shownTasks.length} unfinished tasks${categoryFilter?' in this room':''}`;
-list("#nowList",shownTasks,"task",st.tasks.filter(t=>completedToday(t,st.wins)&&inCategory(t)));
-renderSidequestTabs($('#sideTabs'),st,filter,value=>{filter=value;render()},changed,()=>st);
-list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&sidequestMatches(t,filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&sidequestMatches(t,filter)));
-renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderCalendar();colourTaskLists();renderUndoDeleted();applyListFilters();showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
+if(!$("#now").classList.contains("hide"))list("#nowList",shownTasks,"task",st.tasks.filter(t=>completedToday(t,st.wins)&&inCategory(t)));
+if(!$("#side").classList.contains("hide"))renderSidequestTabs($('#sideTabs'),st,filter,value=>{filter=value;render()},changed,()=>st);
+if(!$("#side").classList.contains("hide"))list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&sidequestMatches(t,filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&sidequestMatches(t,filter)));
+if(!$('#wins').classList.contains('hide'))renderStats(st,categoryFilter,personFilter,changed);renderFeatures();if(!$('#calendar').classList.contains('hide'))renderCalendar();colourTaskLists();renderUndoDeleted();applyListFilters();if(!$('#doing').classList.contains('hide'))showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
 
 function renderHousehold(){
  $('#scoreboardHeading').textContent='Household members · '+$('#statsPeriod').selectedOptions[0].textContent;
@@ -711,6 +712,7 @@ if(page==='preferences')settingsTab('general');
 if(page==='other'){markActivitySeen('shopping');renderHousehold();showOtherView(otherView)}else if(page==='notes'){markActivitySeen('notes');renderHousehold()}else if(page==='calendar'){renderCalendar()}else if(page==='manualSchedule'){renderFeatures()}
 localStorage.setItem('mc-view-v2',page);
 showRoom(page==='house'&&st.rooms.some(r=>r.id===room)?room:null);
+render();
 window.scrollTo({top:0,behavior:'instant'})}
 $$("nav button[data-tab]").forEach(b=>b.onclick=()=>{if(b.dataset.tab==='doing')showDoingTab('mine');if(['wins','data'].includes(b.dataset.tab))sessionStorage.setItem('mc-data-tab','overview');navigate(b.dataset.tab);if(['wins','data'].includes(b.dataset.tab))renderStats(st,categoryFilter,personFilter,changed)});
 $$(".filters button").forEach(b=>b.onclick=()=>{$$(".filters button").forEach(x=>x.classList.remove("on"));
@@ -939,9 +941,8 @@ initReviewUI({get:()=>st,save:changed});
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=review-20261011-v3").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=issues-2-20261012-v1").catch(console.error);
 updateSignInUI(false);render();
-renderCalendar();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
 storageStatus();if(criticalStorageProblem())$('#storageRecovery').showModal();else connect();

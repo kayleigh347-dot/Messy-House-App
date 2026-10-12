@@ -26,7 +26,7 @@ export function initFeatures(handlers){api=handlers;$('#simpleSettings').onclick
  $('#taskUpload').onchange=readUpload;$('#applyImport').onclick=applyImport;$('#undoImport').onclick=undoImport;
  initTimer({actor:api.actor,dialog:showDialog,toast:featureToast});
 }
-export function renderFeatures(){if(!api)return;renderRecurring();if(!$('#manualSchedule').classList.contains('hide'))renderManualSchedule();tickTimer()}
+export function renderFeatures(){if(!api)return;if(!$('#recurring').classList.contains('hide'))renderRecurring();if(!$('#manualSchedule').classList.contains('hide'))renderManualSchedule();tickTimer()}
 function showDialog(title){const body=$('#featureDialogBody');body.replaceChildren(el('h2',title));$('#featureDialog').showModal();return body}
 function renderRecurring(){
  const root=$('#recurringList'),select=$('#recurringRoom'),state=api.get(),selected=select.value;

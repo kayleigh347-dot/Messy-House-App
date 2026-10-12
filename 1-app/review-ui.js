@@ -7,6 +7,12 @@ let api;const controls=new Map();
 export function initReviewUI(handlers){api=handlers;
  for(const id of ['nowList','sideList','doingList','attentionList','recurringList','templateList','roomTasks','laundryTasks','laundryTemplateList','laundryScheduleList','shoppingList','errandList','manualScheduleChoices']){
   const root=document.getElementById(id);if(!root)continue;
+  if(id==='roomTasks'){
+   const query=document.getElementById('roomSearchInput'),toggle=document.getElementById('roomSearchToggle'),wrap=document.getElementById('roomTextSearch');
+   controls.set(id,{query,wrap});query.addEventListener('input',applyListFilters);
+   toggle.onclick=()=>{wrap.hidden=!wrap.hidden;toggle.setAttribute('aria-expanded',String(!wrap.hidden));if(!wrap.hidden)query.focus();else{query.value='';applyListFilters()}};
+   continue;
+  }
   const wrap=el('div');wrap.className='list-search-controls';wrap.dataset.listFor=id;const details=el('details'),summary=el('summary','Search & filters'),fields=el('div');fields.className='list-search-fields';
   const query=el('input');query.type='search';query.placeholder='Search tasks';query.setAttribute('aria-label','Search '+(id==='templateList'?'reusable tasks':id==='roomTasks'?'this room':'tasks'));
   const timing=el('select');timing.setAttribute('aria-label','Task dates');for(const [value,name] of Object.entries(timingNames))timing.append(new Option(name,value));if(id.toLowerCase().includes('template'))timing.hidden=true;timing.value=['nowList','roomTasks'].includes(id)?'active':'all';
@@ -19,16 +25,16 @@ export function initReviewUI(handlers){api=handlers;
  document.addEventListener('mc-lists-rendered',applyListFilters);
  document.getElementById('openDuplicateReview').onclick=()=>{renderRepeatedTasks();document.getElementById('duplicateReview').showModal()};
 }
-export function applyListFilters(){if(!api)return;const state=api.get();
- for(const [id,control] of controls){const root=document.getElementById(id);root.previousElementSibling.hidden=root.hidden;const selected=control.person.value;control.person.replaceChildren(new Option('All people',''),new Option('Unassigned','anyone'));for(const p of state.householdPeople)control.person.append(new Option(displayPersonName(p),p.id));control.person.value=selected;
-  const options={query:control.query.value,timing:control.timing.value,person:control.person.value,priority:control.priority.value};
+export function applyListFilters(){if(!api)return;const state=api.get(),indexes=new Map();const indexed=key=>{if(!indexes.has(key))indexes.set(key,new Map((state[key]||[]).map(task=>[task.id,task])));return indexes.get(key)};
+ for(const [id,control] of controls){const root=document.getElementById(id);if(root.closest('.page')?.classList.contains('hide'))continue;if(control.wrap){document.getElementById('roomSearchToggle').hidden=root.hidden;if(root.hidden)control.wrap.hidden=true;}else root.previousElementSibling.hidden=root.hidden;if(control.person){const selected=control.person.value;control.person.replaceChildren(new Option('All people',''),new Option('Unassigned','anyone'));for(const p of state.householdPeople)control.person.append(new Option(displayPersonName(p),p.id));control.person.value=selected;}
+  const options={query:control.query.value,timing:control.timing?.value||'all',person:control.person?.value||'',priority:control.priority?.value||''};
   const cards=[...root.querySelectorAll('.task,.laundry-extra-task,.shared-item,.manual-schedule-task')].filter(card=>!card.parentElement.closest('.task'));
-  let shown=0;for(const card of cards){const collection=card.dataset.collection||(id.includes('Template')||id==='templateList'?'templates':id==='sideList'?'side':id.includes('laundry')?'settings':'tasks'),items=state[collection]||[],task=items.find(t=>t.id===card.dataset.taskId);const visible=!task||matchesTask(task,options,items);card.hidden=!visible;if(visible)shown++;
+  let shown=0;for(const card of cards){const collection=card.dataset.collection||(id.includes('Template')||id==='templateList'?'templates':id==='sideList'?'side':id.includes('laundry')?'settings':'tasks'),items=state[collection]||[],task=indexed(collection).get(card.dataset.taskId);const visible=!task||matchesTask(task,options,items);card.hidden=!visible;if(visible)shown++;
    let badge=card.querySelector(':scope > .body > .review-timing');if(task&&!['templates'].includes(collection)){if(!badge){badge=el('span');badge.className='review-timing meta';card.querySelector(':scope > .body')?.append(badge)}badge.textContent=timingNames[taskTiming(task)]||taskTiming(task)}
   }
   for(const box of root.querySelectorAll('.completed-list,.laundry-completed,.doing-task-group'))box.hidden=!!box.querySelector('.task,.laundry-extra-task')&&![...box.querySelectorAll('.task,.laundry-extra-task')].some(card=>!card.hidden);
   for(const heading of root.querySelectorAll('.task-order-heading,.template-room-heading')){let next=heading.nextElementSibling,visible=false;while(next&&!next.matches('.task-order-heading,.template-room-heading')){if(next.matches('.task')&&!next.hidden||next.querySelector?.('.task:not([hidden])'))visible=true;next=next.nextElementSibling}heading.hidden=!visible}
-  control.count.textContent=`${shown} of ${cards.length} ${id.toLowerCase().includes('template')?'templates':'tasks'}`;
+  if(control.count)control.count.textContent=`${shown} of ${cards.length} ${id.toLowerCase().includes('template')?'templates':'tasks'}`;
  }
  const side=document.querySelector('#side > .bottom-add');if(side)side.hidden=!state.side.some(t=>!t.done&&!t.archived);
 }

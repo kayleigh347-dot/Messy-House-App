@@ -150,7 +150,6 @@ body *{text-shadow:none!important;-webkit-text-stroke:0!important}body :is(butto
 .bottom-add{display:block;margin:14px 0 8px auto}.room-quick-actions{justify-content:flex-end}
 .task-compact-view :is(#nowList,#doingList,#roomTasks,#sideList,#homeOverdue) .task:not(.completed-task){padding:8px 10px!important;min-height:52px;box-shadow:none!important;cursor:pointer}
 .task-compact-view :is(#nowList,#doingList,#roomTasks,#sideList,#homeOverdue) .task .meta,
-.task-compact-view :is(#nowList,#doingList,#roomTasks,#sideList,#homeOverdue) .task .task-quick-actions,
 .task-compact-view :is(#nowList,#doingList,#roomTasks,#sideList,#homeOverdue) .task .task-options,
 .task-compact-view :is(#nowList,#doingList,#roomTasks,#sideList,#homeOverdue) .task .subtasks:not([open]){display:none!important}
 .task-compact-view :is(#nowList,#doingList,#roomTasks,#sideList,#homeOverdue) .task-heading{min-height:34px}

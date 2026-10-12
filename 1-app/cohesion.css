@@ -190,7 +190,6 @@ main .note-reply-form[hidden]{display:none!important}
 main .note-reply-form textarea{width:100%;min-width:0}
 main .item-image-thumbnail{max-width:110px}
 main .item-image-controls:empty{display:none}
-body.task-compact-view main :is(#nowList,#doingList,#roomTasks,#sideList,#homeOverdue) .task-card:is(.subtask-expanded,.compact-expanded)>.body>.task-secondary-actions>.task-options{display:block!important}
 main [hidden]{display:none!important}
 
 main input[type=file]::file-selector-button{background:#52356c;color:#f5e5ff;border:1px solid #9470ae;border-radius:6px;padding:5px 8px;font:inherit}
@@ -273,3 +272,18 @@ body[data-view=laundry] :is(.hero,.progress,.category-bar){display:none}#homeLau
 .uniform-current-step{margin:8px 0}.uniform-current-step h4{margin:6px 0}.uniform-colours{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left}.uniform-colours h5{font-size:15px;margin:8px 0}.uniform-stage{font-size:13px;margin:6px 0;overflow-wrap:anywhere}.uniform-stage-done{opacity:.7}
 
 .doing-room-group>summary{display:flex;align-items:center;gap:8px;list-style:none}.doing-room-group>summary::-webkit-details-marker{display:none}.doing-room-group>summary::before{content:'▸';flex-shrink:0}.doing-room-group[open]>summary::before{content:'▾'}.doing-room-group>summary h3{flex:1;min-width:0;margin:0}.doing-room-group>summary .meta{float:none;flex-shrink:0}.doing-room-face{display:flex;align-items:center;justify-content:center;width:44px;min-width:44px;height:44px;min-height:44px;padding:4px;border:0;border-radius:50%;background:transparent}.doing-room-face-art{display:block;width:36px;height:36px;border-radius:50%;background-repeat:no-repeat;font-size:24px;line-height:36px;text-align:center}
+
+/* Compact expansion is for subtasks only. These rules override older exceptions. */
+body.task-compact-view main .task-card>.body> :is(.meta,details,p,.item-image-thumbnail),
+body.task-compact-view main .task-card>.body>.task-secondary-actions>.task-options,
+body.task-compact-view main .task-card>.body>.task-footer> :not(.task-quick-actions):not(.task-undo):not(.task-complete),
+body.task-compact-view main .task-card>.body>.task-secondary-actions>.subtasks> :not(.subtask-list):not(.collapse-subtasks){display:none!important}
+body.task-compact-view main .task-card>.body>.task-secondary-actions>.subtasks:not([open]){display:none!important}
+body.task-compact-view main .task-card>.body>.task-footer>.task-quick-actions{display:flex!important;gap:4px}
+body.task-compact-view main .task-card>.body>.task-footer>.task-quick-actions>button{font-size:11px!important;min-height:32px!important;padding:4px 7px!important;min-width:0}
+body.task-compact-view main .task-card>.body>.task-footer{margin-top:4px;justify-content:flex-start}
+body.task-compact-view main .task-card:not(.compact-expanded):not(.subtask-expanded){content-visibility:auto;contain-intrinsic-size:auto 78px}
+main .room-search-toggle{display:grid;place-items:center;min-width:40px;padding:8px}
+#roomTextSearch input{width:100%;margin:8px 0}
+
+body.task-compact-view main .task-card>.body>.task-footer>.task-complete{margin-left:auto}
