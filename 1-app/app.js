@@ -1,5 +1,5 @@
-import {initHomeManagement,updateManagementRoute} from './home-management.js?v=laundry-schedule-20261012-v1';
-import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=schedule-weeks-tools-20261012-v1';
+import {initHomeManagement,updateManagementRoute} from './home-management.js?v=startup-navigation-20261012-v1';
+import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=startup-navigation-20261012-v1';
 import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=compact-week-20261012-v4';
 import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=laundry-schedule-20261012-v1';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
@@ -28,9 +28,9 @@ import {renderStats} from './stats-ui.js?v=streamline-20261009-v2';
 
 import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-extras.js?v=new-tasks-first-20261010-v1';
 
-import {navigate,initNavigation} from './navigation.js';
+import {navigate,initNavigation} from './navigation.js?v=startup-navigation-20261012-v1';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=laundry-schedule-20261012-v1";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=startup-navigation-20261012-v1";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=compact-week-20261012-v4";
 
@@ -963,7 +963,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=schedule-weeks-tools-20261012-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=startup-navigation-20261012-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");

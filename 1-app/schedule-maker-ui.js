@@ -1,6 +1,6 @@
 import {roomCategories,roomCategory,roomTaskDraft,makeSchedulePreview,applySchedulePreview,catchUpTasks} from './schedule-maker.js?v=laundry-schedule-20261012-v1';
 import {toolsPicker} from './needed-tools.js';
-import {setBackHandler} from './navigation.js';
+import {setBackHandler} from './navigation.js?v=startup-navigation-20261012-v1';
 import {downloadJSON} from './safe-storage.js';
 import {calendarSettings} from './calendar-planner.js';
 import {localDateKey} from './calendar.js';

@@ -12,7 +12,7 @@ import {characterLine} from './personalities.js';
 import {messPhrase,cleanPercent,isSparkling,barState} from './mess-phrase.js';
 import {createReusable,saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=new-tasks-first-20261010-v1';
 import {activeTask,completedToday,roomActiveTasks} from './task-flow.js?v=tools-20261012-v1';
-import {navigate} from './navigation.js';
+import {navigate} from './navigation.js?v=startup-navigation-20261012-v1';
 import {messPieces,renderRoomMess} from './room-mess.js';
 import {displayPersonName} from './completion-history.js?v=tools-20261012-v1';
 import {updateCompanion,leaveCompanion} from './room-companion.js?v=mobile-1';

@@ -1,4 +1,4 @@
-import {navigate} from './navigation.js';
+import {navigate} from './navigation.js?v=startup-navigation-20261012-v1';
 import {commonTools,openToolsNeeded} from './needed-tools.js';
 import {doingNowTasks} from './task-flow.js';
 let api;
