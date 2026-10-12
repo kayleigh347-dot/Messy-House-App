@@ -1,6 +1,6 @@
 import {initHomeManagement,updateManagementRoute} from './home-management.js?v=startup-navigation-20261012-v1';
 import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=startup-navigation-20261012-v1';
-import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=compact-week-20261012-v4';
+import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=calendar-recurring-20261012-v1';
 import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=laundry-schedule-20261012-v1';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
 import {laundryDoingSteps} from './laundry.js?v=laundry-schedule-20261012-v1';
@@ -645,8 +645,8 @@ $('#calendarRoomFilter').onchange=renderCalendar;
 
 $('#displayNameForm').onsubmit=e=>{e.preventDefault();if(!signedIn||!setDisplayName(st,currentActor(),$('#displayName').value)){ $('#displayNameStatus').textContent='Enter a name (up to 60 characters) while signed in.';return}meta.actor=currentActor();remember();$('#displayNameStatus').textContent='Your household name is saved.';changed()};
 $('#connectShortcut').onclick=()=>{showPage('preferences');settingsTab('account')};$('#closeSettings').onclick=()=>showPage('house');
-$('#calendarView').value=localStorage.getItem('tidy-calendar-view')||'week';$('#calendarRecurring').checked=localStorage.getItem('mc-calendar-recurring')!=='off';$('#calendarSetDay').checked=localStorage.getItem('mc-calendar-set-day')!=='off';
-$('#calendarView').onchange=()=>{localStorage.setItem('tidy-calendar-view',$('#calendarView').value);renderCalendar()};$('#calendarRecurring').onchange=()=>{localStorage.setItem('mc-calendar-recurring',$('#calendarRecurring').checked?'on':'off');renderCalendar()};$('#calendarSetDay').onchange=()=>{localStorage.setItem('mc-calendar-set-day',$('#calendarSetDay').checked?'on':'off');renderCalendar()};
+$('#calendarView').value=localStorage.getItem('tidy-calendar-view')||'week';$('#calendarRecurring').checked=localStorage.getItem('mc-calendar-recurring')!=='off';
+$('#calendarView').onchange=()=>{localStorage.setItem('tidy-calendar-view',$('#calendarView').value);renderCalendar()};$('#calendarRecurring').onchange=()=>{localStorage.setItem('mc-calendar-recurring',$('#calendarRecurring').checked?'on':'off');renderCalendar()};
 document.addEventListener('calendar-jump',e=>{calendarMonth=new Date(e.detail.date);jumpTidyCalendar(e.detail.date);renderCalendar()});
 
 
@@ -963,7 +963,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=startup-navigation-20261012-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=calendar-recurring-20261012-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");

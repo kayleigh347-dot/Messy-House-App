@@ -17,12 +17,12 @@ export function taskMinutes(state,task){
  return leaves.reduce((sum,t)=>({base:sum.base+(estimate(t)||0),unknown:sum.unknown+(estimate(t)===null?1:0)}),{base:0,unknown:0});
 }
 // A pure suggestion layer: neither due dates nor recurrence rules are rewritten.
-export function buildCalendarPlan(state,{today=localDateKey(new Date()),end=addDays(today,90)}={}){
+export function buildCalendarPlan(state,{today=localDateKey(new Date()),end=addDays(today,90),recurringOnly=false}={}){
  const settings=calendarSettings(state),entries=[],backlog=[],side=new Set((state.side||[]).map(t=>t.id));
  const overrides=new Map((state.calendarPlans||[]).map(p=>[p.id,p]));
  const sessions=new Map((state.calendarSessions||[]).map(s=>[s.id,s]));
  for(const task of state.tasks||[]){
-  if(task.parentId||task.done||task.archived||task.pausedAt||task.bucket==='side'||side.has(task.id)||isLaundryItem(task))continue;
+  if(recurringOnly&&!task.recurrence||task.parentId||task.done||task.archived||task.pausedAt||task.bucket==='side'||side.has(task.id)||isLaundryItem(task))continue;
   const raw=task.recurrence?task.nextDue||task.activeSince||task.created:task.dueDate||taskDeadline({...task,scheduled:false});
   const due=raw!=null&&Number.isFinite(new Date(raw).getTime())?localDateKey(new Date(raw)):'';
   const duration=taskMinutes(state,task),session=(state.calendarSessions||[]).find(s=>s.taskIds.includes(task.id)||s.taskIds.includes(task.seriesId));
