@@ -25,3 +25,15 @@ Chrome is signed in to GitHub. If local Git credentials or the GitHub connector 
 Before editing this repository, save its current working files to `../backup/previous-version/`, excluding `.git` and generated or downloaded folders. Build the replacement backup in a temporary folder and verify it before removing the older backup.
 
 Keep only that one previous-version backup. This repository remains the current app folder, and Git history provides access to older versions. Do not create numbered edit copies, retry copies, or another active source folder.
+
+--- Added by Kayleigh do not remove this section when updating this file ---
+- do not make unrequested without asking first, only fix/add specified changes in my prompt. Preserve all other functions.
+- create a plan and checklist before starting, to be sure everything asked for has been completed. Show me the plan, save them in there own folder canned plans (add folder path after you create it) you can start immediately after sharing it,
+- once finished create a handoff for next agent.
+- ask me if a request seems illogical or would make the app worse and explain why.
+
+## Personal task lists and backups
+
+- Preserve Kayleigh’s personal task lists, names, subtasks, schedules and ordering unless she explicitly asks to change them. App UI fixes must not rewrite, clean, replace or import her personal data.
+- Do not edit her personal task-list backup files unless explicitly asked. This is separate from the required rolling app-source backup.
+- If Kayleigh requests a backup edit and says not to upload it, return the edited backup as a downloadable file only. Do not upload, publish, import or sync it.
