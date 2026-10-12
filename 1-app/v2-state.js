@@ -1,3 +1,4 @@
+import {localDateKey} from './calendar.js';
 import {canonicalRoomName,roomNames} from './room-names.js';
 import {migrateKitchenLaundry,restoreUniformBackupSteps} from './laundry-migration.js?v=checklist-20261012-v3';
 import {settleScheduledLaundry,updateUniformCycles} from './laundry.js?v=checklist-20261012-v3';
@@ -133,6 +134,9 @@ export function freshTask(template,id,now=new Date().toISOString(),order=0){
 }
 export function validRecurrence(r){return r===null||r===undefined||((r.kind==='days'||r.kind==='weeks')&&Number.isInteger(r.every)&&r.every>=1&&r.every<=3650)||(r.kind==='weekdays'&&Array.isArray(r.days)&&r.days.length>0&&r.days.every(d=>Number.isInteger(d)&&d>=0&&d<=6))||(r.kind==='fixed-weekday'&&Number.isInteger(r.day)&&r.day>=0&&r.day<=6)}
 export function nextOccurrence(recurrence,from=new Date()){
+ const skip=new Set(recurrence?.skipDates||[]);let cursor=new Date(from),next;for(let i=0;i<=skip.size;i++){next=nextUnskippedOccurrence(recurrence,cursor);if(!next||!skip.has(localDateKey(next)))return next;cursor=new Date(next)}return null;
+}
+function nextUnskippedOccurrence(recurrence,from=new Date()){
  const d=new Date(from);d.setHours(0,0,0,0);
  if(!validRecurrence(recurrence)||!recurrence)return null;
  if(recurrence.kind==='weekdays'||recurrence.kind==='fixed-weekday'){const days=recurrence.kind==='weekdays'?recurrence.days:[recurrence.day];do{d.setDate(d.getDate()+1)}while(!days.includes(d.getDay()))}

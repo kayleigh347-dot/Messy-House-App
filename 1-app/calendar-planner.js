@@ -1,7 +1,7 @@
 import {automaticTaskMinutes} from './task-estimates.js?v=checklist-20261012-v3';
 import {localDateKey} from './calendar.js';
-import {nextOccurrence} from './v2-state.js?v=checklist-20261012-v3';
-import {descendants,childrenOf} from './subtasks.js';
+import {nextOccurrence,freshTask} from './v2-state.js?v=calendar-skip-20261012-v1';
+import {descendants,childrenOf,repeatChildren} from './subtasks.js';
 import {taskDeadline} from './task-extras.js';
 import {isLaundryItem} from './laundry.js?v=checklist-20261012-v3';
 export const defaultCalendarSettings={dailyMax:240,multiplier:2,oneRoom:true,wholeHouse:true};
@@ -73,4 +73,17 @@ export function adjustedTaskMinutes(state,task,multiplier=calendarSettings(state
  if(Number(task.presetMinutes)>0)return Math.ceil(task.presetMinutes*multiplier);
  const leaves=descendants(state.tasks,task.id).filter(t=>!t.archived&&!t.pausedAt&&!childrenOf(state.tasks,t.id).length);
  return leaves.length?leaves.reduce((n,t)=>n+Math.ceil(automaticTaskMinutes(state,t)*(own(t)?1:multiplier)),0):Math.ceil(automaticTaskMinutes(state,task)*(own(task)?1:multiplier));
+}
+
+export function skipCalendarOccurrence(state,entry,now=new Date()){
+ const task=state.tasks.find(t=>t.id===entry.taskId);if(!task||task.done||task.archived||task.pausedAt||task.parentId||!task.recurrence||!validDate(entry.dueDate))throw Error('This recurring occurrence changed. Refresh the calendar.');
+ const due=localDateKey(task.nextDue||task.activeSince||task.created),recurrence=structuredClone(task.recurrence);if(entry.id!==task.id+'@'+entry.dueDate||entry.dueDate<due||(recurrence.skipDates||[]).includes(entry.dueDate))throw Error('This occurrence is no longer available.');
+ let cursor=due;for(let i=0;cursor<entry.dueDate&&i<20000;i++){const next=nextOccurrence(recurrence,new Date(cursor+'T12:00:00'));if(!next)break;cursor=localDateKey(next)}if(cursor!==entry.dueDate)throw Error('This occurrence is no longer available.');
+ recurrence.skipDates=[...new Set([...(recurrence.skipDates||[]),entry.dueDate])].sort();const at=now.toISOString();
+ if(entry.dueDate!==due){task.recurrence=recurrence;task.updatedAt=at;return null}
+ const nextDue=nextOccurrence(recurrence,new Date(due+'T12:00:00'));if(!nextDue)throw Error('The next repeat could not be scheduled.');const seriesId=task.seriesId||task.id,id='occ-'+seriesId+'-'+nextDue;if(state.tasks.some(t=>t.id===id))throw Error('The next repeat already exists. Refresh the calendar.');
+ const next={...freshTask(task,id,at,task.order),seriesId,recurringGroupId:task.recurringGroupId||seriesId,...(task.importantWhenOverdue?{importantWhenOverdue:true}:{}),...(task.lastDone?{lastDone:task.lastDone}:{}),recurrence,scheduled:Date.parse(nextDue)>+now,nextDue,activeSince:nextDue,allowanceDays:null,updatedAt:at};
+ const children=repeatChildren(state.tasks.filter(t=>!t.archived),task,next);const family=[task,...descendants(state.tasks,task.id)];for(const item of family)if(!item.done){item.archived=true;item.doingNow=false;item.skippedAt=at;item.updatedAt=at}if(family.some(t=>t.id===state.current))state.current=null;
+ state.tasks.push(next,...children);state.calendarPlans=(state.calendarPlans||[]).filter(p=>p.id!==entry.id).map(p=>p.taskId===task.id?{...p,id:p.id.replace(task.id+'@',next.id+'@'),taskId:next.id,updatedAt:at}:p);
+ for(const session of state.calendarSessions||[])if(session.taskIds.includes(task.id)){session.taskIds=[...new Set(session.taskIds.map(id=>id===task.id?seriesId:id))];session.updatedAt=at}return next;
 }

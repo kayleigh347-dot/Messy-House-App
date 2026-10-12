@@ -87,3 +87,5 @@ body:not([data-view=house]):not([data-view=calendar]) .tidy-brand{display:none}
 #calendar .tidy-view-switch{justify-content:flex-end;margin:8px 0}
 #calendar .tidy-view-switch button{flex:0 1 auto;min-width:120px;background:#7041ad!important;color:white!important}
 @media(min-width:750px){#calendar .tidy-week-strip .tidy-day-card{padding:10px 6px}#calendar .tidy-week-strip .tidy-card-date strong{font-size:16px}#calendar .tidy-week-strip .tidy-card-date small{font-size:12px}#calendar .tidy-week-strip .tidy-card-art{height:65px}#calendar .tidy-week-strip .tidy-card-art .calendar-sprite{height:60px}#calendar .tidy-week-strip .tidy-card-content>strong{font-size:13px}#calendar .tidy-week-strip .tidy-card-minutes{font-size:12px}}
+
+#calendar .tidy-month-symbols{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px;min-height:28px;margin:3px 0;font-size:18px}#calendar .tidy-month-symbols .calendar-sprite{height:24px;width:auto;max-width:28px;flex-shrink:1}#calendar .tidy-month-symbols small{font-size:10px}

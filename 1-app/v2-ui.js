@@ -16,7 +16,7 @@ import {navigate} from './navigation.js?v=startup-navigation-20261012-v1';
 import {messPieces,renderRoomMess} from './room-mess.js';
 import {displayPersonName} from './completion-history.js?v=tools-20261012-v1';
 import {updateCompanion,leaveCompanion} from './room-companion.js?v=mobile-1';
-import {placeNewTasksFirst,ordered,priorityOrdered,move,freshTask,roomMess,setRoomMessLevel} from './v2-state.js?v=checklist-20261012-v3';
+import {placeNewTasksFirst,ordered,priorityOrdered,move,freshTask,roomMess,setRoomMessLevel} from './v2-state.js?v=calendar-skip-20261012-v1';
 let getState,save,makeTaskCard,collaboration={},selectedRoom=null,roomBucket="now",roomRecurringView='list',roomRecurringMonth=new Date(),roomRecurringSelectedDay=null,roomRecurringStatus='all',roomSideFilter='all';
 let navigationDebugModule,navigationDebugImport;
 function syncNavigationDebug(scene,roomId){
