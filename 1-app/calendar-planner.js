@@ -29,7 +29,7 @@ export function buildCalendarPlan(state,{today=localDateKey(new Date()),end=addD
   let occurrence=due||'undated',count=0;
   do{
    const key=task.id+'@'+occurrence,override=overrides.get(key);
-   if(occurrence==='undated'||occurrence<=end&&(count===0||occurrence>=today)){entries.push({id:key,taskId:task.id,title:task.text,roomId:task.roomId,dueDate:occurrence==='undated'?'':occurrence,projected:count>0,baseMinutes:duration.base,minutes:Math.ceil(duration.base*settings.multiplier),unknown:duration.unknown,sessionId:session?.id||'',sessionName:session?.name||'',manual:!!override,date:override?.date||'',done:false});}
+   if(occurrence==='undated'||occurrence<=end&&(count===0||occurrence>=today)){entries.push({id:key,taskId:task.id,title:task.text,roomId:task.roomId,dueDate:occurrence==='undated'?'':occurrence,projected:count>0,baseMinutes:duration.base,minutes:settings.preserveUserTimes?adjustedTaskMinutes(state,task,settings.multiplier):Math.ceil(duration.base*settings.multiplier),unknown:duration.unknown,sessionId:session?.id||'',sessionName:session?.name||'',manual:!!override,fixed:!!task.scheduleMaker&&occurrence>=today,date:override?.date||(task.scheduleMaker&&occurrence>=today?occurrence:''),done:false});}
    if(!task.recurrence||!due)break;
    const next=nextOccurrence(task.recurrence,new Date(occurrence+'T12:00:00'));if(!next)break;
    const nextKey=localDateKey(next);if(nextKey<=occurrence)break;occurrence=nextKey;count++;
@@ -38,8 +38,8 @@ export function buildCalendarPlan(state,{today=localDateKey(new Date()),end=addD
  const loads=new Map();
  const put=e=>{const load=loads.get(e.date)||{minutes:0,rooms:new Set(),sessions:new Set(),unknown:0};load.minutes+=e.minutes;load.unknown+=e.unknown;load.rooms.add(e.roomId);load.sessions.add(e.sessionId);loads.set(e.date,load);};
  // Reserve explicit user choices first, even if they create a visible conflict.
- for(const e of entries.filter(e=>e.manual))put(e);
- const pending=entries.filter(e=>!e.manual).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')||a.roomId.localeCompare(b.roomId)||a.id.localeCompare(b.id));
+ for(const e of entries.filter(e=>e.manual||e.fixed))put(e);
+ const pending=entries.filter(e=>!e.manual&&!e.fixed).sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999')||a.roomId.localeCompare(b.roomId)||a.id.localeCompare(b.id));
  const units=new Map();
  for(const e of pending){const key=e.sessionId&&settings.wholeHouse?e.sessionId+'@'+(e.projected?e.dueDate:'current'):e.id;if(!units.has(key))units.set(key,[]);units.get(key).push(e);}
  for(const unit of units.values()){
@@ -48,6 +48,7 @@ export function buildCalendarPlan(state,{today=localDateKey(new Date()),end=addD
   const first=unit[0],whole=!!first.sessionId&&settings.wholeHouse;
   const latestDue=unit.map(e=>e.dueDate||today).sort().at(-1);let date=latestDue>today?latestDue:today,placed=false;
   for(;date<=end;date=addDays(date,1)){
+   if(settings.restDays?.includes(new Date(date+'T12:00:00').getDay()))continue;
    const load=loads.get(date),sameRoom=!load||!settings.oneRoom||([...load.rooms].every(r=>r===first.roomId)&&[...load.sessions].every(s=>!s||s===first.sessionId)),sameWhole=whole&&(!load||[...load.sessions].every(s=>s===first.sessionId));
    if((sameRoom||sameWhole)&&(!load||load.minutes+minutes<=settings.dailyMax)){for(const e of unit){e.date=date;put(e);}placed=true;break;}
   }
@@ -65,3 +66,11 @@ export function movePlannedOccurrences(state,entries,date){
  return {before,after:structuredClone(state.calendarPlans)};
 }
 export function undoPlanMove(state,undo){if(!undo||JSON.stringify(state.calendarPlans)!==JSON.stringify(undo.after))return false;state.calendarPlans=structuredClone(undo.before);return true;}
+
+export function adjustedTaskMinutes(state,task,multiplier=calendarSettings(state).multiplier){
+ const own=t=>{const template=state.templates?.find(x=>x.id===t.sourceTemplateId);return Number(t.estimatedMinutes)>0||Number(template?.estimatedMinutes)>0};
+ if(Number(task.estimatedMinutes)>0)return Math.ceil(automaticTaskMinutes(state,task));
+ if(Number(task.presetMinutes)>0)return Math.ceil(task.presetMinutes*multiplier);
+ const leaves=descendants(state.tasks,task.id).filter(t=>!t.archived&&!t.pausedAt&&!childrenOf(state.tasks,t.id).length);
+ return leaves.length?leaves.reduce((n,t)=>n+Math.ceil(automaticTaskMinutes(state,t)*(own(t)?1:multiplier)),0):Math.ceil(automaticTaskMinutes(state,task)*(own(task)?1:multiplier));
+}

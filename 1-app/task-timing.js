@@ -18,5 +18,5 @@ export function useTimingEstimate(state,recordId){
  const targets=items.filter(task=>record.collection==='tasks'?(task.id===record.taskId||(task.seriesId||task.recurringGroupId||task.id)===record.seriesId):task.id===record.taskId);
  if(record.sourceTemplateId){const template=state.templates?.find(task=>task.id===record.sourceTemplateId);if(template)targets.push(template)}
  if(record.collection==='templates')for(const task of state.tasks||[])if(!task.done&&task.sourceTemplateId===record.taskId)targets.push(task);
- for(const task of targets)task.estimatedMinutes=minutes;return targets.length;
+ for(const task of targets){task.estimatedMinutes=minutes;task.estimateSource='measured';}return targets.length;
 }

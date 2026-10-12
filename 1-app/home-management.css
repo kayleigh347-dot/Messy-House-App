@@ -1,0 +1,34 @@
+/* Main and nested folder tabs retain distinct levels on small screens. */
+.manage-home-heading{margin:0 0 1rem;min-width:0}
+.manage-home-heading h2{padding-right:2.8rem}
+.manage-home-heading .folder-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;margin:.4rem 0 0;gap:.25rem}
+.manage-home-heading .folder-tabs button{min-width:0;flex:1;white-space:nowrap;padding:.65rem .35rem;font-size:.88rem}
+.folder-tabs.nested-tabs button{background:#225f6c!important;border-color:#7acbda!important;color:#fff!important}
+.folder-tabs.nested-tabs button[aria-pressed=true]{background:#a5e6df!important;color:#122c30!important}
+.folder-tabs.nested-tabs button:nth-child(2){background:#713b5d!important;border-color:#eda5cc!important}
+.folder-tabs.nested-tabs button:nth-child(2)[aria-pressed=true]{background:#f0b9d7!important;color:#361d2e!important}
+.folder-tabs.nested-tabs button:nth-child(3){background:#635022!important;border-color:#e2c36a!important}
+.folder-tabs.nested-tabs button:nth-child(3)[aria-pressed=true]{background:#f4db9a!important;color:#352911!important}
+body[data-management]:not([data-management=""]) .manage-home-heading~h2,body[data-management]:not([data-management=""]) .settings-heading h2{font-size:1.1rem;margin:.6rem 0}
+#simpleSettings{display:grid;place-items:center;position:fixed;top:max(.65rem,env(safe-area-inset-top));right:max(.65rem,env(safe-area-inset-right));z-index:45;width:2.7rem;height:2.7rem;padding:0;font-size:1.5rem;border-radius:50%;background:#592473;color:#fff}
+#simpleSettings[hidden]{display:none!important}
+details.optional-section>summary{width:auto;max-width:100%;white-space:normal;overflow-wrap:normal;word-break:normal;display:list-item}
+.quick-flags{display:flex;flex-wrap:nowrap;gap:.45rem;align-items:center;justify-content:space-between;width:100%}
+.quick-flags .checkbox-label{display:flex;align-items:center;gap:.25rem;margin:0;font-size:.85rem;white-space:nowrap;min-width:0}
+.quick-flags input{flex:0 0 auto;width:1rem!important;height:1rem;margin:0!important}
+#openQuickMore{width:100%;margin-top:.4rem}
+#quickMoreOptions{width:min(94vw,620px);max-height:85dvh;overflow:auto}
+.tools-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.4rem}
+.tools-picker input,#neededToolsBody input{width:auto}
+.tools-picker~div{display:flex;gap:.4rem;margin:.6rem 0}.tools-picker~div input{min-width:0}
+#scheduleMakerContent>label{display:flex;flex-direction:column;gap:.4rem;margin:.7rem 0}
+#scheduleMakerContent label.checkbox-label{flex-direction:row;align-items:center}
+#scheduleMakerContent input[type=checkbox]{width:auto;flex:0 0 auto}
+.rest-day-choices{display:flex;flex-wrap:wrap;gap:.5rem}
+.maker-room-choice{padding:.35rem 0}.maker-task-choice,.maker-preview article,.catch-up-task{padding:.75rem;border:1px solid #a582c4;border-radius:.6rem;margin:.4rem 0;background:#2c1641}
+.maker-task-choice>label{margin:0}.maker-task-choice details{margin:.35rem 0 0}.maker-task-choice details label{display:flex;flex-direction:column;gap:.3rem;margin:.5rem 0}
+.maker-preview article{display:flex;flex-direction:column;gap:.3rem}.maker-preview{max-height:50dvh;overflow:auto}
+#scheduleMakerContent button{margin:.35rem .35rem .35rem 0}.catch-up-task{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}.catch-up-task strong{flex:1 1 55%}.catch-up-task small{margin-left:auto}
+#doingToolsNeeded{margin:.6rem 0}
+@media(max-width:360px){.quick-flags{gap:.2rem}.quick-flags .checkbox-label{font-size:.74rem}}
+@media(max-width:300px){.quick-flags{flex-wrap:wrap}}

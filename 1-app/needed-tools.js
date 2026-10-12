@@ -1,0 +1,14 @@
+export const commonTools=['Vacuum cleaner','Mop','Bucket','Microfibre cloth','Duster','All-purpose cleaner','Glass cleaner','Toilet brush','Scrubbing brush','Rubber gloves','Broom','Dustpan','Laundry detergent'];
+export function cleanTools(values){const unique=new Map();for(const value of Array.isArray(values)?values:[]){const text=String(value).trim().slice(0,80);if(text&&!unique.has(text.toLocaleLowerCase()))unique.set(text.toLocaleLowerCase(),text)}return [...unique.values()]}
+export function toolsNeeded(state,taskIds){
+ const items=[...(state.tasks||[]),...(state.side||[]),...(state.settings||[])],ids=new Set(taskIds),seen=new Set();let changed=true;
+ while(changed){changed=false;for(const t of items)if(ids.has(t.parentId)&&!ids.has(t.id)){ids.add(t.id);changed=true}}
+ const tools=[];for(const t of items)if(ids.has(t.id)&&!t.done&&!t.archived&&!seen.has(t.id)){seen.add(t.id);tools.push(...(t.tools||[]));const template=state.templates?.find(x=>x.id===t.sourceTemplateId);if(!t.tools&&template)tools.push(...(template.tools||[]))}return cleanTools(tools);
+}
+export function toolsPicker(target,values=[]){
+ target.replaceChildren();const selected=new Set(cleanTools(values).map(t=>t.toLocaleLowerCase())),list=document.createElement('div');list.className='tools-picker';
+ const add=text=>{const label=document.createElement('label'),check=document.createElement('input');label.className='checkbox-label';check.type='checkbox';check.value=text;check.checked=selected.has(text.toLocaleLowerCase());label.append(check,document.createTextNode(text));list.append(label)};
+ for(const tool of cleanTools([...commonTools,...values]))add(tool);
+ const row=document.createElement('div'),input=document.createElement('input'),button=document.createElement('button');input.placeholder='Custom tool';input.maxLength=80;input.setAttribute('aria-label','Custom tool');button.type='button';button.textContent='Add tool';button.onclick=()=>{const text=input.value.trim();if(!text)return;const existing=[...list.querySelectorAll('input')].find(x=>x.value.toLocaleLowerCase()===text.toLocaleLowerCase());if(existing)existing.checked=true;else{selected.add(text.toLocaleLowerCase());add(text)}input.value=''};row.append(input,button);target.append(list,row);return ()=>cleanTools([...list.querySelectorAll('input:checked')].map(x=>x.value));
+}
+export function openToolsNeeded(state,ids){const d=document.getElementById('neededToolsDialog'),body=document.getElementById('neededToolsBody');body.replaceChildren();const tools=toolsNeeded(state,ids);if(!tools.length){const p=document.createElement('p');p.textContent='No tools added to these tasks yet.';body.append(p)}for(const text of tools){const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';label.className='checkbox-label';label.append(check,document.createTextNode(text));body.append(label)}d.showModal()}

@@ -1,3 +1,5 @@
+import {initHomeManagement,updateManagementRoute} from './home-management.js';
+import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js';
 import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=compact-week-20261012-v4';
 import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=compact-week-20261012-v4';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
@@ -42,7 +44,7 @@ import {ensurePerson,setDisplayName,householdScoreboard,personName,unseenActivit
 if(!crypto.randomUUID)crypto.randomUUID=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 document.addEventListener('reset',event=>{for(const section of event.target.querySelectorAll('details.optional-section'))section.open=false});
-document.addEventListener('invalid',event=>{for(let section=event.target.closest('details');section;section=section.parentElement?.closest('details'))section.open=true},true);
+document.addEventListener('invalid',event=>{const popup=event.target.closest('#quickMoreOptions');if(popup&&!popup.open)popup.showModal();for(let section=event.target.closest('details');section;section=section.parentElement?.closest('details'))section.open=true},true);
 const inputDraftKey=field=>`mc-input-draft:${field.form?.id||'form'}:${field.name||field.id}`;
 function restoreInputDrafts(){let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}for(const field of document.querySelectorAll('input[type=text],textarea'))if(!field.closest('#setup,#houseSharing')&&!field.value&&drafts[inputDraftKey(field)])field.value=drafts[inputDraftKey(field)]}
 document.addEventListener('input',event=>{const field=event.target;if(!(field instanceof HTMLInputElement||field instanceof HTMLTextAreaElement)||field.type==='password'||field.closest('#setup,#houseSharing'))return;let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}const key=inputDraftKey(field);if(field.value)drafts[key]=field.value;else delete drafts[key];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});
@@ -451,7 +453,7 @@ function renderLaundryPanel(){
   if(loads.length>1){const tabs=document.createElement('div');tabs.className='folder-tabs';tabs.setAttribute('aria-label','Laundry loads');for(const load of loads){const tab=document.createElement('button');tab.type='button';tab.textContent='Load '+load.slot;tab.setAttribute('aria-pressed',String(load.slot===selectedLaundryLoad));tab.onclick=()=>{selectedLaundryLoad=load.slot;renderLaundryPanel()};tabs.append(tab)}root.append(tabs)}
   const progress=loads.find(load=>load.slot===selectedLaundryLoad),card=document.createElement('section'),number=document.createElement('p'),title=document.createElement('h4');card.className='laundry-cycle';number.className='laundry-step-number';number.textContent=`Load ${progress.slot} · Step ${progress.index+1} of ${progress.total}`;title.textContent=progress.text;card.append(number,title);
   const actions=document.createElement('div');actions.className='laundry-load-actions';
-  for(const route of progress.needsTransfer?['dryer','rail']:[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
+  for(const route of progress.needsTransfer?(st.settings.find(x=>x.id==='laundry-load-cycle-definition')?.hasDryer===false?['rail']:['dryer','rail']):[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
   const reminder=laundryReminder(st,progress.slot);if(reminder){const text=document.createElement('p');text.className='laundry-reminder';text.textContent=reminder.due?'Washing reminder due · repeats every 30 minutes':'Washing reminder at '+new Date(reminder.nextAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});card.append(text)}
   if(loads.length===1&&progress.step.kind==='finish'){const start=document.createElement('button');start.type='button';start.textContent='＋ Start second load';start.onclick=()=>{if(startSecondLaundryLoad(st)){selectedLaundryLoad=2;changed()}};card.append(start)}
   root.append(card);
@@ -512,7 +514,7 @@ const collapsedDoingRooms=new Set();
 function renderDoingNow(){
  const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done),completed=items.filter(t=>t.done),groups=new Map();root.replaceChildren();
  const washing=laundryLoads(st).filter(load=>load.doingNow),extras=[...doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask),...laundryDoingSteps(st)],extraActive=extras.filter(task=>!task.done),extraCompleted=extras.filter(task=>task.done);
- if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · ${progress.needsTransfer?'Choose dryer or hanging rail':progress.text}`;actions.className='laundry-load-actions';for(const route of progress.needsTransfer?['dryer','rail']:[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
+ if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · ${progress.needsTransfer?'Choose dryer or hanging rail':progress.text}`;actions.className='laundry-load-actions';for(const route of progress.needsTransfer?(st.settings.find(x=>x.id==='laundry-load-cycle-definition')?.hasDryer===false?['rail']:['dryer','rail']):[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
 
  for(const task of active){const room=st.rooms.find(room=>room.id===task.roomId),key=room?.id||task.area||'General';if(!groups.has(key))groups.set(key,{room,name:room?.name||task.area||'General',tasks:[]});groups.get(key).tasks.push(task)}
  for(const [key,group] of groups){const section=document.createElement('details'),heading=document.createElement('summary'),title=document.createElement('h3'),list=document.createElement('div');section.className='doing-room-group';section.open=!collapsedDoingRooms.has(key);title.textContent=group.name;const count=document.createElement('span');count.className='meta';count.textContent=String(group.tasks.length);const face=doingRoomFace(group.room);if(face)heading.append(face);heading.append(title,count);section.append(heading,list);for(const task of group.tasks)list.append(mk(task,'task','doing'));section.ontoggle=()=>{if(!section.isConnected)return;if(section.open)collapsedDoingRooms.delete(key);else collapsedDoingRooms.add(key)};root.append(section)}
@@ -541,7 +543,7 @@ $('#allTaskSummary').textContent=`${shownTasks.length} unfinished tasks${categor
 if(!$("#now").classList.contains("hide"))list("#nowList",shownTasks,"task",st.tasks.filter(t=>completedToday(t,st.wins)&&inCategory(t)));
 if(!$("#side").classList.contains("hide"))renderSidequestTabs($('#sideTabs'),st,filter,value=>{filter=value;render()},changed,()=>st);
 if(!$("#side").classList.contains("hide"))list("#sideList",st.side.filter(t=>!t.done&&inCategory(t)&&sidequestMatches(t,filter)),"side",st.side.filter(t=>completedToday(t,st.wins)&&inCategory(t)&&sidequestMatches(t,filter)));
-if(!$('#wins').classList.contains('hide'))renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderTaskTools();if(!$('#calendar').classList.contains('hide'))renderCalendar();colourTaskLists();renderUndoDeleted();applyListFilters();if(!$('#doing').classList.contains('hide'))showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
+if(!$('#wins').classList.contains('hide'))renderStats(st,categoryFilter,personFilter,changed);renderFeatures();renderTaskTools();renderScheduleMaker();if(!$('#calendar').classList.contains('hide'))renderCalendar();colourTaskLists();renderUndoDeleted();applyListFilters();if(!$('#doing').classList.contains('hide'))showDoingTab(document.querySelector('[data-doing-tab][aria-pressed="true"]')?.dataset.doingTab||'mine')}
 
 function renderHousehold(){
  $('#scoreboardHeading').textContent='Household members · '+$('#statsPeriod').selectedOptions[0].textContent;
@@ -718,7 +720,7 @@ quickAdd(st.rooms.find(r=>r.name.toLowerCase()===$("#sideArea").value.trim().toL
 
 
 function renderRoute({page,room}){
-if(page==='data')page='wins';if(page==='later')page='now';if(!document.querySelector('nav button[data-tab="'+page+'"]'))page='house';
+if(page==='manageHome')page='library';if(page==='data')page='wins';if(page==='later')page='now';if(!document.querySelector('nav button[data-tab="'+page+'"]'))page='house';
 $$("nav button").forEach(b=>b.classList.toggle('active',b.dataset.tab===page));
 document.body.dataset.view=page;
 const categoryBar=document.querySelector('.category-bar');if(page==='wins')$('#dataFilters').append(categoryBar);else $('#categories').before(categoryBar);
@@ -728,6 +730,7 @@ if(page==='preferences')settingsTab('general');
 if(page==='other'){markActivitySeen('shopping');renderHousehold();showOtherView(otherView)}else if(page==='notes'){markActivitySeen('notes');renderHousehold()}else if(page==='calendar'){renderCalendar()}else if(page==='manualSchedule'){renderFeatures()}
 localStorage.setItem('mc-view-v2',page);
 showRoom(page==='house'&&st.rooms.some(r=>r.id===room)?room:null);
+updateManagementRoute(page,room);
 render();
 window.scrollTo({top:0,behavior:'instant'})}
 $$("nav button[data-tab]").forEach(b=>b.onclick=()=>{if(b.dataset.tab==='doing')showDoingTab('mine');if(['wins','data'].includes(b.dataset.tab))sessionStorage.setItem('mc-data-tab','overview');navigate(b.dataset.tab);if(['wins','data'].includes(b.dataset.tab))renderStats(st,categoryFilter,personFilter,changed)});
@@ -953,9 +956,11 @@ $('#backupShortcut').onclick=()=>{$('#moreMenu').close();showPage('preferences')
 $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').click()};
 
 initTaskTools({get:()=>st,save:changed,toast:featureToast});
+initHomeManagement({get:()=>st});
 initTaskPlanning({get:()=>st,save:changed,actor:currentActor,toast:featureToast,expand:id=>expandedSubtasks.add(id)});
 initReviewUI({get:()=>st,save:changed});
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
+initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
 if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=tools-20261012-v1").catch(console.error);

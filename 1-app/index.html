@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="features.css?v=tools-20261012-v1">
 <link rel="stylesheet" href="house-calendar.css?v=compact-week-20261012-v4">
 <link rel="stylesheet" href="cohesion.css?v=tools-20261012-v1">
+<link rel="stylesheet" href="home-management.css?v=home-20261012-v1">
 </head>
 <body class="dark-mode">
 <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs><filter id="character-edge-cleanup" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="erode" radius="0.65" result="inset"/><feGaussianBlur in="inset" stdDeviation="0.25" result="soft"/><feComposite in="SourceGraphic" in2="soft" operator="in"/></filter></defs></svg>
@@ -65,7 +66,7 @@
 <button data-tab="other" class="hidden-route" aria-hidden="true" tabindex="-1">Other tasks</button>
 <button data-tab="notes" class="hidden-route" aria-hidden="true" tabindex="-1">Notes</button>
 <button data-tab="laundry" class="hidden-route" aria-hidden="true" tabindex="-1">Laundry</button><button data-tab="taskTiming" class="hidden-route" aria-hidden="true" tabindex="-1">Task timing</button><button data-tab="manualSchedule" class="hidden-route">Manual schedule</button><button data-tab="laundryLibrary" class="hidden-route" aria-hidden="true" tabindex="-1">Laundry tasks</button><button data-tab="recurring" class="hidden-route">Recurring tasks</button><button data-tab="imports" class="hidden-route">Upload tasks</button><button data-tab="preferences" class="hidden-route">Preferences</button><button id="settings" hidden>Settings</button>
-<button id="moreNav">More</button>
+<button data-tab="manageHome" class="hidden-route">Manage home</button><button data-tab="scheduleMaker" class="hidden-route">Schedule maker</button><button id="moreNav">More</button>
 </nav>
 <section id="house" class="page hide">
 
@@ -144,7 +145,7 @@
 <div class="folder-tabs" aria-label="Calendar views"><button type="button" data-calendar-view="week" aria-pressed="true">Week</button><button type="button" data-calendar-view="month" aria-pressed="false">Month</button></div>
 <select id="calendarView" hidden aria-label="Calendar view"><option value="week">Weekly</option><option value="month">Monthly</option></select>
 <div class="calendar-month-toolbar"><button type="button" id="previousCalendarMonth" aria-label="Previous week">‹</button><h3 id="calendarMonthLabel" aria-live="polite"></h3><button type="button" id="nextCalendarMonth" aria-label="Next week">›</button><button type="button" id="calendarToday">Today</button></div>
-<div id="tidyCalendar"></div>
+<div id="tidyCalendar"></div><details class="optional-section"><summary>Catch up</summary><section data-catch-up></section></details>
 <details class="tidy-calendar-options"><summary>Calendar options</summary><button type="button" id="addCalendarEvent">＋ Add to calendar</button><div class="calendar-view-controls"><label class="checkbox-label"><input id="calendarRecurring" type="checkbox" checked>Recurring</label><label class="checkbox-label"><input id="calendarSetDay" type="checkbox" checked>Set day</label><label>Room<select id="calendarRoomFilter" aria-label="Room filter"><option value="">All rooms &amp; household</option></select></label></div></details>
 
 </section>
@@ -221,7 +222,7 @@
 <div id="doingList"></div>
 <div id="attentionList" hidden></div>
 <button type="button" id="doingAdd" class="add-task-main">＋ Add task</button>
-</section>
+<details class="optional-section"><summary>Catch up</summary><section data-catch-up></section></details></section>
 <section id="laundry" class="page hide"><h2>Laundry</h2><section id="laundryPanel" class="laundry-panel" aria-label="Laundry">
 <section data-uniform-cycle class="laundry-cycle uniform-cycle" aria-label="Wash uniform" hidden></section><div data-laundry-loads></div>
 <section class="laundry-other" aria-label="Other laundry tasks"><h4>Other laundry tasks</h4>
@@ -419,6 +420,7 @@
 
 </fieldset>
 </div></details>
+<details class="optional-section"><summary>Tools needed</summary><div id="editToolPicker"></div></details>
 <label id="editQuestTab" hidden>Tab<select name="questType"></select></label><div id="editTaskImage" hidden></div>
 <button>Save changes</button>
 <button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
@@ -431,7 +433,7 @@
 <label>Room<select name="room" required></select></label>
 <label data-normal-field>Task<input name="text" required maxlength="180" autocomplete="off" placeholder="A small next step…">
 </label>
-<label data-normal-field>Subtasks<textarea name="subtasks" rows="2" placeholder="One subtask per line"></textarea></label>
+<div class="quick-flags"><label class="checkbox-label" data-doing-now><input type="checkbox" name="doingNow">Doing Now</label><label class="checkbox-label"><input type="checkbox" name="important">Needs attention</label><label class="checkbox-label"><input type="checkbox" name="sidequest">Sidequest</label></div><details class="optional-section" data-normal-field><summary>Add subtask</summary><label>Subtasks<textarea name="subtasks" rows="2" placeholder="One subtask per line"></textarea></label></details>
 <datalist id="quickSuggestions" hidden></datalist>
 
 <section id="quickSavedMultiple" hidden>
@@ -440,16 +442,27 @@
 <button type="button" id="quickSavedAll">Add all available saved tasks</button>
 <p id="quickSavedEmpty" class="meta"></p><div class="saved-task-options"></div>
 </section>
-<details class="optional-section" id="quickTaskOptions"><summary>Options</summary><div class="optional-fields">
-<label data-normal-field data-task-only>Reusable tasks for this room<select name="template">
+
+
+<label id="quickImageLabel" hidden>Upload image<input name="image" type="file" accept="image/*"></label><p id="quickTaskStatus" role="status"></p>
+<div class="dialog-actions">
+<button type="submit" id="quickSubmit">Add task</button>
+<button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
+</div>
+<button type="button" id="openQuickMore">More options</button>
+</form>
+<div id="quickRecurringBody" hidden></div>
+</dialog>
+<dialog id="quickMoreOptions"><h2>More task options</h2><div class="optional-fields" id="quickTaskOptions">
+<label data-normal-field data-task-only>Reusable tasks for this room<select form="quickTaskForm" name="template">
 <option value="">Choose a reusable task…</option>
 </select>
 </label>
-<label class="checkbox-label"><input type="checkbox" name="important">Needs attention</label>
-<label>Assigned to<select name="assignee"><option value="">Anyone</option></select>
+
+<label>Assigned to<select form="quickTaskForm" name="assignee"><option value="">Anyone</option></select>
 </label>
-<input type="hidden" name="bucket" value="now">
-<label>Mess impact<select name="impact">
+<input form="quickTaskForm" type="hidden" name="bucket" value="now">
+<label>Mess impact<select form="quickTaskForm" name="impact">
 <option value="tiny">Tiny (+1% mess)</option><option value="small">Small</option>
 <option value="normal" selected>Normal</option>
 <option value="big">Big</option>
@@ -458,36 +471,27 @@
 </label>
 
 <div id="quickRepeat" hidden>
-<label>Repeat every<input name="every" type="number" min="1" max="3650" value="1">
+<label>Repeat every<input form="quickTaskForm" name="every" type="number" min="1" max="3650" value="1">
 </label>
-<label>Period<select name="period">
+<label>Period<select form="quickTaskForm" name="period">
 <option value="weeks">Weeks</option>
 <option value="days">Days</option>
 </select>
 </label>
 
 </div>
-<label id="quickSide" hidden>Tab<select name="questType">
+<label id="quickSide" hidden>Tab<select form="quickTaskForm" name="questType">
 <option value="organisation">Organisation</option>
 <option value="hobby">Hobby / craft</option>
 </select>
 </label>
 
 <label class="checkbox-label" data-normal-field data-task-only>
-<input name="allRooms" type="checkbox">All rooms · save a template in every room</label>
-<label id="quickNotifyLabel">Notify household member<select name="notifyRecipient"><option value="">No notification</option></select></label>
+<input form="quickTaskForm" name="allRooms" type="checkbox">All rooms · save a template in every room</label>
+<label id="quickNotifyLabel">Notify household member<select form="quickTaskForm" name="notifyRecipient"><option value="">No notification</option></select></label>
 
-</div></details>
 <label class="checkbox-label" data-normal-field data-task-only>
-<input name="reusable" type="checkbox">Add as a saved task</label>
-<label class="checkbox-label" data-doing-now><input type="checkbox" name="doingNow">Add to Doing Now</label><label id="quickImageLabel" hidden>Upload image<input name="image" type="file" accept="image/*"></label><p id="quickTaskStatus" role="status"></p>
-<div class="dialog-actions">
-<button type="submit" id="quickSubmit">Add task</button>
-<button type="button" autofocus onclick="this.closest('dialog').close()">Cancel</button>
-</div>
-</form>
-<div id="quickRecurringBody" hidden></div>
-</dialog>
+<input form="quickTaskForm" name="reusable" type="checkbox">Add as a saved task</label><h3>Tools needed</h3><div id="quickToolPicker"></div></div><button type="button" id="closeQuickMore">Done</button></dialog>
 <dialog id="homelessEditor" tabindex="-1">
 <h2>Homeless item</h2>
 <form id="homelessForm" class="editor">
@@ -502,11 +506,11 @@
 <dialog id="moreMenu">
 <h2>More</h2>
 <div class="more-actions">
-<button data-open="taskTiming">Task timing</button><button data-open="now">Active tasks</button><button data-open="laundry">Laundry</button><button data-open="library">Recurring &amp; reusable tasks</button><button data-open="imports">Upload tasks</button><button data-open="preferences">Settings &amp; backups</button>
+<button data-open="library">Manage home</button><button data-open="now">Active tasks</button><button data-open="laundry">Laundry</button><button data-open="imports">Backup &amp; custom tasks</button><button data-open="preferences">Settings</button>
 
 
 <button data-open="data">Task data</button>
-<button data-open="rooms">⌂ Manage rooms</button>
+
 <button data-open="rewards">✦ Mystery Shelf</button>
 <button data-open="other">☷ Household organiser</button>
 <button data-open="notes">✎ House notes</button>
@@ -520,7 +524,7 @@
 <section id="preferences" class="page hide"><div class="settings-heading"><h2>Settings</h2><button id="closeSettings" type="button">Close settings</button></div><div class="folder-tabs" aria-label="Settings tabs"><button type="button" data-settings-tab="general" aria-pressed="true">Settings</button><button type="button" data-settings-tab="account" aria-pressed="false">Account &amp; sync</button><button type="button" data-settings-tab="help" aria-pressed="false">Help</button></div><div id="generalSettings" data-settings-panel="general"><section class="settings-backups"><h3>Backup &amp; tasks</h3><p id="backupStatus" role="status"></p><button id="export">Export board backup</button>
 <label>Import board backup<input id="import" type="file" accept="application/json,.json">
 </label>
-<button data-open="imports">Upload tasks from CSV</button><button type="button" id="recoverPreviousImport" hidden>Recover pre-import board</button><button type="button" id="downloadPreviousImport" hidden>Download pre-import recovery copy</button><button type="button" id="openDuplicateReview">Review repeated tasks</button></section><details class="optional-section"><summary>Phone timer setup</summary><div id="phoneTimerSettings"></div></details><h3>View &amp; characters</h3><label class="checkbox-label"><input id="simpleView" type="checkbox">Simplified view</label><label>Character dialogue<select id="snarkLevel"><option value="off">Off</option><option value="gentle">Gentle teasing</option><option value="sharp">Extra snark</option></select></label></div><section id="helpSettings" data-settings-panel="help" hidden><h3>Help</h3><details><summary>Find your way around</summary><p>House opens your rooms. Doing Now holds the tasks you are working on. More opens task lists, recurring/reusable tasks and backups. Task Data keeps completion history.</p></details><details><summary>Tasks and subtasks</summary><p>Tap a task name to expand its steps. Swipe right to complete. Use Search &amp; filters to find overdue, today's, upcoming or undated tasks. Reset clears those filters.</p></details><details><summary>Mess level</summary><p>This measures unfinished cleaning work, not completed work. Higher means more mess. Task impact and overdue work affect it. Sidequests usually do not add mess.</p></details><details><summary>Points and Undo</summary><p>Sign in to record who completed a task and award points. Completing subtasks awards their points; their parent adds no extra point. Undo reverses a completion. Task lists show today's completions; Task Data keeps older history.</p></details><details><summary>Recurring and reusable tasks</summary><p>Recurring tasks have a schedule. Completing one creates its next occurrence. Edit its next due date or pause it in recurring options. Reusable tasks are saved templates you can add when needed. Laundry cycles have their own tab.</p></details><details><summary>Backups and recovery</summary><p>Export saves a copy. Import previews a merge: backup records replace matching IDs, while other existing records stay. A recovery copy is saved before import. Storage warnings mean changes may not survive closing the app; export them before leaving.</p></details><details><summary>Account and sharing</summary><p>Local tasks stay on this browser. Sign in on this device to sync and record household points. Use the same house on your devices. Offline changes sync when you reconnect.</p></details><details><summary>Planning a manageable task</summary><p>Use More → Task timing to measure a task. Recorded times change estimates only when you choose Use as estimate. Task times are automatic. Change a base estimate only in More → Task timing. Snooze moves the current task to tomorrow or a chosen date, keeping its repeat pattern. Select existing tasks in a parent’s subtasks to move several tasks under it.</p></details><details><summary>Phone timers</summary><p>Set up Automate for Android, or House Timer in iPhone Shortcuts, in Settings. Set timer sends the duration to your phone Clock. Check your phone: the app cannot confirm alarm delivery. Stop a phone timer in Clock. iPhone alarm delivery has not yet been tested.</p></details><details><summary>Calendar and notifications</summary><p>Calendar shows scheduled tasks, appointments and errands. Change a task's due date through its date control, or move its room on the calendar. Enable notifications in Account &amp; sync on each device.</p></details></section><section id="setup" data-settings-panel="account" class="card" hidden>
+<button data-open="imports">Upload tasks from CSV</button><button type="button" id="recoverPreviousImport" hidden>Recover pre-import board</button><button type="button" id="downloadPreviousImport" hidden>Download pre-import recovery copy</button><button type="button" id="openDuplicateReview">Review repeated tasks</button></section><details class="optional-section"><summary>Phone timer setup</summary><div id="phoneTimerSettings"></div></details><h3>View &amp; characters</h3><label class="checkbox-label"><input id="simpleView" type="checkbox">Simplified view</label><label>Character dialogue<select id="snarkLevel"><option value="off">Off</option><option value="gentle">Gentle teasing</option><option value="sharp">Extra snark</option></select></label></div><section id="helpSettings" data-settings-panel="help" hidden><h3>Help</h3><details><summary>Find your way around</summary><p>House opens your rooms. Doing Now holds the tasks you are working on. More opens Manage home, task lists and Backup &amp; custom tasks. Task Data keeps completion history.</p></details><details><summary>Tasks and subtasks</summary><p>Tap a task name to expand its steps. Swipe right to complete. Use Search &amp; filters to find overdue, today's, upcoming or undated tasks. Reset clears those filters.</p></details><details><summary>Mess level</summary><p>This measures unfinished cleaning work, not completed work. Higher means more mess. Task impact and overdue work affect it. Sidequests usually do not add mess.</p></details><details><summary>Points and Undo</summary><p>Sign in to record who completed a task and award points. Completing subtasks awards their points; their parent adds no extra point. Undo reverses a completion. Task lists show today's completions; Task Data keeps older history.</p></details><details><summary>Recurring and reusable tasks</summary><p>Recurring tasks have a schedule. Completing one creates its next occurrence. Edit its next due date or pause it in recurring options. Reusable tasks are saved templates you can add when needed. Laundry cycles have their own tab.</p></details><details><summary>Backups and recovery</summary><p>Export saves a copy. Import previews a merge: backup records replace matching IDs, while other existing records stay. A recovery copy is saved before import. Storage warnings mean changes may not survive closing the app; export them before leaving.</p></details><details><summary>Account and sharing</summary><p>Local tasks stay on this browser. Sign in on this device to sync and record household points. Use the same house on your devices. Offline changes sync when you reconnect.</p></details><details><summary>Planning a manageable task</summary><p>Use More → Manage home → Tasks → Tools/times to measure a task. Recorded times change estimates only when you choose Use as estimate. Task times are automatic. Change a base estimate only in More → Manage home → Tasks → Tools/times. Snooze moves the current task to tomorrow or a chosen date, keeping its repeat pattern. Select existing tasks in a parent’s subtasks to move several tasks under it.</p></details><details><summary>Phone timers</summary><p>Set up Automate for Android, or House Timer in iPhone Shortcuts, in Settings. Set timer sends the duration to your phone Clock. Check your phone: the app cannot confirm alarm delivery. Stop a phone timer in Clock. iPhone alarm delivery has not yet been tested.</p></details><details><summary>Calendar and notifications</summary><p>Calendar shows scheduled tasks, appointments and errands. Change a task's due date through its date control, or move its room on the calendar. Enable notifications in Account &amp; sync on each device.</p></details></section><section id="setup" data-settings-panel="account" class="card" hidden>
 <h3>Account &amp; sync</h3>
 
 
@@ -562,10 +566,12 @@
 </section>
 </section>
 <section id="manualSchedule" class="page hide" data-schedule-page><div class="settings-heading"><h2>Edit recurring schedule</h2><button id="closeManualSchedule" type="button">Back to recurring tasks</button></div><div id="manualScheduleCalendar"></div><section id="manualScheduleChoices" class="manual-schedule-choices"></section></section>
-<section id="recurring" class="page hide"><h2>Recurring &amp; reusable tasks</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="false">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="true">Recurring</button><button type="button" data-edit-tab="laundryLibrary" aria-pressed="false">Laundry</button></div><div id="recurringStatusTabs" class="folder-tabs"><button type="button" data-recurring-status="needs" aria-pressed="true">Needs done now!</button><button type="button" data-recurring-status="ready" aria-pressed="false">Ready to do</button><button type="button" data-recurring-status="later" aria-pressed="false">Not yet</button></div><button class="add-task-main" data-add-task>Add task</button><label>Room<select id="recurringRoom"><option value="">All rooms</option></select></label><details class="optional-section" id="recurringScheduleOptions"><summary>Scheduling</summary><div class="optional-fields schedule-tools"><button id="openManualSchedule">Edit schedule manually</button><button id="roomSchedule">Schedule tasks by room</button><button id="spreadTasks">Preview spread-out schedule</button><button id="pauseAll">Pause all for a holiday</button><button id="resumeAll">Resume paused tasks</button></div></details><button id="undoSchedule" disabled hidden>Undo schedule change</button><p id="recurringNotice" role="status"></p><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button></div><div id="recurringList"></div><button class="add-task-main bottom-add" data-add-task>Add task</button></section>
+<section id="recurring" class="page hide"><h2>Recurring &amp; reusable tasks</h2><div class="folder-tabs"><button type="button" data-edit-tab="library" aria-pressed="false">Reusable</button><button type="button" data-edit-tab="recurring" aria-pressed="true">Recurring</button><button type="button" data-edit-tab="laundryLibrary" aria-pressed="false">Laundry</button></div><div id="recurringStatusTabs" class="folder-tabs"><button type="button" data-recurring-status="needs" aria-pressed="true">Needs done now!</button><button type="button" data-recurring-status="ready" aria-pressed="false">Ready to do</button><button type="button" data-recurring-status="later" aria-pressed="false">Not yet</button></div><button class="add-task-main" data-add-task>Add task</button><label>Room<select id="recurringRoom"><option value="">All rooms</option></select></label><details class="optional-section" id="recurringScheduleOptions"><summary>Scheduling</summary><div class="optional-fields schedule-tools"><button id="openManualSchedule">Edit schedule manually</button><button id="roomSchedule">Schedule maker</button><button id="spreadTasks" hidden>Schedule maker</button><button id="pauseAll">Pause all for a holiday</button><button id="resumeAll">Resume paused tasks</button></div></details><button id="undoSchedule" disabled hidden>Undo schedule change</button><p id="recurringNotice" role="status"></p><div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button></div><div id="recurringList"></div><button class="add-task-main bottom-add" data-add-task>Add task</button></section>
 <section id="imports" class="page hide"><h2>Upload tasks</h2><a href="task-upload-template.csv" download>Download CSV template</a> · <a href="TASK-UPLOAD-GUIDE.md" download>Download instructions</a><label>Choose CSV file<input id="taskUpload" type="file" accept=".csv,text/csv"></label><p id="importNotice" role="status"></p><div id="importPreview"></div><button id="applyImport" disabled>Add these tasks</button><button id="undoImport" disabled>Undo last import</button></section>
 <button id="simpleSettings" type="button" aria-label="Settings, character preferences and backups" title="Settings" hidden>⚙</button>
 <div id="featureToast" role="status" aria-live="polite" hidden></div><div id="focusStatus" hidden></div>
+<section id="manageHome" class="page hide"></section><section id="scheduleMaker" class="page hide"><h2>Schedule maker</h2><button id="startScheduleMaker" type="button">Start setup</button><div id="scheduleMakerContent"></div><section data-catch-up></section></section>
+<dialog id="neededToolsDialog"><h2>Tools needed</h2><div id="neededToolsBody"></div><button type="button" onclick="this.closest('dialog').close()">Close</button></dialog>
 <section id="taskTiming" class="page hide"><h2>Task timing</h2><div id="taskTimingContent"></div></section>
 <dialog id="taskToolsDialog"><form method="dialog"><button aria-label="Close task tools">×</button></form><div id="taskToolsBody"></div></dialog>
 <dialog id="taskPlanningDialog"><div id="taskPlanningBody"></div><button type="button" onclick="this.closest('dialog').close()">Close</button></dialog>
