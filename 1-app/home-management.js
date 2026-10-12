@@ -3,7 +3,7 @@ import {commonTools,openToolsNeeded} from './needed-tools.js';
 import {doingNowTasks} from './task-flow.js';
 let api;
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n};
-const groups={library:'tasks',recurring:'tasks',taskTiming:'tasks',laundryLibrary:'tasks',manualSchedule:'schedule',scheduleMaker:'schedule',rooms:'rooms',manageHome:'tasks'};
+const groups={library:'tasks',recurring:'tasks',taskTiming:'tasks',manualSchedule:'schedule',scheduleMaker:'schedule',rooms:'rooms',manageHome:'tasks'};
 export function initHomeManagement(handlers){api=handlers;document.querySelectorAll('#roomSideTabs,#roomRecurringStatusTabs').forEach(n=>n.classList.add('nested-tabs'));
  // Reuse existing controls and handlers, keeping board import and CSV upload distinct actions.
  const backup=document.querySelector('.settings-backups');document.getElementById('imports').insertBefore(backup,document.getElementById('imports').children[1]);backup.querySelector('[data-open="imports"]').remove();document.querySelector('#imports > h2').textContent='Backup & custom tasks';
@@ -13,7 +13,8 @@ export function initHomeManagement(handlers){api=handlers;document.querySelector
   root.querySelector('#recurringStatusTabs')?.classList.add('nested-tabs');root.querySelectorAll(':scope > .folder-tabs').forEach(t=>{if(t.querySelector('[data-edit-tab]'))t.hidden=true});
  }
  document.getElementById('closeManualSchedule').hidden=true;
- const timing=document.getElementById('taskTiming'),laundry=el('details');laundry.className='optional-section';laundry.append(el('summary','Laundry editing'));for(const [text,run] of [['Edit load cycle',()=>document.getElementById('editLaundryLoadCycle').click()],['Recurring laundry & reusable cycles',()=>navigate('laundryLibrary')]]){const b=el('button',text);b.type='button';b.onclick=run;laundry.append(b)}timing.insertBefore(laundry,document.getElementById('taskTimingContent'));
+ const timing=document.getElementById('taskTiming');
+ document.querySelector('#laundryLibrary > h2').textContent='Laundry setup & editing';document.querySelectorAll('#laundryLibrary [data-edit-tab]').forEach(tab=>tab.closest('.folder-tabs').hidden=true);
  const presets=el('details');presets.className='optional-section';presets.append(el('summary','Common tools'));const tools=el('div');tools.className='tools-picker';for(const tool of commonTools)tools.append(el('span',tool));presets.append(tools);timing.insertBefore(presets,document.getElementById('taskTimingContent'));
  const button=el('button','Tools needed');button.type='button';button.id='doingToolsNeeded';button.onclick=()=>{const s=api.get();openToolsNeeded(s,[...doingNowTasks(s.tasks,s.wins),...doingNowTasks(s.settings,s.wins)].filter(t=>!t.done).map(t=>t.id))};document.getElementById('doing').insertBefore(button,document.getElementById('doing').children[1]);
 }

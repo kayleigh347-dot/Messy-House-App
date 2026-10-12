@@ -2,7 +2,7 @@ import {toolsPicker} from './needed-tools.js';
 import {localStorage,sessionStorage} from './safe-storage.js';
 import {isLaundryItem,isLaundryCycleItem,deleteLaundryItem} from './laundry.js?v=checklist-20261012-v3';
 import {nextDueDate,setNextDue} from './recurring-schedule.js?v=tools-20261012-v1';
-import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?v=checklist-20261012-v3';
+import {appendCycleStepControls,appendCycleAutoOption} from './task-tools-ui.js?v=laundry-schedule-20261012-v1';
 import {renderSidequestTabs,fillQuestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {appendItemImage,readItemImage} from './item-images.js';
 import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appendTaskGroups,colourTaskPositions} from './task-ui.js?v=tools-20261012-v1';

@@ -178,7 +178,7 @@ export function startSecondLaundryLoad(state,at=new Date().toISOString()){
 }
 export function completeLaundryLoadStep(state,slot,expectedCompleted,actor,at=new Date().toISOString(),route=null){
  const person=state.householdPeople?.find(item=>item.id===actor?.id&&item.id!=='local-device'),progress=laundryLoadProgress(state,slot);
- if(!person||!progress||progress.completed!==expectedCompleted||progress.needsTransfer&&!['rail','dryer'].includes(route))return null;
+ if(!person||!progress||progress.completed!==expectedCompleted||progress.needsTransfer&&!laundryRoutes(state).includes(route))return null;
  const sequence=progress.completed+1,taskId=`laundry-load-${slot}-${sequence}`;
  if(state.wins?.some(win=>win.id==='win-'+taskId))return null;
  const selected=progress.needsTransfer?route:progress.route,steps=laundryLoadSteps(state),nextIndex=(progress.index+1)%steps.length,nextStep=steps[nextIndex];
@@ -238,3 +238,12 @@ export function handoffUniformLaundry(state,parent,at=new Date().toISOString()){
 }
 
 export function uniformStepColour(state,step){const seen=new Set();let current=step;while(current&&!seen.has(current.id)){seen.add(current.id);if(/darks/i.test(current.text||''))return 'darks';if(/whites/i.test(current.text||''))return 'whites';current=state.settings.find(t=>t.id===current.parentId);}return '';}
+
+export function laundryRoutes(state){const setup=state.settings?.find(row=>row.id==='laundry-load-cycle-definition');return ['dryer','rail'].filter(route=>setup?.[route==='dryer'?'hasDryer':'hasRail']!==false)}
+export function saveLaundrySetup(state,{steps,hasDryer,hasRail},at=new Date().toISOString()){
+ if(typeof hasDryer!=='boolean'||typeof hasRail!=='boolean'||!hasDryer&&!hasRail)throw Error('Choose at least one drying cycle.');
+ const copy=structuredClone(state),definition=saveLaundryLoadSteps(copy,steps,at);definition.hasDryer=hasDryer;definition.hasRail=hasRail;
+ // Preserve the current load's progress and Doing Now status while changing future cycles.
+ for(const load of state.settings||[])if(/^laundry-load-\d+$/.test(load.id)){const saved=copy.settings.find(row=>row.id===load.id);if(saved){saved.completedSteps=load.completedSteps;saved.route=load.route;saved.doingNow=load.doingNow;}}
+ state.settings=copy.settings;return state.settings.find(row=>row.id===definition.id);
+}

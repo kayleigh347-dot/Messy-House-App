@@ -1,15 +1,15 @@
-import {initHomeManagement,updateManagementRoute} from './home-management.js';
-import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js';
+import {initHomeManagement,updateManagementRoute} from './home-management.js?v=laundry-schedule-20261012-v1';
+import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=laundry-schedule-20261012-v1';
 import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=compact-week-20261012-v4';
-import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=compact-week-20261012-v4';
+import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=laundry-schedule-20261012-v1';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
-import {laundryDoingSteps} from './laundry.js?v=compact-week-20261012-v4';
+import {laundryDoingSteps} from './laundry.js?v=laundry-schedule-20261012-v1';
 import {initTaskPlanning,openExistingSubtasks,openSnooze,offerDraggedParent} from './task-planning-ui.js';
 import {initReviewUI,applyListFilters} from './review-ui.js';
 import {localStorage,sessionStorage,criticalStorageProblem,downloadJSON} from './safe-storage.js';
 import {validateBackup,backupPreview} from './backup-tools.js';
 import {initLaundryReminders,laundryReminder} from './laundry-reminders.js?v=tools-20261012-v1';
-import {laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,uniformCycleSteps,uniformStepColour,uniformHangingReminder,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=compact-week-20261012-v4';
+import {laundryRoutes,laundryLoads,startSecondLaundryLoad,completeLaundryLoadStep,laundryTaskList,isLaundryCycleItem,deleteLaundryItem,undoLaundryTask,addLaundryTask,completeLaundryTask,uniformProgress,uniformHomeProgress,uniformCycleSteps,uniformStepColour,uniformHangingReminder,completeUniformStep,laundryCompletionPhrase} from './laundry.js?v=laundry-schedule-20261012-v1';
 import {renderSidequestTabs,sidequestMatches} from './sidequest-tabs.js';
 import {recurringTiming,appendTaskGroups} from './task-ui.js?v=tools-20261012-v1';
 import {appendItemImage,readItemImage} from './item-images.js';
@@ -30,7 +30,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=home-20261012-v3";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=laundry-schedule-20261012-v1";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=compact-week-20261012-v4";
 
@@ -453,7 +453,7 @@ function renderLaundryPanel(){
   if(loads.length>1){const tabs=document.createElement('div');tabs.className='folder-tabs';tabs.setAttribute('aria-label','Laundry loads');for(const load of loads){const tab=document.createElement('button');tab.type='button';tab.textContent='Load '+load.slot;tab.setAttribute('aria-pressed',String(load.slot===selectedLaundryLoad));tab.onclick=()=>{selectedLaundryLoad=load.slot;renderLaundryPanel()};tabs.append(tab)}root.append(tabs)}
   const progress=loads.find(load=>load.slot===selectedLaundryLoad),card=document.createElement('section'),number=document.createElement('p'),title=document.createElement('h4');card.className='laundry-cycle';number.className='laundry-step-number';number.textContent=`Load ${progress.slot} · Step ${progress.index+1} of ${progress.total}`;title.textContent=progress.text;card.append(number,title);
   const actions=document.createElement('div');actions.className='laundry-load-actions';
-  for(const route of progress.needsTransfer?(st.settings.find(x=>x.id==='laundry-load-cycle-definition')?.hasDryer===false?['rail']:['dryer','rail']):[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
+  for(const route of progress.needsTransfer?laundryRoutes(st):[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(actions);
   const reminder=laundryReminder(st,progress.slot);if(reminder){const text=document.createElement('p');text.className='laundry-reminder';text.textContent=reminder.due?'Washing reminder due · repeats every 30 minutes':'Washing reminder at '+new Date(reminder.nextAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});card.append(text)}
   if(loads.length===1&&progress.step.kind==='finish'){const start=document.createElement('button');start.type='button';start.textContent='＋ Start second load';start.onclick=()=>{if(startSecondLaundryLoad(st)){selectedLaundryLoad=2;changed()}};card.append(start)}
   root.append(card);
@@ -514,7 +514,7 @@ const collapsedDoingRooms=new Set();
 function renderDoingNow(){
  const root=$('#doingList'),items=doingNowTasks(st.tasks,st.wins),active=items.filter(t=>!t.done),completed=items.filter(t=>t.done),groups=new Map();root.replaceChildren();
  const washing=laundryLoads(st).filter(load=>load.doingNow),extras=[...doingNowTasks(st.settings,st.wins).filter(task=>task.laundryTask),...laundryDoingSteps(st)],extraActive=extras.filter(task=>!task.done),extraCompleted=extras.filter(task=>task.done);
- if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · ${progress.needsTransfer?'Choose dryer or hanging rail':progress.text}`;actions.className='laundry-load-actions';for(const route of progress.needsTransfer?(st.settings.find(x=>x.id==='laundry-load-cycle-definition')?.hasDryer===false?['rail']:['dryer','rail']):[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
+ if(washing.length||extraActive.length){const laundry=document.createElement('section'),heading=document.createElement('h3');laundry.className='doing-laundry';heading.textContent='Laundry';laundry.append(heading);for(const progress of washing){const card=document.createElement('section'),title=document.createElement('h4'),actions=document.createElement('div');card.className='laundry-cycle';title.textContent=`Load ${progress.slot} · ${progress.needsTransfer?'Choose dryer or hanging rail':progress.text}`;actions.className='laundry-load-actions';for(const route of progress.needsTransfer?laundryRoutes(st):[null]){const button=document.createElement('button');button.type='button';button.textContent=route==='dryer'?progress.step.dryerText:route==='rail'?progress.step.text:laundryCompletionPhrase(progress.text);button.disabled=!!laundryBusy[progress.slot];button.onclick=()=>finishLaundryLoad(progress,route);actions.append(button)}card.append(title,actions);laundry.append(card)}for(const task of extraActive)laundry.append(laundryExtraCard(task));root.append(laundry)}
 
  for(const task of active){const room=st.rooms.find(room=>room.id===task.roomId),key=room?.id||task.area||'General';if(!groups.has(key))groups.set(key,{room,name:room?.name||task.area||'General',tasks:[]});groups.get(key).tasks.push(task)}
  for(const [key,group] of groups){const section=document.createElement('details'),heading=document.createElement('summary'),title=document.createElement('h3'),list=document.createElement('div');section.className='doing-room-group';section.open=!collapsedDoingRooms.has(key);title.textContent=group.name;const count=document.createElement('span');count.className='meta';count.textContent=String(group.tasks.length);const face=doingRoomFace(group.room);if(face)heading.append(face);heading.append(title,count);section.append(heading,list);for(const task of group.tasks)list.append(mk(task,'task','doing'));section.ontoggle=()=>{if(!section.isConnected)return;if(section.open)collapsedDoingRooms.delete(key);else collapsedDoingRooms.add(key)};root.append(section)}
@@ -963,7 +963,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=home-20261012-v2").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-schedule-20261012-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");

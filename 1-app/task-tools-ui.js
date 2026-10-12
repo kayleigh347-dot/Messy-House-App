@@ -2,7 +2,7 @@ import {automaticTaskMinutes,setTaskBaseMinutes} from './task-estimates.js?v=che
 import {buildCalendarPlan,movePlannedOccurrences} from './calendar-planner.js?v=checklist-20261012-v3';
 import {localStorage} from './safe-storage.js';
 import {timingChoices,recordTaskTiming,useTimingEstimate} from './task-timing.js?v=checklist-20261012-v3';
-import {laundryLoadSteps,saveLaundryLoadSteps,addLaundryCycleStep,isLaundryItem} from './laundry.js?v=checklist-20261012-v3';
+import {laundryLoadSteps,saveLaundryLoadSteps,saveLaundrySetup,laundryRoutes,addLaundryCycleStep,isLaundryItem} from './laundry.js?v=laundry-schedule-20261012-v1';
 import {freshTask,placeNewTasksFirst} from './v2-state.js?v=checklist-20261012-v3';
 import {setNextDue} from './recurring-schedule.js';
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n},button=(text,run)=>{const n=el('button',text);n.type='button';n.onclick=run;return n};
@@ -28,13 +28,15 @@ function renderTiming(){
  for(const record of records){const row=el('article');row.className='timing-record';row.append(el('strong',record.text),el('span',timeLabel(record.milliseconds)+' · '+new Date(record.at).toLocaleDateString()));row.append(button('Use as estimate',()=>{const count=useTimingEstimate(api.get(),record.id);if(!count){api.toast('This task is no longer available. Its recorded time is kept.');return}api.save();api.toast(`Estimate set to ${Math.max(1,Math.ceil(record.milliseconds/60000))} minutes.`)}));root.append(row)}if(!records.length)root.append(el('p','No recorded times.'));
 }
 function editLoadCycle(){
- const state=api.get(),original=JSON.stringify(laundryLoadSteps(state)),draft=structuredClone(laundryLoadSteps(state)),{d,body}=dialog('Edit laundry load steps'),list=el('div'),notice=el('p');notice.setAttribute('role','status');
+ const state=api.get(),snapshot=()=>JSON.stringify({steps:laundryLoadSteps(api.get()),routes:laundryRoutes(api.get())}),original=snapshot(),draft=structuredClone(laundryLoadSteps(state)),routes=new Set(laundryRoutes(state)),{d,body}=dialog('Laundry setup & editing'),list=el('div'),notice=el('p');
+ const routeChoices=el('fieldset');routeChoices.append(el('legend','Drying cycles'));for(const [route,text] of [['dryer','Dryer cycle'],['rail','Hang on rail cycle']]){const label=el('label'),input=el('input');label.className='checkbox-label';input.type='checkbox';input.checked=routes.has(route);input.onchange=()=>{input.checked?routes.add(route):routes.delete(route);draw()};label.append(input,el('span',text));routeChoices.append(label)}
+ body.append(routeChoices,button('Use dryer and hanging rail cycles',()=>{routes.add('dryer');routes.add('rail');for(const input of routeChoices.querySelectorAll('input'))input.checked=true;draw()}));notice.setAttribute('role','status');
  const draw=()=>{list.replaceChildren();for(const [index,step] of draft.entries()){
-  const row=el('section');row.className='cycle-edit-step';const label=el('label','Step '+(index+1)),input=el('input');input.value=step.text;input.maxLength=180;input.oninput=()=>step.text=input.value;label.append(input);row.append(label);
-  if(['route','finish'].includes(step.kind)){const dryerLabel=el('label','Dryer route'),dryer=el('input');dryer.value=step.dryerText;dryer.maxLength=180;dryer.oninput=()=>step.dryerText=dryer.value;dryerLabel.append(dryer);row.append(dryerLabel)}
+  const row=el('section');row.className='cycle-edit-step';const label=el('label',step.kind==='route'?'Hang on rail step':step.kind==='finish'?'Finish rail cycle':'Step '+(index+1)),input=el('input');input.value=step.text;input.maxLength=180;input.oninput=()=>step.text=input.value;label.append(input);row.append(label);
+  if(['route','finish'].includes(step.kind)){const dryerLabel=el('label',step.kind==='route'?'Dryer step':'Finish dryer cycle'),dryer=el('input');dryer.value=step.dryerText;dryer.maxLength=180;dryer.oninput=()=>step.dryerText=dryer.value;dryerLabel.append(dryer);row.append(dryerLabel)}
   const autoLabel=el('label'),auto=el('input');autoLabel.className='checkbox-label';auto.type='checkbox';auto.checked=!!step.autoDoingNow;auto.onchange=()=>step.autoDoingNow=auto.checked;autoLabel.append(auto,el('span','Add to Doing Now when the previous step is complete'));row.append(autoLabel);
   if(step.kind==='custom')row.append(button('Remove step',()=>{draft.splice(index,1);draw()}));list.append(row);
- }};draw();body.append(list,button('Add step',()=>{draft.splice(draft.length-1,0,{id:crypto.randomUUID(),kind:'custom',text:'',autoDoingNow:false});draw()}),notice,button('Save cycle',()=>{if(JSON.stringify(laundryLoadSteps(api.get()))!==original){notice.textContent='This cycle changed elsewhere. Close and reopen it.';return}try{saveLaundryLoadSteps(api.get(),draft);d.close();api.save()}catch(error){notice.textContent=error.message}}));
+ }};draw();body.append(list,button('Add step',()=>{draft.splice(draft.length-1,0,{id:crypto.randomUUID(),kind:'custom',text:'',autoDoingNow:false});draw()}),notice,button('Save cycle',()=>{if(snapshot()!==original){notice.textContent='This cycle changed elsewhere. Close and reopen it.';return}try{saveLaundrySetup(api.get(),{steps:draft,hasDryer:routes.has('dryer'),hasRail:routes.has('rail')});d.close();api.save()}catch(error){notice.textContent=error.message}}));
 }
 export function appendCycleStepControls(parent,collection,target){
  if(!isLaundryItem(parent)||parent.done||parent.parentId||parent.parentTemplateId)return;
