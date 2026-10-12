@@ -5,6 +5,10 @@ export function activeTask(task,now=Date.now()){
  const due=Date.parse(task.nextDue||task.dueDate);
  return !(Number.isFinite(due)&&due>+now);
 }
+export function roomActiveTasks(state,roomId,now=Date.now()){
+ const sideIds=new Set((state.side||[]).map(task=>task.id).filter(Boolean));
+ return state.tasks.filter(task=>!task.parentId&&task.roomId===roomId&&task.bucket!=='side'&&!sideIds.has(task.id)&&activeTask(task,now));
+}
 const time=value=>{const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:null};
 const sameLocalDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
 

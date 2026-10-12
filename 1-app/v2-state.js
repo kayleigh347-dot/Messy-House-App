@@ -156,8 +156,34 @@ export function recurrenceLabel(t){
 }
 // Recurring occurrences contribute once when due; ordinary task allowance pressure remains capped.
 export const MESS_CONFIG={impact:{none:0,small:0.5,normal:1,big:2},overduePerDay:0.25,maxOverdueDays:14,thresholds:{clean:0.01,messy:5,disaster:14}};
+// Parents organise work; only actionable leaves contribute to a room's mess.
+export function roomMessTasks(st,roomId,now=Date.now()){
+ const sideIds=new Set((st.side||[]).map(task=>task.id).filter(Boolean)),parents=new Set(st.tasks.filter(task=>task.parentId).map(task=>task.parentId));
+ const byId=new Map(st.tasks.map(task=>[task.id,task]));
+ return st.tasks.filter(task=>{
+  if(task.roomId!==roomId||parents.has(task.id)||sideIds.has(task.id)||task.bucket==='side'||!activeTask(task,now))return false;
+  const seen=new Set([task.id]);let parent=task.parentId?byId.get(task.parentId):null;
+  while(parent){if(seen.has(parent.id)||!activeTask(parent,now))return false;seen.add(parent.id);parent=parent.parentId?byId.get(parent.parentId):null}
+  return true;
+ });
+}
+export function setRoomMessLevel(st,roomId,percent,now=Date.now()){
+ const room=st.rooms.find(item=>item.id===roomId),level=Number(percent);
+ if(!room||!Number.isFinite(level)||level<0||level>100)throw new Error('Choose a mess level between 0 and 100.');
+ room.messCalibration={percent:level,weights:roomMessTasks(st,roomId,now).map(task=>({id:task.id,weight:MESS_CONFIG.impact[task.messImpact||'normal']??1})),updatedAt:new Date(now).toISOString()};
+ return room.messCalibration;
+}
+function adjustedRoomMess(room,tasks){
+ const calibration=room?.messCalibration;
+ if(!calibration||!Number.isFinite(calibration.percent)||calibration.percent<0||calibration.percent>100||!Array.isArray(calibration.weights)||calibration.weights.some(item=>!item||typeof item.id!=='string'||!Number.isFinite(item.weight)||item.weight<0))return null;
+ const weights=new Map(calibration.weights.map(item=>[item.id,item.weight])),total=[...weights.values()].reduce((sum,weight)=>sum+weight,0);
+ let remaining=0,extra=0;
+ for(const task of tasks){if(weights.has(task.id))remaining+=weights.get(task.id);else extra+=MESS_CONFIG.impact[task.messImpact||'normal']??1}
+ const perPoint=total>0&&calibration.percent>0?calibration.percent/total:100/MESS_CONFIG.thresholds.disaster;
+ return Math.max(0,Math.min(100,(total>0?calibration.percent*remaining/total:calibration.percent)+extra*perPoint));
+}
 export function roomMess(st,roomId,now=Date.now()){
- const tasks=st.tasks.filter(t=>activeTask(t,now)&&t.roomId===roomId);
+ const tasks=roomMessTasks(st,roomId,now);
  const score=tasks.reduce((sum,t)=>{
   const weight=MESS_CONFIG.impact[t.messImpact||'normal']??1;
   if(t.recurrence){
@@ -170,7 +196,8 @@ export function roomMess(st,roomId,now=Date.now()){
  const {thresholds}=MESS_CONFIG,stored=st.rooms?.find(room=>room.id===roomId)?.messCapacity;
  const capacity=Math.max(thresholds.disaster,Number.isFinite(stored)?stored:0,score);
  const scaledScore=score/capacity*thresholds.disaster;
- return {score,capacity,percent:Math.min(100,Math.round(score/capacity*1000)/10),count:tasks.length,state:scaledScore>=thresholds.disaster?'DISASTER':scaledScore>=thresholds.messy?'MESSY':score>=thresholds.clean?'CLEAN':'SPOTLESS'};
+ const adjusted=adjustedRoomMess(st.rooms?.find(room=>room.id===roomId),tasks),percent=adjusted===null?Math.min(100,Math.round(score/capacity*1000)/10):Math.round(adjusted*10)/10;
+ return {score,capacity,percent,count:tasks.length,calibrated:adjusted!==null,state:adjusted===null?(scaledScore>=thresholds.disaster?'DISASTER':scaledScore>=thresholds.messy?'MESSY':score>=thresholds.clean?'CLEAN':'SPOTLESS'):(percent>=100?'DISASTER':percent>=thresholds.messy/thresholds.disaster*100?'MESSY':percent>0?'CLEAN':'SPOTLESS')};
 }
 
 // Also settle parents after two devices finish different final subtasks concurrently.

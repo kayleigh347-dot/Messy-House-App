@@ -8,13 +8,14 @@ import {recurringSections,recurringTiming,appendRecurringTiming,setTabLabel,appe
 import {createSymbolCalendar} from './house-calendar.js?v=tools-20261012-v1';
 import {roomArtworkFor} from './room-art.js';
 import {characterLine} from './personalities.js';
+import {messPhrase,cleanPercent,isSparkling,barState} from './mess-phrase.js';
 import {createReusable,saveReusable,deleteReusable,roomTemplates,taskDeadline,overdueTaskGroups,addSavedTasks,activeSavedTasks,removeSavedTasks,reusableSuggestionEligible} from './task-extras.js?v=new-tasks-first-20261010-v1';
-import {activeTask,completedToday} from './task-flow.js?v=tools-20261012-v1';
+import {activeTask,completedToday,roomActiveTasks} from './task-flow.js?v=tools-20261012-v1';
 import {navigate} from './navigation.js';
 import {messPieces,renderRoomMess} from './room-mess.js';
 import {displayPersonName} from './completion-history.js?v=tools-20261012-v1';
 import {updateCompanion,leaveCompanion} from './room-companion.js?v=mobile-1';
-import {placeNewTasksFirst,ordered,priorityOrdered,move,freshTask,roomMess} from './v2-state.js?v=new-tasks-first-20261010-v1';
+import {placeNewTasksFirst,ordered,priorityOrdered,move,freshTask,roomMess,setRoomMessLevel} from './v2-state.js?v=new-tasks-first-20261010-v1';
 let getState,save,makeTaskCard,collaboration={},selectedRoom=null,roomBucket="now",roomRecurringView='list',roomRecurringMonth=new Date(),roomRecurringSelectedDay=null,roomRecurringStatus='all',roomSideFilter='all';
 let navigationDebugModule,navigationDebugImport;
 function syncNavigationDebug(scene,roomId){
@@ -167,18 +168,18 @@ const positions={
  'room-hall':[12,60.025,36,18.222], 'room-kitchen':[50,60.025,44,18.222],
  'room-entrance':[22,79.319,57,16.078]
 };
-function messLabel(m){return `${m.state.charAt(0)+m.state.slice(1).toLowerCase()} · Mess level ${Math.round(m.percent)}%`}
+function messLabel(m){return messPhrase(m.percent)}
 function renderHouse(st){
  const root=document.querySelector('#houseRooms');root.replaceChildren();
- if(document.body.classList.contains('simple-view')){const list=el('div');list.className='simple-rooms';ordered(st.rooms).filter(r=>!r.archived).forEach((r,i)=>{const b=button('',()=>openRoom(r.id));b.style.setProperty('--room-hue',String(i*137.5%360));b.append(el('strong',r.name),el('span','Mess level '+Math.round(roomMess(st,r.id).percent)+'%'));list.append(b)});root.append(list);return;}
+ if(document.body.classList.contains('simple-view')){const list=el('div');list.className='simple-rooms';ordered(st.rooms).filter(r=>!r.archived).forEach((r,i)=>{const b=button('',()=>openRoom(r.id));b.style.setProperty('--room-hue',String(i*137.5%360));b.append(el('strong',r.name),el('span',messPhrase(roomMess(st,r.id).percent)));list.append(b)});root.append(list);return;}
  const scene=el('div');scene.className='house-scene';
  const img=el('img');img.src='assets/house.png';img.alt='Mission Control house. Choose a labelled room to open it.';scene.append(img);
  const other=el('div');other.className='other-rooms';
  for(const r of ordered(st.rooms).filter(r=>!r.archived)){
-  const m=roomMess(st,r.id),pos=positions[r.id];const b=button('',()=>openRoom(r.id),`Open ${r.name}, ${messLabel(m)}`);b.dataset.state=m.state;b.dataset.room=r.id;
+  const m=roomMess(st,r.id),pos=positions[r.id];const b=button('',()=>openRoom(r.id),`Open ${r.name}, ${messLabel(m)}`);b.dataset.state=m.state;b.dataset.barState=barState(m.percent,m.state);b.dataset.room=r.id;
   if(pos){
    b.className='house-hotspot';Object.assign(b.style,{left:pos[0]+'%',top:pos[1]+'%',width:pos[2]+'%',height:pos[3]+'%'});
-   const status=el('span','Mess level '+Math.round(m.percent)+'%');status.className='house-status';status.setAttribute('aria-hidden','true');const name=el('span',r.name);name.className='house-room-name';b.append(name,status);scene.append(b)
+   const status=el('span',messPhrase(m.percent));status.className='house-status';status.style.setProperty('--room-clean',cleanPercent(m.percent)+'%');if(isSparkling(m.percent))status.dataset.sparkle='true';status.setAttribute('aria-hidden','true');const name=el('span',r.name);name.className='house-room-name';b.append(name,status);scene.append(b)
   }
   else{b.append(el('strong',r.name),el('small',messLabel(m)));other.append(b)}
  }
@@ -191,7 +192,11 @@ function renderRoom(st){
  const r=st.rooms.find(r=>r.id===selectedRoom&&!r.archived);if(!r){leaveCompanion();return}
  const mess=roomMess(st,r.id);document.querySelector('#detailName').textContent=r.name;document.querySelector('#guardianName').hidden=true;
  document.querySelector('#roomSceneState').textContent=messLabel(mess);
- document.querySelector('#detailState').textContent=messLabel(mess);document.querySelector('#roomMessBar').value=mess.percent;document.querySelector('#roomMessBar').setAttribute('aria-label','Mess level: '+Math.round(mess.percent)+'%');document.querySelector('#roomMessBar').dataset.state=mess.state;
+ document.querySelector('#detailState').textContent=messLabel(mess);document.querySelector('#roomMessBar').value=cleanPercent(mess.percent);document.querySelector('#roomMessBar').setAttribute('aria-label','Room cleanliness: '+messPhrase(mess.percent));document.querySelector('#roomMessBar').dataset.state=mess.state;document.querySelector('#roomMessBar').dataset.barState=barState(mess.percent,mess.state);document.querySelector('#roomMessBar').dataset.sparkle=isSparkling(mess.percent)?'true':'false';document.querySelector('#detailState').dataset.sparkle=isSparkling(mess.percent)?'true':'false';
+ const level=document.querySelector('#roomMessLevel'),levelOutput=document.querySelector('#roomMessLevelOutput'),levelForm=document.querySelector('#roomMessLevelForm');level.value=Math.round(mess.percent);
+ const showLevel=()=>{levelOutput.value=level.value+'% mess';level.setAttribute('aria-valuetext',levelOutput.value)};showLevel();level.oninput=showLevel;
+ levelForm.onsubmit=event=>{event.preventDefault();setRoomMessLevel(getState(),r.id,level.value);save()};
+ const resetLevel=document.querySelector('#resetRoomMessLevel');resetLevel.hidden=!mess.calibrated;resetLevel.onclick=()=>{delete getState().rooms.find(room=>room.id===r.id).messCalibration;save()};
  document.querySelector('#roomMood').textContent=characterLine(st,r,mess,document.body.dataset.snark||'gentle');
  const scene=document.querySelector('#roomScene');scene.dataset.room=r.id;scene.classList.toggle('living-scene',r.id==='room-living');
  const art=document.querySelector('#guardianArea');art.dataset.state=mess.state;art.dataset.guardian=r.id;
@@ -209,7 +214,7 @@ function renderRoom(st){
  if(document.body.classList.contains('simple-view')||!document.querySelector('#roomSceneDetails').open)leaveCompanion();else updateCompanion(r.id,mess,clutter);
  document.querySelector('#roomQuickAdd').textContent=roomBucket==='homeless'?'＋ Add homeless item':roomBucket==='side'?'＋ Add sidequest':'＋ Add task';document.querySelector('#roomBottomAdd').textContent=document.querySelector('#roomQuickAdd').textContent;
  const sidequestIds=new Set(st.side.map(task=>task.id));const roomTaskItems=st.tasks.filter(task=>!sidequestIds.has(task.id)&&task.bucket!=='side');
- const groups={homeless:st.homeless.filter(t=>!t.parentId&&!t.done&&t.roomId===r.id),now:roomTaskItems.filter(t=>!t.parentId&&!t.done&&!t.archived&&t.roomId===r.id),side:st.side.filter(t=>!t.parentId&&!t.done&&t.roomId===r.id&&sidequestMatches(t,roomSideFilter)),recurring:[...new Map(roomTaskItems.filter(t=>!t.parentId&&!t.done&&!t.archived&&t.recurrence&&t.roomId===r.id).map(t=>[t.roomId+'|'+(t.recurringGroupId||t.seriesId||t.id),t])).values()]};
+ const groups={homeless:st.homeless.filter(t=>!t.parentId&&!t.done&&t.roomId===r.id),now:roomActiveTasks(st,r.id),side:st.side.filter(t=>!t.parentId&&!t.done&&t.roomId===r.id&&sidequestMatches(t,roomSideFilter)),recurring:[...new Map(roomTaskItems.filter(t=>!t.parentId&&!t.done&&!t.archived&&t.recurrence&&t.roomId===r.id).map(t=>[t.roomId+'|'+(t.recurringGroupId||t.seriesId||t.id),t])).values()]};
  const tabs=document.querySelector('#roomTabs');tabs.replaceChildren();for(const [key,name] of [['now','Tasks'],['side','Side quests'],['recurring','Recurring'],['homeless','Homeless']]){const b=setTabLabel(button(name,()=>{roomBucket=key;renderRoom(getState())}),name,groups[key].length);b.setAttribute('aria-pressed',String(roomBucket===key));tabs.append(b)}
  const sideTabs=document.querySelector('#roomSideTabs');sideTabs.hidden=roomBucket!=='side';if(roomBucket==='side')renderSidequestTabs(sideTabs,st,roomSideFilter,value=>{roomSideFilter=value;renderRoom(getState())},save,getState);
  const list=document.querySelector('#roomTasks'),calendar=document.querySelector('#roomRecurringCalendar'),views=document.querySelector('#roomRecurringViews'),statusTabs=document.querySelector('#roomRecurringStatusTabs');list.replaceChildren();views.hidden=roomBucket!=='recurring';calendar.hidden=roomBucket!=='recurring'||roomRecurringView!=='calendar';list.hidden=roomBucket==='recurring'&&roomRecurringView==='calendar';statusTabs.hidden=roomBucket!=='recurring'||roomRecurringView!=='list';const toggle=document.querySelector('#roomRecurringToggle');toggle.textContent=roomRecurringView==='calendar'?'List view':'Calendar view';toggle.setAttribute('aria-label','Switch to '+toggle.textContent.toLowerCase());toggle.onclick=()=>{roomRecurringView=roomRecurringView==='calendar'?'list':'calendar';if(roomRecurringView==='list')roomRecurringStatus='all';renderRoom(getState())};

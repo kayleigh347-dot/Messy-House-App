@@ -113,13 +113,13 @@ header h1{color:#302a21}.house-label{box-sizing:border-box}.house-hotspot{align-
 .household-activity{grid-template-columns:repeat(3,minmax(0,1fr))}.time-picker-button{width:100%;text-align:left;background:#fffdf6;border:1.5px solid #bea98e;font-size:16px;font-weight:500}.appointment-submit{grid-column:1/-1}.form-status{min-height:1.3em;margin:0 0 10px;color:#50794f;font-size:13px}.time-picker-selects{display:grid;grid-template-columns:1fr 1fr;gap:10px}.calendar-heading,.calendar-actions,.calendar-month-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px}.calendar-heading h2{margin-bottom:4px}.calendar-actions{flex-wrap:wrap}.calendar-setup{padding:12px;border:1px solid #dec4a1;background:#fcf2df}.calendar-setup label{display:grid;gap:6px;margin:10px 0}.calendar-month-toolbar{margin:18px 0 8px}.calendar-month-toolbar h3{margin:0}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid #cfb796;border-radius:14px;overflow:hidden;background:#fffaf0}.calendar-weekday{padding:8px 4px;text-align:center;background:#dce3c7;font-size:12px}.calendar-day{min-height:105px;padding:6px;border-top:1px solid #decdb3;border-right:1px solid #decdb3;overflow:hidden}.calendar-day:nth-child(7n+7){border-right:0}.calendar-date{display:block;margin-bottom:5px}.calendar-day.outside-month{opacity:.48}.calendar-day.today .calendar-date{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#50794f;color:#fff}.calendar-event{display:grid;gap:1px;margin:3px 0;padding:4px;border-radius:6px;background:#dbe9e5;font-size:10px;overflow:hidden}.calendar-event span{color:#52605b}.calendar-event strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:600px){.calendar-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(76px,1fr))}.calendar-day{min-height:90px}.calendar-heading{align-items:flex-start;flex-direction:column}.calendar-actions{width:100%}.calendar-actions button{flex:1}.household-activity{grid-template-columns:1fr}}
 
 /* One palette for every mess indicator. */
-[data-state=SPOTLESS]{--mess-colour:#25834b;--mess-tint:#dcefe1}
-[data-state=CLEAN]{--mess-colour:#2469b0;--mess-tint:#dceafa}
-[data-state=MESSY]{--mess-colour:#c5680c;--mess-tint:#ffe3bc}
-[data-state=DISASTER]{--mess-colour:#c33333;--mess-tint:#fbd8d8}
+[data-state=SPOTLESS]{--mess-fill:#94c6a5;--mess-colour:#25834b;--mess-tint:#dcefe1}
+[data-state=CLEAN]{--mess-fill:#8bb5de;--mess-colour:#2469b0;--mess-tint:#dceafa}
+[data-state=MESSY]{--mess-fill:#e7b176;--mess-colour:#c5680c;--mess-tint:#ffe3bc}
+[data-state=DISASTER]{--mess-fill:#e79898;--mess-colour:#c33333;--mess-tint:#fbd8d8}
 .house-hotspot{flex-direction:column;align-items:center;justify-content:flex-end;gap:2px}
 .house-room-name{display:block;max-width:94%;padding:2px 4px;border-radius:4px;background:#fff0d8ed;color:#302a21;font-size:clamp(8px,1.7vw,13px);line-height:1.15;font-weight:700;text-align:center;box-sizing:border-box}
-.house-hotspot[data-state] .house-status{background:var(--mess-tint);border-color:var(--mess-colour);color:var(--mess-colour);margin-bottom:3%}
+.house-hotspot[data-state] .house-status{background:linear-gradient(to right,var(--mess-fill) 0 var(--room-clean,0%),var(--mess-tint) var(--room-clean,0%) 100%);border-color:var(--mess-colour);color:var(--mess-colour);margin-bottom:3%}
 .mess-panel progress[data-state]{accent-color:var(--mess-colour);background:var(--mess-tint);border:0;border-radius:8px;overflow:hidden}
 .mess-panel progress[data-state]::-webkit-progress-bar{background:var(--mess-tint);border-radius:8px}
 .mess-panel progress[data-state]::-webkit-progress-value{background:var(--mess-colour);border-radius:8px}
@@ -146,3 +146,14 @@ header h1{color:#302a21}.house-label{box-sizing:border-box}.house-hotspot{align-
 .living-walk-rig{position:absolute;inset:0;pointer-events:none}.living-walk-rig[hidden]{display:none}.living-rig-part{position:absolute;display:block;background-repeat:no-repeat;transform-origin:50% 8%;will-change:transform}
 /* Keep bedroom loading gaps in the app's dark theme. */
 #roomScene[data-room=room-master].supplied-room-art,#roomScene[data-room=room-penny].supplied-room-art{background-color:#1A0430}
+
+/* Mess phrases: allow the short phrase to wrap inside the small house-map pill. */
+.house-status{white-space:normal;text-align:center;line-height:1.1;overflow-wrap:anywhere}
+/* Sparkle at 95% clean and above. */
+@keyframes mess-sparkle{0%,100%{box-shadow:0 0 2px 0 #fff9}50%{box-shadow:0 0 9px 2px #ffe9a6,0 0 3px 1px #fff}}
+@keyframes mess-sparkle-text{0%,100%{text-shadow:0 0 0 transparent}50%{text-shadow:0 0 6px #ffe9a6}}
+.house-status[data-sparkle=true],.mess-panel progress[data-sparkle=true]{animation:mess-sparkle 1.8s ease-in-out infinite}
+#detailState[data-sparkle=true]{animation:mess-sparkle-text 1.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.house-status[data-sparkle=true],.mess-panel progress[data-sparkle=true],#detailState[data-sparkle=true]{animation:none}.house-status[data-sparkle=true],.mess-panel progress[data-sparkle=true]{box-shadow:0 0 6px 1px #ffe9a6}}
+
+.room-mess-adjustment{margin:12px 14px;padding:10px 15px;border:1px solid #dec4a1;border-radius:12px}.room-mess-adjustment summary{cursor:pointer}.room-mess-adjustment form{margin-top:12px;padding:0;border:0;box-shadow:none;background:none}.room-mess-adjustment label,.mess-slider-labels{display:flex;justify-content:space-between;gap:10px}.room-mess-adjustment input[type=range]{display:block;width:100%;min-height:44px;accent-color:#a76ec3}.mess-slider-labels{font-size:12px;margin-bottom:12px}.dark-mode .room-mess-adjustment{background:#2d1643;border-color:#765096}

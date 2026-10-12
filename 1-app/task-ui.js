@@ -9,7 +9,7 @@ export function appendTaskGroups(root,tasks,makeCard){
  if(doing.length){
   const section=document.createElement('details'),title=document.createElement('summary'),list=document.createElement('div'),key='mc-doing-group:'+root.id;
   section.className='doing-task-group';title.textContent=`Doing Now (${doing.length})`;section.open=sessionStorage.getItem(key)!=='collapsed';section.ontoggle=()=>sessionStorage.setItem(key,section.open?'expanded':'collapsed');section.append(title,list);root.append(section);
-  appendPriorityGroups(list,doing,makeCard);
+  for(const task of doing){const card=makeCard(task);card.dataset.orderGroup='doing';card.dataset.orderGroupLabel='Doing Now';list.append(card)}
  }
  appendPriorityGroups(root,other,makeCard);colourTaskPositions(root);
 }

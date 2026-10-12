@@ -187,12 +187,21 @@
 <p id="detailState" aria-live="polite">
 </p>
 </div>
-<progress id="roomMessBar" max="100" value="0" aria-label="Room mess percentage">
+<progress id="roomMessBar" max="100" value="0" aria-label="Room cleanliness">
 </progress>
 <p id="roomMood">
 </p>
 
 </div>
+</details>
+<details id="roomMessAdjustment" class="room-mess-adjustment">
+<summary>Adjust mess level</summary>
+<form id="roomMessLevelForm">
+<label for="roomMessLevel">Room mess <output id="roomMessLevelOutput" for="roomMessLevel"></output></label>
+<input id="roomMessLevel" type="range" min="0" max="100" step="1" value="0">
+<div class="mess-slider-labels"><span>Clean</span><span>Messy</span></div>
+<div class="dialog-actions"><button type="submit">Set mess level</button><button id="resetRoomMessLevel" type="button" hidden>Use task estimate</button></div>
+</form>
 </details>
 <div class="task-list-toolbar"><button type="button" class="task-layout-toggle" data-task-layout>Detailed view</button><span id="roomRecurringViews" class="task-list-toolbar" hidden><button type="button" id="roomRecurringToggle" class="task-layout-toggle">Calendar view</button></span><button type="button" id="roomSearchToggle" class="room-search-toggle" aria-label="Search this room" aria-expanded="false" aria-controls="roomTextSearch"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15 15 6 6" stroke="currentColor" stroke-width="2"/></svg></button><button id="roomQuickAdd" class="add-task-main">＋ Add task</button></div>
 <div id="roomTextSearch" hidden><input id="roomSearchInput" type="search" placeholder="Search this room…" aria-label="Search this room" autocomplete="off"></div>

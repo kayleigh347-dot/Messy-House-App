@@ -81,7 +81,7 @@ body *{text-shadow:none!important;-webkit-text-stroke:0!important}body :is(butto
 :is(.house-hotspot,#roomMessBar)[data-state=CLEAN]{--mess-colour:#77b7f4}
 :is(.house-hotspot,#roomMessBar)[data-state=MESSY]{--mess-colour:#ffae55}
 :is(.house-hotspot,#roomMessBar)[data-state=DISASTER]{--mess-colour:#f57575}
-.dark-mode .house-hotspot[data-state] .house-status{background:var(--mess-colour)!important;border-color:var(--mess-colour)!important;color:#21162c!important}
+.dark-mode .house-hotspot[data-state] .house-status{background:linear-gradient(to right,var(--mess-colour) 0 var(--room-clean,0%),var(--mess-tint) var(--room-clean,0%) 100%)!important;border-color:var(--mess-colour)!important;color:#21162c!important}
 #roomMessBar{accent-color:var(--mess-colour);background:#302340;appearance:none;border:0;border-radius:8px;overflow:hidden}
 #roomMessBar::-webkit-progress-bar{background:#302340;border-radius:8px}
 #roomMessBar::-webkit-progress-value{background:var(--mess-colour);border-radius:8px}
@@ -224,3 +224,9 @@ body[data-view="recurring"] .category-bar,body[data-view="library"] .category-ba
 #displayNameForm{margin-bottom:1rem}
 
 body[data-view="manualSchedule"] .category-bar{display:none!important}
+
+/* Bar colour follows cleanliness without changing room artwork states. */
+:is(.house-hotspot,#roomMessBar)[data-bar-state=MESSY]{--mess-colour:#ffae55;--mess-fill:#e7b176;--mess-tint:#ffe3bc}
+:is(.house-hotspot,#roomMessBar)[data-bar-state=CLEAN]{--mess-colour:#77b7f4;--mess-fill:#8bb5de;--mess-tint:#dceafa}
+
+:is(.house-hotspot,#roomMessBar)[data-bar-state=DISASTER]{--mess-colour:#f57575;--mess-fill:#e79898;--mess-tint:#fbd8d8}
