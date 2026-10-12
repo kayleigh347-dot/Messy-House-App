@@ -119,7 +119,7 @@ test('selected backup fills missing uniform step once while preserving completed
  const raw=uniformBoard(),old='uniform',id='7db69e67-90f5-4a25-aded-e5cc614f4c2a';raw.tasks[0].id=id;
  for(const task of raw.tasks)if(task.parentId===old)task.parentId=id;
  const state=normalize(raw),children=state.settings.filter(item=>item.parentId===id);
- assert.ok(children.some(item=>item.text==='Remove dye from tops if possible'));
+ assert.ok(!children.some(item=>item.text==='Remove dye from tops if possible'&&!item.archived));
  assert.equal(children.find(item=>item.id==='gather').done,true);
  const count=state.settings.length;assert.equal(normalize(state).settings.length,count);
 });
@@ -221,9 +221,9 @@ test('Saturday uniform stays active until both darks and whites washing and hang
 });
 
 import {uniformHomeProgress} from '../laundry.js';
-test('homepage uniform hides after both colour cycles, keeping any other uniform steps in dedicated Laundry',()=>{
+test('homepage uniform hides after both colour cycles, retiring dye removal and handing put-away to regular Laundry',()=>{
  const state=normalize({...board(),settings:[{id:'uniform-colours',text:'Wash uniform',laundryUniform:true,laundryImported:true,nextDue:'2026-10-10T00:00:00Z',recurrence:{kind:'fixed-weekday',day:6},done:false},...['Wash darks','Put out darks','Wash whites','Put out whites','Remove dye from tops if possible'].map((text,index)=>({id:'colour-step-'+index,parentId:'uniform-colours',text,order:index,done:false}))]});
  assert.equal(uniformHomeProgress(state,Date.parse('2026-10-09T12:00:00Z')),null);
  for(let index=0;index<4;index++){assert.ok(uniformHomeProgress(state,Date.parse(at)));completeUniformStep(state,'colour-step-'+index,actor,at)}
- assert.equal(uniformHomeProgress(state,Date.parse(at)),null);assert.equal(uniformProgress(state,Date.parse(at)).step.text,'Remove dye from tops if possible');
+ assert.equal(uniformHomeProgress(state,Date.parse(at)),null);assert.equal(uniformProgress(state,Date.parse(at)),null);assert.equal(laundryLoadProgress(state,1).text,'Put away clothes on rail');
 });
