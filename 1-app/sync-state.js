@@ -11,7 +11,7 @@ export function openHouseState(remote,cached,owner,houseId){
 export function merge(base,local,remote){
   base=normalize(base);local=normalize(local);remote=normalize(remote);
   const out=structuredClone(remote);
-  for(const key of ['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs']){
+  for(const key of ['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions']){
     const before=new Map((base[key]||[]).map(x=>[x.id,x]));
     const mine=new Map((local[key]||[]).map(x=>[x.id,x]));
     const result=new Map((remote[key]||[]).map(x=>[x.id,structuredClone(x)]));
@@ -32,6 +32,7 @@ export function merge(base,local,remote){
   }
   out.wins.sort((a,b)=>b.at.localeCompare(a.at));
   const archivedThrough=[base.historyArchivedThrough,local.historyArchivedThrough,remote.historyArchivedThrough].filter(Boolean).sort().at(-1);if(archivedThrough)out.historyArchivedThrough=archivedThrough;
+  if(!equal(local.calendarSettings,base.calendarSettings))out.calendarSettings=structuredClone(local.calendarSettings);
   out.current=local.current!==base.current?local.current:remote.current;
   if(!out.tasks.some(t=>t.id===out.current&&!t.done&&!t.scheduled))out.current=null;
   return normalize(out);

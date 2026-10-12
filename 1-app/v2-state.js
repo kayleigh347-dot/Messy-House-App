@@ -62,7 +62,7 @@ export const INITIAL_ROOMS=[
 export const roomId=name=>'area-'+encodeURIComponent(name.trim().toLowerCase());
 export function normalize(input){
  const state=structuredClone(input);
- for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs'])state[key]||=[];
+ for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions'])state[key]||=[];
  state.rooms ||= INITIAL_ROOMS.map(([id,name,guardian],order)=>({id:'room-'+id,name:roomNames['room-'+id]||name,guardian,order,archived:false}));
  for(const room of state.rooms)room.name=canonicalRoomName(room);
  for(const key of ['tasks','side','wins','templates','homeless'])state[key].forEach((t,index)=>{

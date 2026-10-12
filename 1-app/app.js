@@ -1,3 +1,4 @@
+import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=tidy-20261012-v1';
 import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=tools-20261012-v1';
 import {rewardUnlockReason} from './rewards.js?v=tools-20261012-v1';
 import {laundryDoingSteps} from './laundry.js?v=tools-20261012-v1';
@@ -562,7 +563,7 @@ function renderHousehold(){
  const memberName=item=>st.householdPeople.find(person=>person.id===item.assignedTo)?.name||item.assignedToName||'Anyone';
  const appointments=$("#appointmentList");appointments.replaceChildren();
  for(const item of [...st.appointments].sort((a,b)=>String(a.date+a.startTime).localeCompare(String(b.date+b.startTime)))){
-  const row=document.createElement('article'),body=document.createElement('div'),title=document.createElement('strong'),meta=document.createElement('span'),calendar=document.createElement('button'),remove=document.createElement('button');row.className='shared-item';body.className='shared-item-body';title.className='shared-item-text';title.textContent=item.text;meta.className='meta';meta.textContent=`${new Date(`${item.date}T${item.startTime}`).toLocaleString()}–${item.endTime} · ${memberName(item)}${item.location?' · '+item.location:''}`;calendar.type='button';calendar.textContent='View calendar';calendar.onclick=()=>{calendarMonth=new Date(item.date+'T12:00:00');showPage('calendar')};remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete appointment: '+item.text);remove.onclick=()=>{st.appointments=st.appointments.filter(value=>value.id!==item.id);changed()};body.append(title,meta);appendItemImage(body,item,()=>st.appointments.find(value=>value.id===item.id),changed);row.append(body,calendar,remove);appointments.append(row)
+  const row=document.createElement('article'),body=document.createElement('div'),title=document.createElement('strong'),meta=document.createElement('span'),calendar=document.createElement('button'),remove=document.createElement('button');row.className='shared-item';body.className='shared-item-body';title.className='shared-item-text';title.textContent=item.text;meta.className='meta';meta.textContent=`${new Date(`${item.date}T${item.startTime}`).toLocaleString()}–${item.endTime} · ${memberName(item)}${item.location?' · '+item.location:''}`;calendar.type='button';calendar.textContent='View calendar';calendar.onclick=()=>{calendarMonth=new Date(item.date+'T12:00:00');jumpTidyCalendar(calendarMonth);showPage('calendar')};remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete appointment: '+item.text);remove.onclick=()=>{st.appointments=st.appointments.filter(value=>value.id!==item.id);changed()};body.append(title,meta);appendItemImage(body,item,()=>st.appointments.find(value=>value.id===item.id),changed);row.append(body,calendar,remove);appointments.append(row)
  }
  if(!st.appointments.length){const empty=document.createElement('p');empty.textContent='No appointments yet.';appointments.append(empty)}
 
@@ -587,7 +588,14 @@ function renderHousehold(){
 
 }
 
-function renderCalendar(){renderLocalCalendar(st,calendarMonth,(type,id,done)=>{if(type==='errand'){const item=st.errands.find(t=>t.id===id);if(item){item.done=done;changed()}return}const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(task.completionUndo&&!st.tasks.some(t=>t.id===task.completionUndo.nextTaskId&&t.done)&&undoCompletion(st,task))changed()},{...calendarDragOptions(),taskActions:true})}
+initTidyCalendar({get:()=>st,save:changed,toast:featureToast,edit:id=>editTask(st.tasks.find(t=>t.id===id)),
+ complete:(id,done)=>{const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(undoCompletion(st,task))changed();},
+ completeMany:(ids,done)=>{for(const id of ids){const task=st.tasks.find(t=>t.id===id);if(!task||!!task.done===done)continue;if(done)finish(task,'task');else if(undoCompletion(st,task))changed();}},
+ reorder:(id,position)=>{position==='first'?moveToTop(st.tasks,id):moveToBottom(st.tasks,id);changed();},
+ laundry:()=>showPage('laundry'),
+ errand:id=>{const item=st.errands.find(t=>t.id===id);if(item){item.done=true;changed();}}
+});
+function renderCalendar(){renderTidyCalendar();}
 document.addEventListener('room-recurring-complete',event=>{const task=st.tasks.find(t=>t.id===event.detail?.id);if(task){if(event.detail.done===false){if(undoCompletion(st,task))changed()}else finish(task,'task')}});
 $('#statsPeriod').value='month';localStorage.setItem('mc-stats-period','month');
 $("#statsPeriod").onchange=()=>{localStorage.setItem('mc-stats-period',$('#statsPeriod').value);renderHousehold();
@@ -626,15 +634,18 @@ $("#addNote").onsubmit=e=>{e.preventDefault();const input=e.currentTarget.elemen
 $("#addCalendarEvent").onclick=()=>{const f=$('#calendarEventForm');f.reset();f.elements.date.value=localDateKey(new Date());$('#calendarEventStatus').textContent='';$('#calendarEventDialog').showModal()};
 $('#cancelCalendarEvent').onclick=()=>$('#calendarEventDialog').close();
 $('#addCalendarEvent').onclick=()=>{const f=$('#calendarEventForm');f.reset();f.elements.date.value=localDateKey(new Date());f.elements.startTime.value='09:00';f.elements.endTime.value='10:00';$('#calendarEventStatus').textContent='';$('#calendarEventDialog').showModal()};
-$('#calendarEventForm').onsubmit=e=>{e.preventDefault();const f=e.currentTarget,v=Object.fromEntries(new FormData(f));if(v.endTime<=v.startTime){$('#calendarEventStatus').textContent='Choose an end time after the start time.';return;}st.appointments.push({...v,text:v.text.trim(),id:id(),createdAt:iso()});calendarMonth=new Date(v.date+'T12:00:00');$('#calendarEventDialog').close();changed()};
-$('#previousCalendarMonth').onclick=()=>{calendarMonth=calendarStep(calendarMonth,-1);renderCalendar()};
-$('#nextCalendarMonth').onclick=()=>{calendarMonth=calendarStep(calendarMonth,1);renderCalendar()};
+$('#calendarEventForm').onsubmit=e=>{e.preventDefault();const f=e.currentTarget,v=Object.fromEntries(new FormData(f));if(v.endTime<=v.startTime){$('#calendarEventStatus').textContent='Choose an end time after the start time.';return;}st.appointments.push({...v,text:v.text.trim(),id:id(),createdAt:iso()});calendarMonth=new Date(v.date+'T12:00:00');jumpTidyCalendar(calendarMonth);$('#calendarEventDialog').close();changed()};
+$('#previousCalendarMonth').onclick=()=>stepTidyCalendar(-1);
+$('#nextCalendarMonth').onclick=()=>stepTidyCalendar(1);
+$('#calendarToday').onclick=todayTidyCalendar;
+for(const tab of $$('[data-calendar-view]'))tab.onclick=()=>{$('#calendarView').value=tab.dataset.calendarView;localStorage.setItem('tidy-calendar-view',tab.dataset.calendarView);renderCalendar();};
+$('#calendarRoomFilter').onchange=renderCalendar;
 
 $('#displayNameForm').onsubmit=e=>{e.preventDefault();if(!signedIn||!setDisplayName(st,currentActor(),$('#displayName').value)){ $('#displayNameStatus').textContent='Enter a name (up to 60 characters) while signed in.';return}meta.actor=currentActor();remember();$('#displayNameStatus').textContent='Your household name is saved.';changed()};
 $('#connectShortcut').onclick=()=>{showPage('preferences');settingsTab('account')};$('#closeSettings').onclick=()=>showPage('house');
-$('#calendarView').value=localStorage.getItem('mc-calendar-view')||'month';$('#calendarRecurring').checked=localStorage.getItem('mc-calendar-recurring')!=='off';$('#calendarSetDay').checked=localStorage.getItem('mc-calendar-set-day')!=='off';
-$('#calendarView').onchange=()=>{localStorage.setItem('mc-calendar-view',$('#calendarView').value);renderCalendar()};$('#calendarRecurring').onchange=()=>{localStorage.setItem('mc-calendar-recurring',$('#calendarRecurring').checked?'on':'off');renderCalendar()};$('#calendarSetDay').onchange=()=>{localStorage.setItem('mc-calendar-set-day',$('#calendarSetDay').checked?'on':'off');renderCalendar()};
-document.addEventListener('calendar-jump',e=>{calendarMonth=new Date(e.detail.date);renderCalendar()});
+$('#calendarView').value=localStorage.getItem('tidy-calendar-view')||'week';$('#calendarRecurring').checked=localStorage.getItem('mc-calendar-recurring')!=='off';$('#calendarSetDay').checked=localStorage.getItem('mc-calendar-set-day')!=='off';
+$('#calendarView').onchange=()=>{localStorage.setItem('tidy-calendar-view',$('#calendarView').value);renderCalendar()};$('#calendarRecurring').onchange=()=>{localStorage.setItem('mc-calendar-recurring',$('#calendarRecurring').checked?'on':'off');renderCalendar()};$('#calendarSetDay').onchange=()=>{localStorage.setItem('mc-calendar-set-day',$('#calendarSetDay').checked?'on':'off');renderCalendar()};
+document.addEventListener('calendar-jump',e=>{calendarMonth=new Date(e.detail.date);jumpTidyCalendar(e.detail.date);renderCalendar()});
 
 
 $("#openReward").onclick=()=>{if(rewardProgress(st).available.length)openMystery();
@@ -884,7 +895,7 @@ setTimeout(()=>URL.revokeObjectURL(url),1000);
 
 $("#import").onchange=e=>readBackupFile(e);
 let importDraft=null,preImportRecovery=localStorage.readJSON('mc-pre-import-v1',null,value=>value===null||object(value));
-const collectionLabels={tasks:'Tasks',side:'Sidequests',wins:'Completion history',completionArchive:'Archived history',rewards:'Rewards',rooms:'Rooms',templates:'Reusable templates',homeless:'Homeless items',shopping:'Shopping',appointments:'Appointments',errands:'Errands',notes:'Notes',householdPeople:'People',notifications:'Notifications',settings:'Settings & laundry',sideTabs:'Sidequest tabs'};
+const collectionLabels={tasks:'Tasks',side:'Sidequests',wins:'Completion history',completionArchive:'Archived history',rewards:'Rewards',rooms:'Rooms',templates:'Reusable templates',homeless:'Homeless items',shopping:'Shopping',appointments:'Appointments',errands:'Errands',notes:'Notes',householdPeople:'People',notifications:'Notifications',settings:'Settings & laundry',sideTabs:'Sidequest tabs',calendarPlans:'Planned cleaning dates',calendarSessions:'Whole-house sessions'};
 function previewBackup(board,recover=false){
  validateBackup(board);importDraft={board:structuredClone(board),recover,before:JSON.stringify(st)};
  $('#backupPreviewTitle').textContent=recover?'Preview board recovery':'Preview backup import';

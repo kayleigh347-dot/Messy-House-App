@@ -1,6 +1,6 @@
 {
-  "name": "Mission Control",
-  "short_name": "Mission Control",
+  "name": "Tidy-ish",
+  "short_name": "Tidy-ish",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#1A0430",
