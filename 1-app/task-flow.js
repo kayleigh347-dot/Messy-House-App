@@ -3,7 +3,8 @@ import {descendants} from './subtasks.js';
 export function activeTask(task,now=Date.now()){
  if(task.done||task.archived||task.pausedAt)return false;
  const due=Date.parse(task.nextDue||task.dueDate);
- return !(Number.isFinite(due)&&due>+now);
+ const selectedEarly=task.flowSelectedDue===(task.nextDue||'')+'|'+(task.dueDate||'');
+ return selectedEarly||!(Number.isFinite(due)&&due>+now);
 }
 export function roomActiveTasks(state,roomId,now=Date.now()){
  const sideIds=new Set((state.side||[]).map(task=>task.id).filter(Boolean));

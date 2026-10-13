@@ -7,6 +7,7 @@ import {normalizeSubtasks,childrenOf,rootTask,repeatChildren} from './subtasks.j
 import {seedCommonTasks} from './common-tasks.js?v=release-20261010-v3';
 import {migrateRewards} from './rewards.js?v=release-20261010-v3';
 import {creditLegacyCompletions,archiveOldCompletions,enrichCompletionRecords} from './completion-history.js?v=release-20261010-v3';
+import {validatePreparationRoutine} from './room-configuration.js';
 export const DAY=86400000;
 export function taskAge(t,now=Date.now()){
  const created=Date.parse(t.created);
@@ -63,7 +64,7 @@ export const INITIAL_ROOMS=[
 export const roomId=name=>'area-'+encodeURIComponent(name.trim().toLowerCase());
 export function normalize(input){
  const state=structuredClone(input);
- for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions'])state[key]||=[];
+ for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions','preparationRoutines','preparationInstances'])state[key]||=[];
  state.rooms ||= INITIAL_ROOMS.map(([id,name,guardian],order)=>({id:'room-'+id,name:roomNames['room-'+id]||name,guardian,order,archived:false}));
  for(const room of state.rooms)room.name=canonicalRoomName(room);
  for(const key of ['tasks','side','wins','templates','homeless'])state[key].forEach((t,index)=>{
@@ -99,6 +100,8 @@ export function normalize(input){
  return state;
 }
 export function validateV2(board){
+ if(board.preparationRoutines!==undefined){if(!Array.isArray(board.preparationRoutines))throw Error('Backup contains invalid preparation routines.');const ids=new Set();for(const routine of board.preparationRoutines){validatePreparationRoutine(routine);if(ids.has(routine.id)||board.rooms&&!board.rooms.some(room=>room.id===routine.roomId))throw Error('Backup contains invalid preparation routine references.');ids.add(routine.id)}}
+ if(board.preparationInstances!==undefined){if(!Array.isArray(board.preparationInstances)||board.preparationInstances.some(item=>!item||typeof item.id!=='string'||typeof item.roomId!=='string'||typeof item.taskId!=='string'||!Number.isSafeInteger(item.generation)||item.generation<0))throw Error('Backup contains invalid preparation instance identities.');if(new Set(board.preparationInstances.map(item=>item.id)).size!==board.preparationInstances.length)throw Error('Backup contains duplicate preparation instance identities.');}
  for(const key of ['rooms','templates','homeless','sideTabs'])if(board[key]!==undefined){
   if(!Array.isArray(board[key])||board[key].some(x=>!x||typeof x.id!=='string'||typeof x[['rooms','sideTabs'].includes(key)?'name':'text']!=='string'))throw new Error('Backup contains invalid '+key+'.');
   if(new Set(board[key].map(x=>x.id)).size!==board[key].length)throw new Error('Backup contains duplicate '+key+'.');
