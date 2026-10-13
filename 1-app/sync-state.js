@@ -11,7 +11,7 @@ export function openHouseState(remote,cached,owner,houseId){
 export function merge(base,local,remote){
   base=normalize(base);local=normalize(local);remote=normalize(remote);
   const out=structuredClone(remote);
-  for(const key of ['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions']){
+  for(const key of ['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions','preparationRoutines','preparationInstances']){
     const before=new Map((base[key]||[]).map(x=>[x.id,x]));
     const mine=new Map((local[key]||[]).map(x=>[x.id,x]));
     const result=new Map((remote[key]||[]).map(x=>[x.id,structuredClone(x)]));
@@ -19,6 +19,12 @@ export function merge(base,local,remote){
     for(const [id,item] of mine){
       const old=before.get(id);
       if(equal(old,item))continue;
+      if(!old&&key==='tasks'&&result.has(id)&&(item.clearWay||item.clearWaySourceTaskId)){
+        // Concurrent replay is an initial creation, not permission to replace the
+        // canonical task's edits/completion. Transfer only a new local completion.
+        const current=result.get(id);if(item.done&&!current.done)for(const field of ['done','completedAt','completionUndo','clearWayGeneratedFollowUp','nextDue','lastDone'])if(field in item)current[field]=structuredClone(item[field]);continue;
+      }
+      if(key==='preparationInstances'&&result.has(id)&&result.get(id).generation>=item.generation)continue;
       if(!old||!result.has(id)){result.set(id,structuredClone(item));continue}
       const next=result.get(id);
       for(const field of new Set([...Object.keys(old),...Object.keys(item)])){

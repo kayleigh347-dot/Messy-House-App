@@ -1,6 +1,6 @@
 import {prizes} from './rewards.js';
 import {validateV2,validRecurrence} from './v2-state.js?v=checklist-20261012-v3';
-export const boardCollections=['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions'];
+export const boardCollections=['tasks','side','wins','completionArchive','rewards','rooms','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions','preparationRoutines','preparationInstances'];
 export function validateBackup(board){
  if(!board||typeof board!=='object'||Array.isArray(board))throw Error('Choose a Tidy-ish backup file.');
  if(board.schemaVersion!==undefined&&(!Number.isInteger(board.schemaVersion)||board.schemaVersion<1||board.schemaVersion>7))throw Error('This backup version is not supported.');

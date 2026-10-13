@@ -1,5 +1,12 @@
 import {skipCalendarOccurrence} from './calendar-planner.js?v=review-fixes-20261012-v3';
-import {initHomeManagement,updateManagementRoute} from './home-management.js?v=fuller-wizard-20261012-v1';
+import {initHomeManagement,updateManagementRoute} from './home-management.js?v=adaptive-stage02-20261013-v1';
+import {initAdaptiveMode} from './adaptive-mode.js?v=adaptive-stage02-20261013-v1';
+import {initRoomSetup} from './room-setup-ui.js?v=flexible-flow-20261013-v1';
+import {initFlow} from './flow-controller.js?v=flexible-flow-20261013-v1';
+import {initFlowSettings} from './flow-settings.js?v=flexible-flow-20261013-v1';
+import {initRoomFocus} from './room-focus-ui.js?v=flexible-flow-20261013-v1';
+import {initClearWay} from './clear-way-ui.js?v=flexible-flow-20261013-v1';
+import {createPreparationFollowUp,removeUntouchedPreparationFollowUp} from './clear-way.js';
 import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=review-fixes-20261012-v3';
 import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=review-fixes-20261012-v3';
 import {initTaskTools,renderTaskTools} from './task-tools-ui.js?v=review-fixes-20261012-v3';
@@ -23,7 +30,7 @@ import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calenda
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
-import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion,taskNotification,taskNoticeForPerson} from './task-flow.js?v=tools-20261012-v1';
+import {activeTask,addToDoingNow,removeFromDoingNow,moveDoingNow,doingNowTasks,completedToday,captureCompletion,undoCompletion as undoTaskCompletion,taskNotification,taskNoticeForPerson} from './task-flow.js?v=tools-20261012-v1';
 
 import {renderStats} from './stats-ui.js?v=streamline-20261009-v2';
 
@@ -31,7 +38,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js?v=startup-navigation-20261012-v1';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=review-fixes-20261012-v3";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=flexible-flow-20261013-v1";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=calendar-skip-20261012-v1";
 
@@ -47,8 +54,8 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 document.addEventListener('reset',event=>{for(const section of event.target.querySelectorAll('details.optional-section'))section.open=false});
 document.addEventListener('invalid',event=>{const popup=event.target.closest('#quickMoreOptions');if(popup&&!popup.open)popup.showModal();for(let section=event.target.closest('details');section;section=section.parentElement?.closest('details'))section.open=true},true);
 const inputDraftKey=field=>`mc-input-draft:${field.form?.id||'form'}:${field.name||field.id}`;
-function restoreInputDrafts(){let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}for(const field of document.querySelectorAll('input[type=text],textarea'))if(!field.closest('#setup,#houseSharing')&&!field.value&&drafts[inputDraftKey(field)])field.value=drafts[inputDraftKey(field)]}
-document.addEventListener('input',event=>{const field=event.target;if(!(field instanceof HTMLInputElement||field instanceof HTMLTextAreaElement)||field.type==='password'||field.closest('#setup,#houseSharing'))return;let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}const key=inputDraftKey(field);if(field.value)drafts[key]=field.value;else delete drafts[key];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});
+function restoreInputDrafts(){let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}for(const field of document.querySelectorAll('input[type=text],textarea'))if(!field.closest('#setup,#houseSharing,.personal-room-setup,#roomSetupAdditions,.clear-way-settings,#clearWayPrompt')&&!field.value&&drafts[inputDraftKey(field)])field.value=drafts[inputDraftKey(field)]}
+document.addEventListener('input',event=>{const field=event.target;if(!(field instanceof HTMLInputElement||field instanceof HTMLTextAreaElement)||field.type==='password'||field.closest('#setup,#houseSharing,.personal-room-setup,#roomSetupAdditions,.clear-way-settings,#clearWayPrompt'))return;let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}const key=inputDraftKey(field);if(field.value)drafts[key]=field.value;else delete drafts[key];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});
 document.addEventListener('submit',event=>{let drafts={};try{drafts=JSON.parse(sessionStorage.getItem('mc-input-drafts')||'{}')}catch{}for(const field of event.target.querySelectorAll('input[type=text],textarea'))delete drafts[inputDraftKey(field)];sessionStorage.setItem('mc-input-drafts',JSON.stringify(drafts))});window.addEventListener('pageshow',restoreInputDrafts);restoreInputDrafts();
 
 if(!localStorage.getItem('mc-compact-default-20261010-v2')){localStorage.setItem('mc-task-layout','compact');localStorage.setItem('mc-compact-default-20261010-v2','true')}
@@ -73,10 +80,11 @@ const activityKey=()=>`mc-house-seen-v1:${meta.owner||'local'}:${meta.houseId||'
 function activitySeen(){try{return JSON.parse(localStorage.getItem(activityKey())||'{}')}catch{return {}}}
 function markActivitySeen(type){const seen=activitySeen();seen[type]=Date.now();localStorage.setItem(activityKey(),JSON.stringify(seen))}
 const currentActor=()=>meta.actor?{...meta.actor,...st.householdPeople?.find(p=>p.id===meta.actor.id)}:{id:'local-device',name:'This device'};
+function featureHouseKey(){const prefix=cfg.url+'/';return cfg.url+':'+(meta.houseId||(meta.owner?.startsWith(prefix)?meta.owner.slice(prefix.length):null)||meta.actor?.id||'local');}
 const entryTime=value=>{const time=Date.parse(value);return Number.isFinite(time)?new Date(time).toLocaleString():''};
 
-let signedIn=false;
-function updateSignInUI(value){signedIn=!!value;$('#displayNameForm').hidden=!signedIn;document.querySelector('.sync-line').hidden=signedIn;$('#signOut').hidden=!signedIn;$('#signIn').hidden=signedIn;$('#email').closest('label').hidden=signedIn}
+let signedIn=false,adaptiveMode,roomSetup,clearWay,roomFocus,flow,flowSettings;
+function updateSignInUI(value){signedIn=!!value;$('#displayNameForm').hidden=!signedIn;document.querySelector('.sync-line').hidden=signedIn;$('#signOut').hidden=!signedIn;$('#signIn').hidden=signedIn;$('#email').closest('label').hidden=signedIn;void adaptiveMode?.refresh();void roomSetup?.refresh()}
 const status=text=>$('#sync').textContent=criticalStorageProblem()?'Not saved · recovery needed':text;
 function settingsTab(name='general'){for(const panel of $$('[data-settings-panel]'))panel.hidden=panel.dataset.settingsPanel!==name;for(const tab of $$('[data-settings-tab]'))tab.setAttribute('aria-pressed',String(tab.dataset.settingsTab===name));if(name==='account'){$('#url').value=cfg.url||'';$('#key').value=cfg.key||'';if(db&&!sharingBusy&&!busy)db.auth.getSession().then(({data})=>{if(data.session)runSharing(refreshHouses)}).catch(()=>{})}}
 for(const tab of $$('[data-settings-tab]'))tab.onclick=()=>settingsTab(tab.dataset.settingsTab);
@@ -236,6 +244,7 @@ st.tasks.push({id:id(),text,area,bucket,done:false,created:iso(),order:Math.min(
 changed()}
 function win(t,kind,at=iso(),actor=currentActor(),details={}){const record={...completionRecord(t,at,kind,actor),...details};st.wins.unshift(record);return record;
 }
+function undoCompletion(state,task){const learningIds=state.tasks.filter(item=>item.done&&!item.parentId).map(item=>item.id),completed=state.tasks.filter(item=>item.done&&item.clearWayGeneratedFollowUp).map(item=>item.id),result=undoTaskCompletion(state,task);if(result)for(const id of completed){const source=state.tasks.find(item=>item.id===id);if(source&&!source.done)removeUntouchedPreparationFollowUp(state,source)}if(result&&typeof flow!=='undefined')for(const id of learningIds)if(state.tasks.some(item=>item.id===id&&!item.done))void flow?.undo(id).catch(()=>featureToast('Your learning correction is waiting to sync.'));return result;}
 function finish(t,kind,actor=currentActor(),silent=false){t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done)return false;
  actor=st.householdPeople.find(p=>p.id===actor?.id&&p.id!=='local-device');if(!actor){if(!silent){showPage('preferences');settingsTab('account');featureToast('Sign in on this device to complete tasks and keep your points.');}return false}
 const items=kind==='side'?st.side:st.tasks,childIds=descendants(items,t.id).reverse().map(child=>child.id);for(const childId of childIds){const childItems=kind==='side'?st.side:st.tasks,child=childItems.find(item=>item.id===childId);if(child&&!child.done)finish(child,kind,actor,true)}t=(kind==='side'?st.side:st.tasks).find(item=>item.id===t.id);if(!t||t.done){if(!silent)changed();return true;}
@@ -251,6 +260,8 @@ let next=null;if(kind==="task"&&!t.parentId&&t.recurrence){next=scheduleNext(t,n
 if(next&&!st.tasks.some(x=>x.id===next.id)){next.order=Math.max(-1,...st.tasks.map(x=>x.order))+1;
 st.tasks.push(next,...repeatChildren(st.tasks,t,next))}}if(kind==="task"&&st.current===t.id)st.current=null;
 captureCompletion(t,completedAt,record.id,next?.id||null,previous);
+if(kind==='task'&&t.clearWay?.pickup)createPreparationFollowUp(st,t,completedAt);
+if(kind==='task'&&typeof flow!=='undefined')void flow?.capture(t,record).catch(()=>featureToast('Your completion date is waiting to sync.'));
 const parentId=t.parentId;
 if(parentId){const currentItems=kind==='side'?st.side:st.tasks,parent=currentItems.find(item=>item.id===parentId),siblings=currentItems.filter(item=>item.parentId===parentId);if(parent&&!parent.done&&siblings.length&&siblings.every(item=>item.done))finish(parent,kind,actor,true)}
 // Save and render once for the entire parent/subtask completion.
@@ -387,7 +398,7 @@ tools.append(bottom);
  const doing=document.createElement('button');doing.className='do-now';doing.textContent=t.doingNow?'Not on it':"I'm on it";doing.setAttribute('aria-pressed',String(!!t.doingNow));doing.setAttribute('aria-label',(t.doingNow?'Remove from Doing Now: ':'Add to Doing Now: ')+t.text);doing.onclick=()=>{t.doingNow?removeFromDoingNow(t):addToDoingNow(t,st.tasks);changed()};if(!t.parentId)tools.append(doing)
 
 }
-const focus=document.createElement('button');focus.type='button';focus.className='time-task';focus.innerHTML='<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path fill="#63b6b1" d="M12 2h8v4h-8zM22 6l3-3 3 3-3 3z"/><circle cx="16" cy="19" r="12" fill="#f5b4cd" stroke="#694671" stroke-width="2"/><path d="M16 10v9l5 3" fill="none" stroke="#51375b" stroke-width="2.5" stroke-linecap="round"/></svg>';focus.setAttribute('aria-label','Set timer for '+t.text);focus.title='Set timer';focus.onclick=()=>startFocus(t);
+const focus=document.createElement('button');focus.type='button';focus.className='time-task';focus.innerHTML='<svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path fill="#63b6b1" d="M12 2h8v4h-8zM22 6l3-3 3 3-3 3z"/><circle cx="16" cy="19" r="12" fill="#f5b4cd" stroke="#694671" stroke-width="2"/><path d="M16 10v9l5 3" fill="none" stroke="#51375b" stroke-width="2.5" stroke-linecap="round"/></svg>';focus.setAttribute('aria-label','Set timer for '+t.text);focus.title='Set timer';focus.onclick=()=>{if(t.clearWaySourceTaskId){t.clearWayTouched=true;changed()}startFocus(t)};
 let del=document.createElement("button");
 del.textContent="Delete";
 del.setAttribute("aria-label","Delete: "+t.text);
@@ -523,7 +534,7 @@ function renderDoingNow(){
  if(!items.length&&!washing.length&&!extras.length){const empty=document.createElement('p');empty.textContent="Nothing selected yet. Tap “I'm on it” on a task, or choose one from Needs done.";root.append(empty)}renderAttention();renderDoingSearch()
 }
 
-function render(){const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
+function render(){void flow?.refresh();flowSettings?.render();roomFocus?.render();clearWay?.render();const actor=currentActor(),nameField=$('#displayName');if(document.activeElement!==nameField)nameField.value=displayPersonName(actor);applyPreferences(st,currentActor());document.body.classList.toggle('task-compact-view',localStorage.getItem('mc-task-layout')!=='detail');for(const b of document.querySelectorAll('[data-task-layout]'))b.textContent=document.body.classList.contains('task-compact-view')?'Detailed view':'Compact view';renderV2(st);
 renderHousehold();
 if(!$('#doing').classList.contains('hide'))renderDoingNow();
 if(['doing','laundryLibrary','laundry','house'].some(page=>!$('#'+page).classList.contains('hide')))renderLaundryPanel();if(['doing','laundry'].some(page=>!$('#'+page).classList.contains('hide')))renderLaundryTasks();
@@ -591,7 +602,7 @@ function renderHousehold(){
 
 }
 
-initTidyCalendar({get:()=>st,save:changed,toast:featureToast,edit:id=>editTask(st.tasks.find(t=>t.id===id)),
+initTidyCalendar({get flow(){return flow},get:()=>st,save:changed,toast:featureToast,edit:id=>editTask(st.tasks.find(t=>t.id===id)),
  complete:(id,done)=>{const task=st.tasks.find(t=>t.id===id);if(!task)return;if(done)finish(task,'task');else if(undoCompletion(st,task))changed();},
  completeMany:(ids,done)=>{for(const id of ids){const task=st.tasks.find(t=>t.id===id);if(!task||!!task.done===done)continue;if(done)finish(task,'task');else if(undoCompletion(st,task))changed();}},
  reorder:(id,position)=>{position==='first'?moveToTop(st.tasks,id):moveToBottom(st.tasks,id);changed();},
@@ -734,6 +745,8 @@ if(page==='other'){markActivitySeen('shopping');renderHousehold();showOtherView(
 localStorage.setItem('mc-view-v2',page);
 showRoom(page==='house'&&st.rooms.some(r=>r.id===room)?room:null);
 updateManagementRoute(page,room);
+void adaptiveMode?.refresh();
+void roomSetup?.refresh();
 render();
 window.scrollTo({top:0,behavior:'instant'})}
 $$("nav button[data-tab]").forEach(b=>b.onclick=()=>{if(b.dataset.tab==='doing')showDoingTab('mine');if(['wins','data'].includes(b.dataset.tab))sessionStorage.setItem('mc-data-tab','overview');navigate(b.dataset.tab);if(['wins','data'].includes(b.dataset.tab))renderStats(st,categoryFilter,personFilter,changed)});
@@ -959,14 +972,21 @@ $('#backupShortcut').onclick=()=>{$('#moreMenu').close();showPage('preferences')
 $('#connectionShortcut').onclick=()=>{$('#moreMenu').close();$('#settings').click()};
 
 initTaskTools({get:()=>st,save:changed,toast:featureToast});
-initHomeManagement({get:()=>st});
+adaptiveMode=initAdaptiveMode({getClient:()=>db,getProject:()=>cfg.url,getHouseKey:featureHouseKey});
+initHomeManagement({get:()=>st,adaptive:adaptiveMode});
+roomSetup=initRoomSetup({getClient:()=>db,getProject:()=>cfg.url,getHouseId:userId=>meta.owner&&meta.owner!==cfg.url+'/'+userId?null:meta.houseId||userId,get:()=>st,save:changed,onAreasChanged:()=>{render();clearWay?.render()}});
+clearWay=initClearWay({get:()=>st,save:changed,actor:currentActor,personal:roomSetup,houseKey:featureHouseKey,toast:featureToast});
+flow=initFlow({get:()=>st,save:changed,adaptive:adaptiveMode,roomSetup,houseKey:featureHouseKey,render});
+flowSettings=initFlowSettings({get:()=>st,flow,roomSetup});
+roomFocus=initRoomFocus({get:()=>st,save:changed,card:mk,clearWay,flow,toast:featureToast,openRoom:id=>navigate('house',id),isRoomOpen:id=>!$('#roomDetail').classList.contains('hide')&&sessionStorage.getItem('mc-open-room')===id,scope:()=>featureHouseKey()+':'+currentActor().id});
+$('#doingRoomFocus').onclick=()=>roomFocus.chooseRoom();
 initTaskPlanning({get:()=>st,save:changed,actor:currentActor,toast:featureToast,expand:id=>expandedSubtasks.add(id)});
 initReviewUI({get:()=>st,save:changed});
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
-initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task')});
+initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task'),roomSetup,roomFocus});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=review-fixes-20261012-v3").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=flexible-flow-20261013-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
