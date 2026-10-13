@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="../../../styles.css"><link rel="stylesheet" href="../../../features.css"><link rel="stylesheet" href="../../../cohesion.css"><link rel="stylesheet" href="../../../home-management.css"></head><body class="dark-mode"><main>
+<section class="page" id="manualSchedule"><div class="manage-home-heading"><h2>Manage home</h2><div class="folder-tabs"><button>Tasks</button><button aria-pressed="true">Schedule</button><button>My rooms</button></div><div class="folder-tabs nested-tabs"><button aria-pressed="true">Manual edit</button><button>Schedule maker</button></div></div></section>
+<section id="helpSettings"></section></main><script type="module">
+import {initAdaptiveMode} from '../../../adaptive-mode.js';
+window.sessionUser=new URLSearchParams(location.search).get('user')||'alice';
+const client={auth:{getSession:async()=>({data:{session:window.sessionUser?{user:{id:window.sessionUser}}:null}})},rpc:async(name,args)=>window.adaptiveRpc(window.sessionUser,name,args)};
+window.adaptiveFixture=initAdaptiveMode({getClient:()=>client,getProject:()=> 'synthetic'});
+window.adaptiveFixture.mount(document.querySelector('.manage-home-heading'),'manualSchedule');
+await window.adaptiveFixture.refresh();
+</script></body></html>
