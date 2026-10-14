@@ -989,7 +989,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task'),roomSetup,roomFocus,templatePreferences:flow});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=whole-app-review-20261014-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-reminder-fix-20261014-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
