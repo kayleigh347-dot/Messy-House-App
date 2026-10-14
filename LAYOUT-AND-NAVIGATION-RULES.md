@@ -142,3 +142,10 @@ Kayleigh authorised completing the connected function in one batch, approved the
 - Daily recommendations freeze at 03:00 in the chosen IANA time zone, with refresh on reopening. Carry unfinished flexible recommendations once; keep event target dates anchored. Settings do not reorder the current day's snapshot.
 - Use approved editable defaults: priority base 60/45/30/15/5, capped urgency and neglect, soft capacity 5 suggestions or 60 minutes, learned intervals rounded up. Remaining suggestions stay accessible.
 - Retain accurate eligible completion dates in separate own-user storage until deletion. Deduplicate the same completion ID, retain genuine separate completions, and correct dates on Undo without changing reward/history records.
+
+## Completion fixes and detailed Help — approved 14 October 2026
+
+- Retain unfinished annual event preparation across New Year when the member chooses Keep recommendations, preserving occurrence year and original/target dates. Completed/hidden occurrences stay excluded.
+- Deleting a saved reusable definition hides its root/selected descendant definitions only for that member, scoped to the current house. Use the existing private preference storage; keep shared definitions, instantiated tasks, active laundry and history unchanged. Restore through Hidden saved tasks in Reusable. Existing actual task Remove/Delete remains shared.
+- Newly added reusable tasks and their subtasks retain their source template identity for eligible learning; never guess or rewrite historical task identities.
+- Detailed Help belongs in Settings → Help. Use the existing expandable optional-section appearance, readable paragraphs/lists and exact current control names. Explain modes, explicit additions, private/shared choices, dates, learning, events, timers, laundry, backups and recovery. Do not add navigation or present synthetic checks as real device/account verification.
