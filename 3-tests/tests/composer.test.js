@@ -1,3 +1,4 @@
+import {visibleTemplates} from '../template-visibility.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -11,7 +12,7 @@ test('actual task composer adds only one active task when saving templates for e
  const form={elements,dataset:{},reset(){elements.impact.value='normal';elements.every.value='1';elements.period.value='weeks'}},dialog={querySelector:()=>field(),showModal(){},close(){}},suggestions=field();let saved=0;
  const document={querySelector:s=>s==='#quickTask'?dialog:s==='#quickTaskForm'?form:suggestions,querySelectorAll:()=>[]};
  const snippet=source.slice(source.indexOf('export function quickAdd('),source.indexOf('function installInlineTemplates(')).replace('export ','');
- const open=new Function('document','getState','ordered','Option','roomTemplates','quickFields','freshTask','saveReusable','save','crypto','fillQuestTabs','placeNewTasksFirst',snippet+';return quickAdd')(document,()=>st,x=>x,function(){},roomTemplates,()=>{},freshTask,saveReusable,()=>saved++,globalThis.crypto,()=>{},placeNewTasksFirst);
+ const open=new Function('document','getState','ordered','Option','roomTemplates','quickFields','freshTask','saveReusable','save','crypto','fillQuestTabs','placeNewTasksFirst','personalTemplates',snippet+';return quickAdd')(document,()=>st,x=>x,function(){},roomTemplates,()=>{},freshTask,saveReusable,()=>saved++,globalThis.crypto,()=>{},placeNewTasksFirst,state=>visibleTemplates(state.templates));
  open('a',{text:'Clean windows'});elements.reusable.checked=true;elements.allRooms.checked=true;form.onsubmit({preventDefault(){}});
  assert.equal(saved,1);assert.equal(st.tasks.length,1);assert.equal(st.tasks[0].roomId,'a');assert.equal(st.templates.length,2);assert.equal(st.tasks[0].text,'Clean windows');
  open('b');elements.text.value='';

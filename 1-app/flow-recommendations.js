@@ -1,4 +1,5 @@
 import {addCivilDays,civilDaysBetween,validCivilDate,localCivilTime} from './flow-dates.js';
+import {visibleTemplates} from './template-visibility.js';
 import {learnedDue,learningIdentity} from './flow-learning.js';
 import {projectFlowEvents} from './flow-events.js';
 import {isLaundryItem} from './laundry.js';
@@ -19,12 +20,12 @@ export function flowSources(state,roomConfiguration={setups:[]},house={}){
  const result=new Map(),sideIds=new Set((state.side||[]).map(task=>task.id));
  for(const task of state.tasks||[]){if(task.parentId||task.archived||task.pausedAt||task.done||task.bucket==='side'||sideIds.has(task.id)||isLaundryItem(task)||task.clearWay||task.clearWaySourceTaskId||task.flowEventId)continue;const key=flowTaskKey(task),previous=result.get(key);if(!previous||(task.nextDue||'')<(previous.nextDue||''))result.set(key,{...task,sourceKey:key,taskId:task.id});}
  for(const setup of roomConfiguration.setups||[]){if(setup.deletedAt)continue;for(const choice of setup.draft?.tasks||[]){if(!choice.selected)continue;const actual=choice.taskId&&(state.tasks||[]).find(task=>task.id===choice.taskId),key=actual?flowTaskKey(actual):'setup:'+setup.id+':'+choice.id;if(actual||result.has(key))continue;result.set(key,{...choice,sourceKey:key,roomId:setup.roomId,text:choice.text,category:'cleaning',definition:{setupId:setup.id,entryId:choice.id}});}}
- for(const template of state.templates||[]){if(template.parentTemplateId||template.archived||!house.taskSettings?.[template.id]?.include||result.has(template.id))continue;result.set(template.id,{...template,sourceKey:template.id,taskId:null,definition:{templateId:template.id}});}
+ for(const template of visibleTemplates(state.templates||[],house.hiddenTemplateIds)){if(template.parentTemplateId||template.archived||!house.taskSettings?.[template.id]?.include||result.has(template.id))continue;result.set(template.id,{...template,sourceKey:template.id,taskId:null,definition:{templateId:template.id}});}
  return [...result.values()];
 }
 export function configurableFlowSources(state,roomConfiguration,house){
  const sources=new Map(flowSources(state,roomConfiguration,house).map(source=>[source.sourceKey,source]));
- for(const template of state.templates||[]){if(template.parentTemplateId||template.archived||sources.has(template.id))continue;sources.set(template.id,{...template,sourceKey:template.id,taskId:null,definition:{templateId:template.id}});}
+ for(const template of visibleTemplates(state.templates||[],house.hiddenTemplateIds)){if(template.parentTemplateId||template.archived||sources.has(template.id))continue;sources.set(template.id,{...template,sourceKey:template.id,taskId:null,definition:{templateId:template.id}});}
  return [...sources.values()];
 }
 export function buildFlowSnapshot(state,roomConfiguration,house,{day,policy,end=addCivilDays(day,90)}={}){
@@ -53,7 +54,7 @@ export function buildFlowSnapshot(state,roomConfiguration,house,{day,policy,end=
 }
 export function liveFlowEntries(snapshot,state,house){
  const suppressed=new Set(house.suppressedIds||[]);
- return (snapshot?.entries||[]).filter(entry=>!suppressed.has(entry.sourceKey)).map(entry=>{
+ return (snapshot?.entries||[]).filter(entry=>!suppressed.has(entry.sourceKey)&&!((house.hiddenTemplateIds||[]).includes(entry.definition?.templateId))).map(entry=>{
   const task=entry.taskId?state.tasks.find(task=>task.id===entry.taskId):state.tasks.find(task=>task.flowSourceKey===entry.sourceKey&&task.flowOccurrenceId===entry.id);
   const done=!!task?.done||!!house.eventCompletions?.[entry.id];return {...entry,done,roomId:task?.roomId||entry.roomId,taskId:task?.id||entry.taskId,unavailable:!!entry.taskId&&(!task||task.archived||task.pausedAt)};
  });

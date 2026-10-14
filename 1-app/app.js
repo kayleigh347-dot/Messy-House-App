@@ -1,11 +1,11 @@
 import {skipCalendarOccurrence} from './calendar-planner.js?v=review-fixes-20261012-v3';
 import {initHomeManagement,updateManagementRoute} from './home-management.js?v=adaptive-stage02-20261013-v1';
 import {initAdaptiveMode} from './adaptive-mode.js?v=adaptive-stage02-20261013-v1';
-import {initRoomSetup} from './room-setup-ui.js?v=flexible-flow-20261013-v1';
-import {initFlow} from './flow-controller.js?v=flexible-flow-20261013-v1';
-import {initFlowSettings} from './flow-settings.js?v=flexible-flow-20261013-v1';
-import {initRoomFocus} from './room-focus-ui.js?v=flexible-flow-20261013-v1';
-import {initClearWay} from './clear-way-ui.js?v=flexible-flow-20261013-v1';
+import {initRoomSetup} from './room-setup-ui.js?v=help-completion-20261014-v1';
+import {initFlow} from './flow-controller.js?v=help-completion-20261014-v1';
+import {initFlowSettings} from './flow-settings.js?v=help-completion-20261014-v1';
+import {initRoomFocus} from './room-focus-ui.js?v=help-completion-20261014-v1';
+import {initClearWay} from './clear-way-ui.js?v=help-completion-20261014-v1';
 import {createPreparationFollowUp,removeUntouchedPreparationFollowUp} from './clear-way.js';
 import {initScheduleMaker,renderScheduleMaker} from './schedule-maker-ui.js?v=review-fixes-20261012-v3';
 import {initTidyCalendar,renderTidyCalendar,jumpTidyCalendar,stepTidyCalendar,todayTidyCalendar} from './tidy-calendar.js?v=review-fixes-20261012-v3';
@@ -38,7 +38,7 @@ import {applyBackupCleanup,applyBackupTestCleanup,taskDeadline} from './task-ext
 
 import {navigate,initNavigation} from './navigation.js?v=startup-navigation-20261012-v1';
 
-import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=flexible-flow-20261013-v1";
+import {initV2,renderV2,editTask,quickAdd,showRoom} from "./v2-ui.js?v=help-completion-20261014-v1";
 
 import {taskAge,ordered,priorityOrdered,priorityOf,move,moveToTop,moveToBottom,moveBefore,normalize,validateV2,allowanceLabel,scheduleNext,activateDue,recurrenceLabel,roomMess} from "./v2-state.js?v=calendar-skip-20261012-v1";
 
@@ -984,9 +984,9 @@ initTaskPlanning({get:()=>st,save:changed,actor:currentActor,toast:featureToast,
 initReviewUI({get:()=>st,save:changed});
 initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>finish(t,'task'),edit:editTask,openPage:showPage,openCalendar:date=>{calendarMonth=new Date(date);showPage('calendar')}});
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
-initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task'),roomSetup,roomFocus});
+initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task'),roomSetup,roomFocus,templatePreferences:flow});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=flexible-flow-20261013-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=help-completion-20261014-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");

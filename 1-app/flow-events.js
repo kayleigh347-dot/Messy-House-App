@@ -8,7 +8,7 @@ export function validateFlowEvent(event){
 }
 export function projectFlowEvents(events,{start,end}){
  const entries=[];
- for(const raw of events||[]){if(raw.deletedAt||raw.enabled===false)continue;const event=validateFlowEvent(raw),years=event.annual?Array.from({length:Number(end.slice(0,4))-Number(start.slice(0,4))+2},(_,i)=>Number(start.slice(0,4))+i):[Number(event.date.slice(0,4))];
+ for(const raw of events||[]){if(raw.deletedAt||raw.enabled===false)continue;const event=validateFlowEvent(raw),years=event.annual?Array.from({length:Math.max(0,Number(end.slice(0,4))-Number(event.date.slice(0,4))+2)},(_,i)=>Number(event.date.slice(0,4))+i):[Number(event.date.slice(0,4))];
   for(const year of years){const date=event.annual?annualDate(event.date,year,event.leapDayPolicy):event.date;
    for(const step of event.steps){const recommendedOn=addCivilDays(date,-step.lead*(step.unit==='weeks'?7:1)),id=event.id+':'+year+':'+step.id;
     if(recommendedOn>end)continue;
