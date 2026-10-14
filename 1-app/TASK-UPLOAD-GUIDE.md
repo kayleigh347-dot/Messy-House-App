@@ -1,6 +1,6 @@
 # Add tasks from a spreadsheet
 
-Open task-upload-template.csv in Excel, Numbers or Google Sheets. Replace the example rows with your tasks, save or download as CSV, then open More → Upload tasks in Mission Control.
+Open task-upload-template.csv in Excel, Numbers or Google Sheets. Replace the example rows with your tasks, save or download as CSV, then open More → Backup & custom tasks in Mission Control and choose your CSV file.
 
 | Column | What to enter |
 | --- | --- |

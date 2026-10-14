@@ -58,3 +58,36 @@ details.optional-section>summary{width:auto;max-width:100%;white-space:normal;ov
 #calendar .flow-recommendation-row{grid-template-columns:minmax(0,1fr);align-items:start;gap:.5rem}#calendar .flow-recommendation-row>button{width:100%;white-space:normal}#calendar .flow-recommendation-row .calendar-checklist-text>strong{font-size:14px;line-height:1.4;overflow-wrap:anywhere}#calendar .flow-recommendation-row details{margin-top:.3rem}@media(min-width:650px){#calendar .flow-recommendation-row{grid-template-columns:minmax(0,1fr) auto}#calendar .flow-recommendation-row>button{width:auto}}
 
 #helpSettings .optional-section>:is(p,ol,ul){margin:12px;line-height:1.5}#helpSettings .optional-section>:is(ol,ul){padding-left:22px}#helpSettings li+li{margin-top:8px}
+
+/* Keep detailed actions inside narrow room, recurring and nested task cards. */
+main .task-card .task-footer{flex-wrap:wrap;justify-content:flex-start}
+main .task-card .task-footer>.task-quick-actions{display:flex;flex:0 0 auto;gap:4px}
+main .task-card .task-footer>.time-task{margin:0}
+main .task-card .task-footer>.task-complete{margin-left:auto!important}
+body.task-compact-view main .task-card>.body>.task-footer{flex-wrap:nowrap}
+
+/* Completed work keeps Undo beside the name in either task view. */
+main .task-card.completed-task>.body,main .subtask-list>.task-card.completed-task>.body{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 8px}
+main .task-card.completed-task>.body>.task-heading,main .subtask-list>.task-card.completed-task>.body>.task-heading{grid-column:1;grid-row:1;min-width:0}
+main .task-card.completed-task>.body>.task-footer,main .subtask-list>.task-card.completed-task>.body>.task-footer{grid-column:2;grid-row:1;margin:0}
+main .task-card.completed-task>.body>:is(.completion-person,.review-timing,.subtasks){grid-column:1/-1}
+
+/* Built-in tabs fit on phones; extra named sidequest tabs remain scrollable. */
+main :is(#sideTabs,#roomSideTabs).folder-tabs button{font-size:11px;padding:10px 12px 8px 7px}
+@media(max-width:380px){main .other-tabs.folder-tabs button{font-size:10px;padding:10px 12px 8px 7px}}
+
+/* Appointment attachments need the full card width before its actions. */
+#appointmentList>.shared-item{flex-wrap:wrap}
+#appointmentList .shared-item-body{flex-basis:100%}
+#appointmentList .item-image-upload{min-width:0}
+#appointmentList .item-image-upload input{box-sizing:border-box;max-width:100%}
+
+#helpSettings .help-search{display:grid;gap:6px;margin:12px 0}
+#helpSettings .help-search input{width:100%;min-width:0;box-sizing:border-box}
+#helpSettings #helpSearchStatus{font-size:13px;line-height:1.5}
+
+/* A grid's automatic minimum must not widen the Add task popup. */
+#quickTaskForm{min-width:0;grid-template-columns:minmax(0,1fr)}
+#quickTaskForm>*,#quickTaskForm .dialog-actions button{min-width:0}
+#quickTask .quick-flags .checkbox-label{flex:1 1 0;white-space:normal}
+#quickTaskTabs.folder-tabs button{font-size:11px;padding:10px 12px 8px 7px}

@@ -51,6 +51,9 @@ import {ensurePerson,setDisplayName,householdScoreboard,personName,unseenActivit
 // Local-network previews may not expose randomUUID, although getRandomValues is available.
 if(!crypto.randomUUID)crypto.randomUUID=()=>{const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function filterHelp(){const query=$('#helpSearch').value.trim().toLocaleLowerCase(),words=query.split(/\s+/).filter(Boolean),topics=$$('#helpSettings > details');let found=0;for(const topic of topics){const text=topic.textContent.toLocaleLowerCase();topic.hidden=!words.every(word=>text.includes(word));if(!topic.hidden)found++;}$('#clearHelpSearch').hidden=!query;$('#helpSearchStatus').hidden=!query;$('#helpSearchStatus').textContent=found?`${found} Help ${found===1?'topic':'topics'} found. Open a heading to read the instructions.`:'No Help topics match. Try another word or clear the search.';}
+$('#helpSearch').oninput=filterHelp;
+$('#clearHelpSearch').onclick=()=>{$('#helpSearch').value='';filterHelp();$('#helpSearch').focus()};
 document.addEventListener('reset',event=>{for(const section of event.target.querySelectorAll('details.optional-section'))section.open=false});
 document.addEventListener('invalid',event=>{const popup=event.target.closest('#quickMoreOptions');if(popup&&!popup.open)popup.showModal();for(let section=event.target.closest('details');section;section=section.parentElement?.closest('details'))section.open=true},true);
 const inputDraftKey=field=>`mc-input-draft:${field.form?.id||'form'}:${field.name||field.id}`;
@@ -86,7 +89,7 @@ const entryTime=value=>{const time=Date.parse(value);return Number.isFinite(time
 let signedIn=false,adaptiveMode,roomSetup,clearWay,roomFocus,flow,flowSettings;
 function updateSignInUI(value){signedIn=!!value;$('#displayNameForm').hidden=!signedIn;document.querySelector('.sync-line').hidden=signedIn;$('#signOut').hidden=!signedIn;$('#signIn').hidden=signedIn;$('#email').closest('label').hidden=signedIn;void adaptiveMode?.refresh();void roomSetup?.refresh()}
 const status=text=>$('#sync').textContent=criticalStorageProblem()?'Not saved · recovery needed':text;
-function settingsTab(name='general'){for(const panel of $$('[data-settings-panel]'))panel.hidden=panel.dataset.settingsPanel!==name;for(const tab of $$('[data-settings-tab]'))tab.setAttribute('aria-pressed',String(tab.dataset.settingsTab===name));if(name==='account'){$('#url').value=cfg.url||'';$('#key').value=cfg.key||'';if(db&&!sharingBusy&&!busy)db.auth.getSession().then(({data})=>{if(data.session)runSharing(refreshHouses)}).catch(()=>{})}}
+function settingsTab(name='general'){for(const panel of $$('[data-settings-panel]'))panel.hidden=panel.dataset.settingsPanel!==name;for(const tab of $$('[data-settings-tab]'))tab.setAttribute('aria-pressed',String(tab.dataset.settingsTab===name));if(name==='help')filterHelp();if(name==='account'){$('#url').value=cfg.url||'';$('#key').value=cfg.key||'';if(db&&!sharingBusy&&!busy)db.auth.getSession().then(({data})=>{if(data.session)runSharing(refreshHouses)}).catch(()=>{})}}
 for(const tab of $$('[data-settings-tab]'))tab.onclick=()=>settingsTab(tab.dataset.settingsTab);
 
 function remember(){localStorage.setItem(M,JSON.stringify(meta))}
@@ -305,7 +308,7 @@ if(t.done){a.classList.add('completed-task');const body=document.createElement('
 let check=document.createElement("button");
 check.type="button";check.disabled=!!t.pausedAt;
 check.className="check";
-check.textContent=t.parentId?'Done it!':t.recurrence&&!activeTask(t)?'Already done!':context==='doing'||document.body.classList.contains('task-compact-view')?'Done it!':'I did a thing!';
+check.textContent=t.parentId||context==='doing'||document.body.classList.contains('task-compact-view')?'Done it!':'I did a thing!';
 check.setAttribute("aria-label","Complete: "+t.text);
 check.onclick=()=>completeTaskCard(a,t,kind,check);
 let body=document.createElement("div");
@@ -986,7 +989,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task'),roomSetup,roomFocus,templatePreferences:flow});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=help-completion-20261014-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=whole-app-review-20261014-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");
