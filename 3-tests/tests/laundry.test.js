@@ -99,7 +99,7 @@ test('moved recurring maintenance keeps its schedule after completion',()=>{
  assert.equal(laundryTasks(state,Date.parse('2026-11-07T12:00:00Z')).some(item=>item.text==='Clean inside washing machine'),true);
 });
 
-import {laundryReminder} from '../laundry-reminders.js';
+import {laundryReminder,inactiveLaundryReminderCycles} from '../laundry-reminders.js';
 test('both load reminders wait two hours, repeat every thirty minutes and stop at step two',()=>{
  for(const cycle of ['rail','dryer']){
   const state=board(),start=Date.parse('2026-10-10T10:00:00Z');
@@ -113,6 +113,24 @@ test('both load reminders wait two hours, repeat every thirty minutes and stop a
   completeLaundryStep(state,1,actor,new Date(start+9000000).toISOString(),cycle);
   assert.equal(laundryReminder(state,cycle,start+10800000),null);
  }
+});
+
+test('moving washing out marks its posted Android reminder inactive immediately',()=>{
+ const state=board(),start=Date.parse('2026-10-10T10:00:00Z'),due=start+7200000;
+ laundryLoads(state);completeLaundryLoadStep(state,1,0,actor,new Date(start).toISOString());
+ assert.deepEqual(inactiveLaundryReminderCycles(state,actor.id,due),[2]);
+ completeLaundryLoadStep(state,1,1,actor,new Date(due).toISOString(),'rail');
+ assert.equal(laundryReminder(state,1,due),null);
+ assert.deepEqual(inactiveLaundryReminderCycles(state,actor.id,due),[1,2]);
+});
+
+test('clearing one finished load leaves a different active washing reminder alone',()=>{
+ const state=board(),start=Date.parse('2026-10-10T10:00:00Z'),due=start+7200000;
+ laundryLoads(state);completeLaundryLoadStep(state,1,0,actor,new Date(start).toISOString());
+ completeLaundryLoadStep(state,1,1,actor,new Date(start).toISOString(),'dryer');
+ assert.ok(startSecondLaundryLoad(state,new Date(start).toISOString()));
+ completeLaundryLoadStep(state,2,0,actor,new Date(start).toISOString());
+ assert.deepEqual(inactiveLaundryReminderCycles(state,actor.id,due),[1]);
 });
 
 test('selected backup fills missing uniform step once while preserving completed live steps',()=>{
