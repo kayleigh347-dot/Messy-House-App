@@ -55,3 +55,11 @@ test('explicit urgent preference has precedence only in the personal projection'
 test('deliberately selected future work can be active without changing due dates; later schedule edits revoke the early selection',()=>{
  const task={id:'future',nextDue:'2099-01-01T12:00:00Z',doingNow:true};assert.equal(activeTask(task),false);assert.equal(doingNowTasks([task]).length,0);task.flowSelectedDue=task.nextDue+'|';assert.equal(activeTask(task),true);assert.equal(doingNowTasks([task]).length,1);assert.equal(task.nextDue,'2099-01-01T12:00:00Z');task.dueDate='2099-01-02T12:00:00Z';assert.equal(activeTask(task),false);task.flowSelectedDue=task.nextDue+'|'+task.dueDate;task.pausedAt='2026-10-13';assert.equal(activeTask(task),false);
 });
+
+test('unfinished annual preparation survives New Year without changing year identity or fixed targets',()=>{
+ const event={id:'christmas',name:'Christmas',date:'2026-12-25',annual:true,afterEvent:'keep',steps:[{id:'wrap',text:'Wrap',lead:7,unit:'days',kind:'flexible'},{id:'target',text:'Target',lead:1,unit:'weeks',kind:'target'}]};
+ const project=start=>projectFlowEvents([event],{start,end:'2027-04-01'});
+ const before=project('2026-12-31'),after=project('2027-01-01');assert.deepEqual(after.map(e=>e.id),before.map(e=>e.id));assert.equal(after[0].displayOn,'2027-01-01');assert.equal(after[0].originalRecommendedOn,'2026-12-18');assert.equal(after[1].targetOn,'2026-12-18');assert.equal(after[1].displayOn,'2026-12-18');
+ assert.equal(projectFlowEvents([{...event,afterEvent:'hide'}],{start:'2027-01-01',end:'2027-04-01'}).length,0);
+ const policy={timeZone:'Europe/London',base:[60,45,30,15,5],dailyCount:5,dailyMinutes:60,rounding:'ceil'},snapshot=buildFlowSnapshot({tasks:[],templates:[],rooms:[]},{setups:[]},{events:[event],eventCompletions:{[after[0].id]:{taskId:'done'}}},{day:'2027-01-01',policy});assert.equal(snapshot.entries.some(e=>e.id===after[0].id),false);
+});
