@@ -1,5 +1,5 @@
 import {skipCalendarOccurrence} from './calendar-planner.js?v=review-fixes-20261012-v3';
-import {initHomeManagement,updateManagementRoute} from './home-management.js?v=adaptive-stage02-20261013-v1';
+import {initHomeManagement,updateManagementRoute} from './home-management.js?v=static-settings-master-page-20261014-v1';
 import {initAdaptiveMode} from './adaptive-mode.js?v=adaptive-stage02-20261013-v1';
 import {initRoomSetup} from './room-setup-ui.js?v=help-completion-20261014-v1';
 import {initFlow} from './flow-controller.js?v=help-completion-20261014-v1';
@@ -26,7 +26,7 @@ import {enableTaskDrag} from './task-drag.js?v=laundry-uniform-20261010-v2';
 import {roomHues} from './room-colours.js';
 import {calendarStep} from './house-calendar.js?v=review-fixes-20261012-v3';
 import {localDateKey} from './calendar.js';
-import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=fuller-wizard-20261012-v1';
+import {initFeatures,renderFeatures,applyPreferences,renderLocalCalendar,calendarDragOptions,startFocus,featureToast} from './features.js?v=static-settings-master-page-20261014-v1';
 import {enablePush,disablePush,pushAvailability} from './push-client.js';
 import {uniqueWins,completionPeople,displayPersonName} from './completion-history.js?v=laundry-uniform-20261010-v2';
 import {completionRecord} from './task-stats.js';
@@ -989,7 +989,7 @@ initFeatures({card:mk,get:()=>st,save:changed,actor:currentActor,complete:t=>fin
 initScheduleMaker({get:()=>st,save:changed,toast:featureToast,open:showPage,edit:editTask});
 initV2(()=>st,changed,mk,{notificationTarget,notifyTasks:notifyAboutTasks,complete:t=>finish(t,'task'),roomSetup,roomFocus,templatePreferences:flow});
 
-if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=laundry-reminder-fix-20261014-v1").catch(console.error);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js?v=static-settings-master-page-20261014-v1").catch(console.error);
 updateSignInUI(false);render();
 const savedView=localStorage.getItem("mc-view-v2"),lastView=savedView==='later'?'now':savedView;
 initNavigation(renderRoute,lastView&&document.querySelector('nav button[data-tab="'+lastView+'"]')?lastView:"house");

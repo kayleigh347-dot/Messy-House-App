@@ -19,4 +19,4 @@ export function initHomeManagement(handlers){api=handlers;document.querySelector
  const presets=el('details');presets.className='optional-section';presets.append(el('summary','Common tools'));const tools=el('div');tools.className='tools-picker';for(const tool of commonTools)tools.append(el('span',tool));presets.append(tools);timing.insertBefore(presets,document.getElementById('taskTimingContent'));
  const button=el('button','Tools needed');button.type='button';button.id='doingToolsNeeded';button.onclick=()=>{const s=api.get();openToolsNeeded(s,[...doingNowTasks(s.tasks,s.wins),...doingNowTasks(s.settings,s.wins)].filter(t=>!t.done).map(t=>t.id))};document.getElementById('doing').insertBefore(button,document.getElementById('doing').children[1]);
 }
-export function updateManagementRoute(page,room){document.body.dataset.management=groups[page]||'';document.getElementById('simpleSettings').hidden=page==='house'&&!room&&!document.body.classList.contains('simple-view');}
+export function updateManagementRoute(page,room){document.body.dataset.management=groups[page]||'';}
