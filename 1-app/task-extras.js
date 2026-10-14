@@ -5,7 +5,7 @@ export function removeSavedTasks(state,template){const roots=activeSavedTasks(st
 export function addSavedTasks(state,ids,newId=()=>crypto.randomUUID(),now=new Date().toISOString()){
  const selected=new Set(ids),roots=ordered(state.templates).filter(t=>selected.has(t.id)&&!t.parentTemplateId&&state.rooms.some(r=>r.id===t.roomId&&!r.archived)),start=Math.max(-1,...state.tasks.map(t=>t.order??0))+1;let count=0;const added=[];
  for(const template of roots){if(activeSavedTasks(state,template).length)continue;const family=[],pending=[template];while(pending.length){const item=pending.shift();family.push(item);pending.push(...ordered(state.templates.filter(child=>child.parentTemplateId===item.id)))}const generated=new Map(),baseOrder=start+count;
-  for(const [index,item] of family.entries()){const fresh=freshTask({...item,roomId:template.roomId,area:state.rooms.find(room=>room.id===template.roomId)?.name||template.area},newId(),now,baseOrder+index);generated.set(item.id,fresh);if(item.parentTemplateId)fresh.parentId=generated.get(item.parentTemplateId)?.id||generated.get(template.id).id;state.tasks.push(fresh);added.push(fresh);count++}
+  for(const [index,item] of family.entries()){const fresh=freshTask({...item,sourceTemplateId:item.id,roomId:template.roomId,area:state.rooms.find(room=>room.id===template.roomId)?.name||template.area},newId(),now,baseOrder+index);generated.set(item.id,fresh);if(item.parentTemplateId)fresh.parentId=generated.get(item.parentTemplateId)?.id||generated.get(template.id).id;state.tasks.push(fresh);added.push(fresh);count++}
  }
  placeNewTasksFirst(state.tasks,added);return count;
 }

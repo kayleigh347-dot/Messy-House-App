@@ -87,7 +87,7 @@ export function initAdaptiveMode(options){
   if(failureMessage&&current?.context.key===previous.context.key){message=failureMessage;paint()}
  }
  const help=document.querySelector('#helpSettings');
- if(help){const details=el('details');details.dataset.adaptiveHelp='true';details.append(el('summary','Go With the Flow'),el('h3',FLOW_INTRO_TITLE),introduction());help.append(details)}
+ if(help){const details=el('details');details.className='optional-section';details.dataset.adaptiveHelp='true';details.append(el('summary','Go With the Flow'),el('h3',FLOW_INTRO_TITLE),introduction());help.append(details)}
  document.addEventListener('visibilitychange',()=>{if(document.hidden)closeInternally();else void refresh()});
  window.addEventListener('online',()=>void refresh());
  setInterval(()=>{if(document.visibilityState==='visible'&&(visible()||popup))void refresh()},10000);
