@@ -21,10 +21,17 @@ This is the authoritative layout, navigation and function document referenced by
 ## Page headers and tabs
 
 - Keep the settings cog at the top right on every page and room. On the home illustration, use the cog mapped to the house image instead.
+- The Settings cog is a fixed silver `⚙︎` at the top right. Keep a fixed `?` Help shortcut immediately beneath it; it opens the existing Settings → Help tab. These are global controls, not page-specific controls.
 - Put tabs immediately beneath the page title, before the page content.
 - Use the same folder-like tab style across pages, with a cut-out tab shape. Top-level tabs are purple. Tabs within a tab use different colours to distinguish the levels, including their inactive states. Tabs should read as tabs, not buttons.
 - Keep a page's tabs on one line on mobile, using concise labels where needed.
 - Keep headers, tabs, and view controls consistent across pages that use the same pattern.
+
+## Copy-first master page
+
+- `1-app/MASTER-PAGE.html` is the protected master for app-page structure. It is an agent-only section template, not a live page or standalone route.
+- Before making a new page or materially reshaping one, copy the master and edit the copy. Never edit the master itself. The finished section is then integrated into `1-app/index.html` using the existing route/navigation patterns only when that scope is requested.
+- Preserve the master pattern: title without a tagline, tabs directly below the title where needed, primary content before collapsed secondary controls, and no duplicate global Settings or Help controls.
 
 ## More and Manage home navigation
 
