@@ -21,10 +21,10 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE_PATH||'playwright');
  await page.locator('#roomTasks [data-task-id="task0"] .task-options summary').click();page.once('dialog',d=>d.accept());await page.locator('#roomTasks [data-task-id="task0"] button').filter({hasText:/^Delete$/}).click();console.log('room undo',await page.locator('#roomDetail > .undo-deleted').isVisible());
  await page.locator('nav button[data-tab="wins"]').click();assert.equal(await page.locator('#wins .undo-deleted').count(),0);console.log('data undo count',await page.locator('#wins .undo-deleted').count());// Enter every lazy-rendered page after the completion/deletion to catch stale lists.
  for(const target of ['now','side','doing','recurring','library','laundryLibrary','calendar']){
-  await page.evaluate(async target=>{const {navigate}=await import('./navigation.js');navigate(target)},target);
+  await page.evaluate(async target=>{const {navigate}=await import('./navigation.js?v=startup-navigation-20261012-v1');navigate(target)},target);
   assert.equal(await page.locator('#'+target).isVisible(),true);
  }
- await page.evaluate(async()=>{const {navigate}=await import('./navigation.js');navigate('house','room-master')});
+ await page.evaluate(async()=>{const {navigate}=await import('./navigation.js?v=startup-navigation-20261012-v1');navigate('house','room-master')});
  await page.locator('#roomTabs button').filter({hasText:/Side quests/}).click();
  assert.equal(await page.locator('#roomTasks > .task-card').count(),2);
  await page.locator('#roomTabs button').filter({hasText:/^Tasks/}).click();
