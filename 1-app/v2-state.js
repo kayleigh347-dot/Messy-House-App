@@ -64,6 +64,7 @@ export const INITIAL_ROOMS=[
 export const roomId=name=>'area-'+encodeURIComponent(name.trim().toLowerCase());
 export function normalize(input){
  const state=structuredClone(input);
+ state.sharedSyncCapabilities={...(state.sharedSyncCapabilities||{}),calendarMonths:1,timedPause:1};
  for(const key of ['tasks','side','wins','rewards','templates','homeless','shopping','appointments','errands','notes','householdPeople','notifications','settings','sideTabs','calendarPlans','calendarSessions','preparationRoutines','preparationInstances'])state[key]||=[];
  state.rooms ||= INITIAL_ROOMS.map(([id,name,guardian],order)=>({id:'room-'+id,name:roomNames['room-'+id]||name,guardian,order,archived:false}));
  for(const room of state.rooms)room.name=canonicalRoomName(room);
@@ -133,16 +134,22 @@ export function allowanceLabel(t,now=Date.now()){
  return due<now?`Overdue by ${days} ${days===1?'day':'days'}`:`${days} ${days===1?'day':'days'} left`;
 }
 export function freshTask(template,id,now=new Date().toISOString(),order=0){
- return {id,...(template.tools?{tools:structuredClone(template.tools)}:{}),...(template.presetMinutes?{presetMinutes:template.presetMinutes}:{}),...(template.estimateSource?{estimateSource:template.estimateSource}:{}),...(template.scheduleKey?{scheduleKey:template.scheduleKey,scheduleMaker:!!template.scheduleMaker}:{}),...(template.autoDoingNow?{autoDoingNow:true}:{}),estimatedMinutes:template.estimatedMinutes||null,effort:template.effort||null,text:template.text,roomId:template.roomId,area:template.area||'General',notes:template.notes||'',bucket:'now',done:false,created:now,activeSince:now,order,allowanceDays:template.allowanceDays||null,messImpact:template.messImpact||'normal',priority:template.priority==='high'?'high':'mid',...(template.assignedTo?{assignedTo:template.assignedTo,assignedToName:template.assignedToName}:{}),sourceTemplateId:template.sourceTemplateId||((template.sourceId||template.builtinKey)?template.id:null)};
+ return {id,...(template.androidScheduleSpec?{androidScheduleSpec:template.androidScheduleSpec}:{}),...(template.androidTask?{androidTask:structuredClone(template.androidTask)}:{}),...(template.scheduleMaker?{scheduleMaker:true}:{}),...(template.tools?{tools:structuredClone(template.tools)}:{}),...(template.presetMinutes?{presetMinutes:template.presetMinutes}:{}),...(template.estimateSource?{estimateSource:template.estimateSource}:{}),...(template.scheduleKey?{scheduleKey:template.scheduleKey,scheduleMaker:!!template.scheduleMaker}:{}),...(template.autoDoingNow?{autoDoingNow:true}:{}),estimatedMinutes:template.estimatedMinutes||null,effort:template.effort||null,text:template.text,roomId:template.roomId,area:template.area||'General',notes:template.notes||'',bucket:'now',done:false,created:now,activeSince:now,order,allowanceDays:template.allowanceDays||null,messImpact:template.messImpact||'normal',priority:template.priority==='high'?'high':'mid',...(template.assignedTo?{assignedTo:template.assignedTo,assignedToName:template.assignedToName}:{}),sourceTemplateId:template.sourceTemplateId||((template.sourceId||template.builtinKey)?template.id:null)};
 }
-export function validRecurrence(r){return r===null||r===undefined||((r.kind==='days'||r.kind==='weeks')&&Number.isInteger(r.every)&&r.every>=1&&r.every<=3650)||(r.kind==='weekdays'&&Array.isArray(r.days)&&r.days.length>0&&r.days.every(d=>Number.isInteger(d)&&d>=0&&d<=6))||(r.kind==='fixed-weekday'&&Number.isInteger(r.day)&&r.day>=0&&r.day<=6)}
+export function validRecurrence(r){return r===null||r===undefined||((r.kind==='days'||r.kind==='weeks')&&Number.isInteger(r.every)&&r.every>=1&&r.every<=3650)||(r.kind==='months'&&Number.isInteger(r.every)&&r.every>=1&&r.every<=120)||(r.kind==='weekdays'&&Array.isArray(r.days)&&r.days.length>0&&r.days.every(d=>Number.isInteger(d)&&d>=0&&d<=6))||(r.kind==='fixed-weekday'&&Number.isInteger(r.day)&&r.day>=0&&r.day<=6)}
 export function nextOccurrence(recurrence,from=new Date()){
  const skip=new Set(recurrence?.skipDates||[]);let cursor=new Date(from),next;for(let i=0;i<=skip.size;i++){next=nextUnskippedOccurrence(recurrence,cursor);if(!next||!skip.has(localDateKey(next)))return next;cursor=new Date(next)}return null;
 }
 function nextUnskippedOccurrence(recurrence,from=new Date()){
  const d=new Date(from);d.setHours(0,0,0,0);
  if(!validRecurrence(recurrence)||!recurrence)return null;
- if(recurrence.kind==='weekdays'||recurrence.kind==='fixed-weekday'){const days=recurrence.kind==='weekdays'?recurrence.days:[recurrence.day];do{d.setDate(d.getDate()+1)}while(!days.includes(d.getDay()))}
+ if(recurrence.kind==='months'){
+  const parsed=recurrence.anchor&&new Date(recurrence.anchor+'T00:00:00'),anchor=parsed&&Number.isFinite(+parsed)?parsed:new Date(d);
+  const rest=Array.isArray(recurrence.restDays)&&recurrence.restDays.length<7?recurrence.restDays:[];
+  let cycle=0;
+  do{d.setFullYear(anchor.getFullYear(),anchor.getMonth()+cycle*recurrence.every,1);d.setDate(Math.min(anchor.getDate(),new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));cycle++;if(cycle>120000)return null}while(d<=from||rest.includes(d.getDay()));
+ }
+ else if(recurrence.kind==='weekdays'||recurrence.kind==='fixed-weekday'){const days=recurrence.kind==='weekdays'?recurrence.days:[recurrence.day];do{d.setDate(d.getDate()+1)}while(!days.includes(d.getDay()))}
  else{const interval=recurrence.every*(recurrence.kind==='weeks'?7:1);if(recurrence.anchor){const anchor=new Date(recurrence.anchor+'T00:00:00');if(Number.isFinite(+anchor)){d.setTime(+anchor);while(d<=from)d.setDate(d.getDate()+interval)}else d.setDate(d.getDate()+interval)}else d.setDate(d.getDate()+interval);if(Array.isArray(recurrence.restDays)&&recurrence.restDays.length<7){let tries=0;while(recurrence.restDays.includes(d.getDay())&&tries++<7)d.setDate(d.getDate()+interval)}}
  return d.toISOString();
 }
@@ -154,12 +161,16 @@ export function scheduleNext(task,now=new Date()){
  return {...freshTask(task,`occ-${seriesId}-${nextDue}`,now.toISOString(),task.order),...(task.importantWhenOverdue?{importantWhenOverdue:true}:{}),seriesId,recurringGroupId:task.recurringGroupId||seriesId,recurrence:structuredClone(task.recurrence),bucket:'now',scheduled:true,allowanceDays:null,nextDue,lastDone:task.lastDone,activeSince:nextDue};
 }
 export function activateDue(st,now=Date.now()){
- let changed=false;for(const t of st.tasks)if(!t.done&&!t.archived&&!t.pausedAt&&t.scheduled&&Date.parse(t.nextDue)<=now){const notice=recurringDueNotification(t,st.householdPeople,new Date(now).toISOString());if(notice){st.notifications||=[];if(!st.notifications.some(n=>n.id===notice.id))st.notifications.push(notice)}t.bucket='now';t.scheduled=false;t.activeSince=t.nextDue;changed=true}return changed;
+ let changed=false;
+ const today=localDateKey(new Date(now));
+ for(const t of [...st.tasks,...(st.side||[])])if(t.pausedAt&&t.androidTask?.pauseUntil&&t.androidTask.pauseUntil<=today){delete t.pausedAt;t.androidTask.pauseUntil='';changed=true}
+ for(const t of st.tasks)if(!t.done&&!t.archived&&!t.pausedAt&&t.scheduled&&Date.parse(t.nextDue)<=now){const notice=recurringDueNotification(t,st.householdPeople,new Date(now).toISOString());if(notice){st.notifications||=[];if(!st.notifications.some(n=>n.id===notice.id))st.notifications.push(notice)}t.bucket='now';t.scheduled=false;t.activeSince=t.nextDue;changed=true}return changed;
 }
 export function recurrenceLabel(t){
  const r=t.recurrence;if(!r)return '';
  if(r.kind==='weekdays')return 'Every '+r.days.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ');
  if(r.kind==='fixed-weekday')return `Every ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][r.day]}`;
+ if(r.kind==='months')return `Every ${r.every} ${r.every===1?'month':'months'}`;
  return `Every ${r.every} ${r.kind==='weeks'?(r.every===1?'week':'weeks'):(r.every===1?'day':'days')}`;
 }
 // Recurring occurrences contribute once when due; ordinary task allowance pressure remains capped.

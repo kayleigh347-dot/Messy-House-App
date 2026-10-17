@@ -1,6 +1,6 @@
 import {automaticTaskMinutes,userTaskMinutes} from './task-estimates.js?v=review-fixes-20261012-v3';
 import {localDateKey} from './calendar.js';
-import {nextOccurrence,freshTask} from './v2-state.js?v=calendar-skip-20261012-v1';
+import {nextOccurrence,freshTask} from './v2-state.js?v=android-sync-20261017-v1';
 import {descendants,childrenOf,repeatChildren} from './subtasks.js';
 import {taskDeadline} from './task-extras.js';
 import {isLaundryItem} from './laundry.js?v=checklist-20261012-v3';
